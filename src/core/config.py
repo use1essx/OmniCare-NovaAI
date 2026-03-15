@@ -153,7 +153,7 @@ class Settings(BaseSettings):
     aws_region: str = Field(default="us-east-1")
     
     # Nova Model Configuration
-    nova_lite_model_id: str = Field(default="amazon.nova-lite-v1:0")
+    nova_lite_model_id: str = Field(default="amazon.nova-2-lite-v1:0")
     nova_pro_model_id: str = Field(default="amazon.nova-pro-v1:0")
     
     # Titan Embeddings Configuration

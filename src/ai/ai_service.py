@@ -535,7 +535,7 @@ class HealthcareAIService:
         # Get Nova model specifications
         nova_specs = {
             "lite": {
-                "model_id": "amazon.nova-lite-v1:0",
+                "model_id": "amazon.nova-2-lite-v1:0",
                 "input_cost_per_1k": 0.00006,
                 "output_cost_per_1k": 0.00024,
                 "description": "Fast, cost-effective model for simple tasks"

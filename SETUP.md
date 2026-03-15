@@ -30,7 +30,7 @@ Create an IAM user with this policy:
         "bedrock:InvokeModelWithResponseStream"
       ],
       "Resource": [
-        "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0",
+        "arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0",
         "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
         "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v1"
       ]

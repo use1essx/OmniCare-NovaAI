@@ -118,7 +118,7 @@ class AIResponse:
     
     Attributes:
         content: The AI-generated response text
-        model: Full model identifier (e.g., 'amazon.nova-lite-v1:0')
+        model: Full model identifier (e.g., 'amazon.nova-2-lite-v1:0')
         model_tier: Model tier used ('lite' or 'pro')
         usage: Token usage dictionary with 'prompt_tokens' and 'completion_tokens'
         cost: Cost of the request in USD (Decimal for precision)
@@ -130,7 +130,7 @@ class AIResponse:
     Examples:
         >>> response = AIResponse(
         ...     content="The flu typically causes fever, cough, and fatigue.",
-        ...     model="amazon.nova-lite-v1:0",
+        ...     model="amazon.nova-2-lite-v1:0",
         ...     model_tier="lite",
         ...     usage={"prompt_tokens": 50, "completion_tokens": 20},
         ...     cost=Decimal('0.000018'),

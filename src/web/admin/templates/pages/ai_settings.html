@@ -31,14 +31,14 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Primary Model</label>
                         <select class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border bg-white" id="primaryModel">
-                            <option value="amazon.nova-lite-v1:0">Nova Lite (Fast, Economical)</option>
+                            <option value="amazon.nova-2-lite-v1:0">Nova Lite (Fast, Economical)</option>
                             <option value="amazon.nova-pro-v1:0">Nova Pro (Powerful)</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Fallback Model</label>
                         <select class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border bg-white" id="fallbackModel">
-                            <option value="amazon.nova-lite-v1:0">Nova Lite</option>
+                            <option value="amazon.nova-2-lite-v1:0">Nova Lite</option>
                             <option value="amazon.nova-pro-v1:0">Nova Pro</option>
                         </select>
                     </div>
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const settings = JSON.parse(saved);
             // Apply saved settings to form...
             if (settings.model) {
-                document.getElementById('primaryModel').value = settings.model.primary || 'amazon.nova-lite-v1:0';
+                document.getElementById('primaryModel').value = settings.model.primary || 'amazon.nova-2-lite-v1:0';
                 document.getElementById('temperature').value = settings.model.temperature || 0.7;
                 document.getElementById('tempValue').textContent = settings.model.temperature || 0.7;
             }

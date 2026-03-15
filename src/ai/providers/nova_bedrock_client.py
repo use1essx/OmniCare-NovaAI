@@ -68,7 +68,7 @@ class NovaBedrockClient:
     # Amazon Nova model catalog
     NOVA_MODELS: Dict[str, NovaModelSpec] = {
         "lite": NovaModelSpec(
-            model_id="amazon.nova-lite-v1:0",
+            model_id="amazon.nova-2-lite-v1:0",
             model_name="Amazon Nova Lite",
             tier="lite",
             cost_per_1k_input_tokens=Decimal('0.00006'),

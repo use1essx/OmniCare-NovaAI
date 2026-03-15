@@ -42,7 +42,7 @@ This document describes the AI system architecture after the migration from Open
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              AWS Bedrock API                                 │
-│  - Nova Lite (amazon.nova-lite-v1:0)                        │
+│  - Nova Lite (amazon.nova-2-lite-v1:0)                      │
 │  - Nova Pro (amazon.nova-pro-v1:0)                          │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -53,7 +53,7 @@ This document describes the AI system architecture after the migration from Open
 
 ### AWS Nova Models
 
-#### Nova Lite (amazon.nova-lite-v1:0)
+#### Nova Lite (amazon.nova-2-lite-v1:0)
 - **Cost:** $0.00006 per 1K input tokens, $0.00024 per 1K output tokens
 - **Use Cases:**
   - Simple chat conversations

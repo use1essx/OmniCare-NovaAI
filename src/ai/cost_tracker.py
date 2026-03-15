@@ -52,7 +52,7 @@ class CostTracker:
     Usage:
         tracker = CostTracker(db_session)
         cost = tracker.calculate_cost('lite', 1000, 500)
-        tracker.log_usage('lite', 'amazon.nova-lite-v1:0', 1000, 500, cost)
+        tracker.log_usage('lite', 'amazon.nova-2-lite-v1:0', 1000, 500, cost)
     """
     
     def __init__(self, db: Session):
@@ -154,7 +154,7 @@ class CostTracker:
         
         Args:
             model_tier: 'lite' or 'pro'
-            model_id: Full model identifier (e.g., 'amazon.nova-lite-v1:0')
+            model_id: Full model identifier (e.g., 'amazon.nova-2-lite-v1:0')
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
             cost: Cost in USD (from calculate_cost)
