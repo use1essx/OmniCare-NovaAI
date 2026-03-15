@@ -100,7 +100,7 @@ class FileParser:
             elif file_ext == 'txt':
                 return await cls._parse_text(file_content, file_name)
             elif file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']:
-                # Images handled by OCR (Gemini)
+                # Images handled by OCR (Amazon Nova)
                 return {
                     "text": "",
                     "metadata": {

@@ -64,6 +64,69 @@ class MultiStageQuestionnairePipeline:
         response = await self.client.make_request(request=request)
         return response.content
     
+        async def _call_models_sequential(self, calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Execute multiple AI calls sequentially (replacement for parallel calls).
+        Maintains same interface as old call_models_parallel for compatibility.
+        
+        Args:
+            calls: List of call specifications with keys:
+                - model_key: Model identifier (ignored, uses Nova)
+                - system_prompt: System prompt
+                - user_prompt: User prompt
+                - temperature: Sampling temperature
+                - max_tokens: Max tokens in response
+        
+        Returns:
+            List of results with keys:
+                - success: Boolean
+                - content: Response content
+                - model_full_name: Model name used
+                - error: Error message (if failed)
+        """
+        results = []
+        
+        for i, call_spec in enumerate(calls):
+            try:
+                # Extract parameters
+                system_prompt = call_spec.get("system_prompt", "")
+                user_prompt = call_spec.get("user_prompt", "")
+                temperature = call_spec.get("temperature", 0.5)
+                max_tokens = call_spec.get("max_tokens", 4000)
+                model_key = call_spec.get("model_key", "nova")
+                
+                logger.info(f"   Executing sequential call {i+1}/{len(calls)} (model_key: {model_key})...")
+                
+                # Make request using Nova
+                request = AIRequest(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    task_type="questionnaire",
+                    temperature=temperature,
+                    max_tokens=max_tokens
+                )
+                
+                response = await self.client.make_request(request=request)
+                
+                # Format result to match old parallel interface
+                results.append({
+                    "success": response.success,
+                    "content": response.content,
+                    "model_full_name": response.model,
+                    "error": response.error_message
+                })
+                
+            except Exception as e:
+                logger.error(f"Sequential call {i+1} failed: {e}")
+                results.append({
+                    "success": False,
+                    "content": "",
+                    "model_full_name": "amazon.nova-lite-v1:0",
+                    "error": str(e)
+                })
+        
+        return results
+
     def _load_prompt(self, prompt_name: str) -> str:
         """Load structured prompt from file"""
         prompt_file = self.prompt_dir / f"{prompt_name}.txt"
@@ -137,9 +200,9 @@ Generate the comprehensive summary JSON now, including 'suggested_title':
             
             # Update usage stats if client available
             if hasattr(self, 'client'):
-                usage = self.client.get_usage_summary()
+                usage = self.client.get_usage_stats()
                 job.total_tokens_used = usage.get("total_tokens", 0)
-                job.estimated_cost_usd = usage.get("total_cost_usd", 0.0)
+                job.estimated_cost_usd = usage.get("total_cost", 0.0)
             
             self.db.commit()
             logger.info(f"📊 Job {job_id}: {stage} - {progress}%")
@@ -253,7 +316,7 @@ Generate the comprehensive summary JSON now, including 'suggested_title':
     async def _stage1_analyze(self, document_text: str, job_id: UUID) -> QuestionnaireAnalysis:
         """
         Stage 1: Document Analysis (2-3 minutes)
-        Parallel: Gemini (structure) + Grok (domain analysis)
+        Uses Nova for structure and domain analysis
         """
         self._update_job_progress(job_id, "analyzing", "Stage 1: Document Analysis", 10)
         
@@ -287,18 +350,18 @@ Generate the comprehensive summary JSON now, including 'suggested_title':
         structure_prompt = f"{structure_prompt_template}\n\nDOCUMENT:\n{document_text[:100000]}"
         domain_prompt = f"{domain_prompt_template}\n\nDOCUMENT:\n{document_text[:60000]}"
         
-        # Parallel analysis calls
-        self._log_action(job_id, "🤖 dispatching parallel analysis: Gemini (Structure) + Grok (Domain)...")
-        results = await self.client.call_models_parallel([
+        # Sequential analysis calls (was parallel)
+        self._log_action(job_id, "🤖 dispatching sequential analysis: Structure + Domain...")
+        results = await self._call_models_sequential([
             {
-                "model_key": "llama-70b",
+                "model_key": "nova-lite",
                 "system_prompt": "You are a document structure analyst specializing in medical and psychological documents.",
                 "user_prompt": structure_prompt,
                 "temperature": 0.3,
                 "max_tokens": 4000
             },
             {
-                "model_key": "mixtral",
+                "model_key": "nova-lite",
                 "system_prompt": "You are a medical/psychological domain expert. Think step-by-step and show your reasoning.",
                 "user_prompt": domain_prompt,
                 "temperature": 0.5,
@@ -328,7 +391,7 @@ Generate the comprehensive summary JSON now, including 'suggested_title':
             structure_analysis=structure_data,
             domain_analysis=domain_data,
             analysis_map=analysis_map,
-            models_used=["meta-llama/llama-3.1-70b-instruct", "mistralai/mixtral-8x7b-instruct"],
+            models_used=["amazon.nova-lite-v1:0", "amazon.nova-lite-v1:0"],
             processing_time_seconds=0  # Will update at end
         )
         self.db.add(analysis)
@@ -396,21 +459,21 @@ DOCUMENT TEXT (first 50k chars):
         # Call 3 different AI models in parallel for independent analysis
         consensus_calls = [
             {
-                "model_key": "llama-70b",
+                "model_key": "nova-lite",
                 "system_prompt": "You are analyzing a healthcare document. Focus on structure, domains, and assessment methodology.",
                 "user_prompt": f"Analyze this document and identify its key characteristics. Return your analysis as a valid JSON object.\n\n{doc_summary}",
                 "temperature": 0.3,
                 "max_tokens": 3000
             },
             {
-                "model_key": "mixtral",
+                "model_key": "nova-lite",
                 "system_prompt": "You are analyzing a healthcare document. Focus on clinical content, scoring systems, and assessment items.",
                 "user_prompt": f"Analyze this document and identify its assessment framework. Return your analysis as a valid JSON object.\n\n{doc_summary}",
                 "temperature": 0.3,
                 "max_tokens": 3000
             },
             {
-                "model_key": "llama-8b",
+                "model_key": "nova-lite",
                 "system_prompt": "You are analyzing a healthcare document. Focus on question types, target population, and practical administration.",
                 "user_prompt": f"Analyze this document and identify its practical characteristics. Return your analysis as a valid JSON object.\n\n{doc_summary}",
                 "temperature": 0.3,
@@ -418,27 +481,27 @@ DOCUMENT TEXT (first 50k chars):
             }
         ]
         
-        # Execute parallel analysis
-        logger.info("   Running 3 AI models in parallel...")
-        self._log_action(job_id, "🤖 Stage 1.5: Dispatching 3 independent AI analysts (Gemini, Grok, GPT-4o)...")
-        results = await self.client.call_models_parallel(consensus_calls)
+        # Execute sequential analysis (was parallel)
+        logger.info("   Running 3 Nova AI analysts sequentially...")
+        self._log_action(job_id, "🤖 Stage 1.5: Dispatching 3 sequential Nova AI analysts...")
+        results = await self._call_models_sequential(consensus_calls)
         
         # Parse individual analyses
-        gemini_analysis = self._safe_json_parse(results[0]["content"]) if results[0]["success"] else {}
-        grok_analysis = self._safe_json_parse(results[1]["content"]) if results[1]["success"] else {}
-        gpt_analysis = self._safe_json_parse(results[2]["content"]) if results[2]["success"] else {}
+        nova_analysis_1 = self._safe_json_parse(results[0]["content"]) if results[0]["success"] else {}
+        nova_analysis_2 = self._safe_json_parse(results[1]["content"]) if results[1]["success"] else {}
+        nova_analysis_3 = self._safe_json_parse(results[2]["content"]) if results[2]["success"] else {}
         
         self._log_action(job_id, "📥 Received independent analyses from all models. Starting consensus moderation...")
         
-        logger.info("   All 3 AI models completed analysis")
-        
+        logger.info("   All 3 Nova AI analysts completed analysis")
+
         # Build consensus using moderator AI
         logger.info("   Building consensus from 3 analyses...")
         consensus_prompt_template = self._load_prompt("stage1_5_consensus_discussion")
         
-        consensus_prompt = consensus_prompt_template.replace("{gemini_analysis}", json.dumps(gemini_analysis, indent=2))
-        consensus_prompt = consensus_prompt.replace("{grok_analysis}", json.dumps(grok_analysis, indent=2))
-        consensus_prompt = consensus_prompt.replace("{gpt_analysis}", json.dumps(gpt_analysis, indent=2))
+        consensus_prompt = consensus_prompt_template.replace("{gemini_analysis}", json.dumps(nova_analysis_1, indent=2))
+        consensus_prompt = consensus_prompt.replace("{grok_analysis}", json.dumps(nova_analysis_2, indent=2))
+        consensus_prompt = consensus_prompt.replace("{gpt_analysis}", json.dumps(nova_analysis_3, indent=2))
         consensus_prompt = consensus_prompt.replace("{document_text}", document_text[:30000])
         
         # Moderator AI builds final consensus
@@ -504,32 +567,32 @@ DOCUMENT TEXT (first 50k chars):
         
         if len(domains) >= 1:
             generation_calls.append({
-                "model_key": "llama-70b",
-                "instance": "llama-domain-1",
+                "model_key": "nova-lite",
+                "instance": "nova-lite-domain-1",
                 "focus": domains[0].get('domain_name', 'domain-1'),
                 "domain_data": domains[0]
             })
         
         if len(domains) >= 2:
             generation_calls.append({
-                "model_key": "mixtral",
-                "instance": "mixtral-domain-2",
+                "model_key": "nova-lite",
+                "instance": "nova-lite-domain-2",
                 "focus": domains[1].get('domain_name', 'domain-2'),
                 "domain_data": domains[1]
             })
         
         if len(domains) >= 3:
             generation_calls.append({
-                "model_key": "llama-8b",
-                "instance": "llama8b-domain-3",
+                "model_key": "nova-lite",
+                "instance": "nova-lite-domain-3",
                 "focus": domains[2].get('domain_name', 'domain-3'),
                 "domain_data": domains[2]
             })
         
         if len(domains) >= 4:
             generation_calls.append({
-                "model_key": "llama-70b",
-                "instance": "llama-domain-4",
+                "model_key": "nova-lite",
+                "instance": "nova-lite-domain-4",
                 "focus": domains[3].get('domain_name', 'domain-4'),
                 "domain_data": domains[3]
             })
@@ -537,8 +600,8 @@ DOCUMENT TEXT (first 50k chars):
         # If fewer than 4 domains, use general extraction
         if len(generation_calls) < 4:
             generation_calls.append({
-                "model_key": "llama-8b",
-                "instance": "llama8b-general",
+                "model_key": "nova-lite",
+                "instance": "nova-lite-general",
                 "focus": "all-domains",
                 "domain_data": {"all_domains": domains}
             })
@@ -566,10 +629,10 @@ DOCUMENT TEXT (first 50k chars):
                 "max_tokens": 8000
             })
         
-        # Execute in parallel
-        logger.info(f"   Running {len(api_calls)} parallel extraction tasks...")
-        self._log_action(job_id, f"🚀 Launching {len(api_calls)} parallel AI extraction workers for specific domains...")
-        results = await self.client.call_models_parallel(api_calls)
+        # Execute sequentially (was parallel)
+        logger.info(f"   Running {len(api_calls)} sequential extraction tasks...")
+        self._log_action(job_id, f"🚀 Launching {len(api_calls)} sequential AI extraction workers for specific domains...")
+        results = await self._call_models_sequential(api_calls)
         
         # Parse and store candidates
         candidates = []
@@ -742,7 +805,7 @@ DOCUMENT TEXT (first 50k chars):
         job_id: UUID
     ) -> List[GeneratedQuestionCandidate]:
         """Stage 3: Validation & Deduplication (1-2 minutes)
-        Grok validates and scores all candidates
+        Amazon Nova validates and scores all candidates
         """
         self._update_job_progress(job_id, "validating", "Stage 3: Validating Questions", 60)
         
@@ -797,18 +860,18 @@ Return JSON array with validation for each question:
 ]
 """
         
-        # Call Grok for validation
-        self._log_action(job_id, f"🧐 Sending {len(candidates_for_validation)} candidates to Mixtral for deep validation and scoring...")
-        result = await self.client.call_model(
-            model_key="mixtral",
+        # Call AI for validation
+        self._log_action(job_id, f"🧐 Sending {len(candidates_for_validation)} candidates to Nova for deep validation and scoring...")
+        result_content = await self._call_ai(
             system_prompt="You are a meticulous validation expert. Provide detailed, thoughtful scores.",
             user_prompt=validation_prompt,
+            task_type="questionnaire",
             temperature=0.3,
             max_tokens=8000
         )
         
         # Parse validation results
-        validation_results = self._safe_json_parse(result["content"])
+        validation_results = self._safe_json_parse(result_content)
         
         if not isinstance(validation_results, list):
             logger.error("❌ Invalid validation format")
@@ -1019,8 +1082,8 @@ Return JSON array with validation for each question:
         
         logger.info("📚 Stage 4: Assembling questionnaire and creating knowledge base...")
         
-        # Build knowledge base in parallel with assembly
-        kb_result = await self.client.call_model(
+         # Build knowledge base
+        kb_result = await self._call_ai(
             model_key="llama-70b",
             system_prompt="You are a knowledge synthesis expert for healthcare assessments.",
             user_prompt=f"""Create a comprehensive knowledge base entry for this questionnaire:
@@ -1045,7 +1108,26 @@ Return as valid JSON.""",
             max_tokens=6000
         )
         
-        kb_data = self._safe_json_parse(kb_result["content"])
+        kb_data = self._safe_json_parse(kb_result)
+        
+                # VALIDATION: Extract and validate data types for database
+        executive_summary = kb_data.get("executive_summary", "")
+        if isinstance(executive_summary, list):
+            # If it's a list of paragraphs, join them
+            executive_summary = "\n\n".join([p.get("paragraph", "") if isinstance(p, dict) else str(p) for p in executive_summary])
+        elif isinstance(executive_summary, dict):
+            # If it's a dict, try to extract text
+            executive_summary = executive_summary.get("text", "") or executive_summary.get("content", "") or str(executive_summary)
+        elif not isinstance(executive_summary, str):
+            executive_summary = str(executive_summary)
+        
+        key_concepts = kb_data.get("key_concepts", [])
+        if not isinstance(key_concepts, list):
+            key_concepts = []
+        
+        scoring_guidelines = kb_data.get("scoring_guidelines", {})
+        if not isinstance(scoring_guidelines, dict):
+            scoring_guidelines = {}
         
         # Save knowledge base
         knowledge_base = QuestionnaireKnowledgeBase(
@@ -1067,8 +1149,7 @@ Return as valid JSON.""",
             "knowledge_base_id": knowledge_base.id,
             "total_candidates": len(selected_questions),
             "selected_questions": [c.question_data for c in selected_questions],
-            "usage_summary": self.client.get_usage_summary()
-        }
+            "usage_summary": self.client.get_usage_stats()        }
     
     # Helper methods
     

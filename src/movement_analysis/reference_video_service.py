@@ -259,13 +259,13 @@ class ReferenceVideoService:
         
         if standard_prompt_text:
             # Replace placeholder with actual video identifier
-            gemini_prompt = standard_prompt_text.replace(
+            nova_prompt = standard_prompt_text.replace(
                 "VIDEO_URL_OR_ID: {REPLACE_WITH_CURRENT_VIDEO_URL_OR_BACKEND_ID}",
                 f"VIDEO_URL_OR_ID: {video_token}"
             )
         else:
             # Fallback prompt if standard.md not found
-            gemini_prompt = f"""VIDEO_URL_OR_ID: {video_token}
+            nova_prompt = f"""VIDEO_URL_OR_ID: {video_token}
 
 Please generate a movement assessment standard rule in JSON format following this structure:
 {{
@@ -292,12 +292,12 @@ Please generate a movement assessment standard rule in JSON format following thi
         
         # Add document text if available (old system method)
         if document_text:
-            gemini_prompt = f"{gemini_prompt}\n\n【附加文字標準說明】\n{document_text}"
+            nova_prompt = f"{nova_prompt}\n\n【附加文字標準說明】\n{document_text}"
         
         try:
             # Call AI with frames or text
             if frames:
-                result = await self.video_processor.analyze_video_with_ai(frames, gemini_prompt)
+                result = await self.video_processor.analyze_video_with_ai(frames, nova_prompt)
                 response_text = result.get("content", "")
             else:
                 # Text-only for document without video
@@ -307,7 +307,7 @@ Please generate a movement assessment standard rule in JSON format following thi
                 client = get_nova_client()
                 request = AIRequest(
                     system_prompt="You are a healthcare AI assistant generating assessment rules from reference video documentation.",
-                    user_prompt=gemini_prompt,
+                    user_prompt=nova_prompt,
                     task_type="report_generation"
                 )
                 response = await client.make_request(request=request)

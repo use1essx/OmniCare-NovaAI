@@ -217,7 +217,7 @@ class Settings(BaseSettings):
     
     # Agent Routing
     enable_intelligent_routing: bool = Field(default=True)
-    routing_model: str = Field(default="gpt-4-turbo-preview")
+    routing_model: str = Field(default="amazon.nova-lite-v1:0")
     urgency_detection_threshold: float = Field(default=0.8)
     
     # Cultural Settings

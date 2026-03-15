@@ -248,11 +248,11 @@ class BackgroundJobProcessor:
                 # Update job
                 job = db.query(AIGenerationJob).filter(AIGenerationJob.job_id == job_id).first()
                 if job:
-                    usage = pipeline.client.get_usage_summary()
+                    usage = pipeline.client.get_usage_stats()
                     job.status = "completed"
                     job.progress_percentage = 100
                     job.total_tokens_used = usage["total_tokens"]
-                    job.estimated_cost_usd = usage["total_cost_usd"]
+                    job.estimated_cost_usd = usage["total_cost"]
                     job.models_used = usage
                     job.completed_at = datetime.utcnow()
                     db.commit()
@@ -261,8 +261,8 @@ class BackgroundJobProcessor:
                 logger.info(f"✅ Job {job_id} completed successfully")
                 logger.info(f"   Total questions extracted: {len(filtered)}")
                 logger.info(f"   Total tokens used: {usage['total_tokens']}")
-                logger.info(f"   Estimated cost: ${usage['total_cost_usd']:.4f}")
-                
+                logger.info(f"   Estimated cost: ${usage['total_cost']:.4f}")
+                                
                 # Remove from active jobs
                 if job_id in self.active_jobs:
                     del self.active_jobs[job_id]

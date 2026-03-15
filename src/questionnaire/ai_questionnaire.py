@@ -70,7 +70,7 @@ async def upload_file(
     
     Supports:
     - PDF, Excel, CSV, Word, TXT files (traditional parsing)
-    - Images (JPG, PNG, etc.) - uses AI OCR with Gemini
+    - Images (JPG, PNG, etc.) - uses AI OCR with Amazon Nova
     
     Args:
         file: Uploaded file
@@ -136,7 +136,7 @@ async def upload_file(
                 )
                 
                 metadata["extraction_method"] = "ai_ocr"
-                metadata["ai_model"] = "gemini-2.0-flash"
+                metadata["ai_model"] = "amazon.nova-lite-v1:0"
                 logger.info(f"✅ AI OCR extracted {len(text)} characters")
                 
             except Exception as e:

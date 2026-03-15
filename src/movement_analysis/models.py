@@ -240,7 +240,7 @@ class AssessmentResult(Base):
     
     # Processing metadata
     processing_time_ms = Column(Integer, nullable=True)
-    model_used = Column(String(100), nullable=True)  # e.g., "google/gemini-2.5-flash"
+    model_used = Column(String(100), nullable=True)  # e.g., "amazon.nova-lite-v1:0"
     frames_analyzed = Column(Integer, nullable=True)
     
     # Timestamp

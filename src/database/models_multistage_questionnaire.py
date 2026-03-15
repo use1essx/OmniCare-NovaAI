@@ -46,7 +46,7 @@ class GeneratedQuestionCandidate(Base):
     id = Column(Integer, primary_key=True, index=True)
     analysis_id = Column(Integer, ForeignKey("questionnaire_analyses.id"), nullable=False, index=True)
     question_data = Column(JSONB, nullable=False)
-    generator_instance = Column(String(50))  # "gemini-1", "grok-1", etc.
+    generator_instance = Column(String(50))  # "nova-lite-1", "nova-pro-1", etc.
     model_used = Column(String(100))
     focus_area = Column(String(50))
     quality_score = Column(DECIMAL(5, 2))
