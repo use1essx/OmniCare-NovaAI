@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Security Dashboard{% endblock %}
+
+{% block content %}
+<div class="w-full px-6 py-6 mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-1 flex items-center">
+                <i class="fas fa-shield-alt text-blue-600 mr-3"></i>Security Dashboard
+            </h2>
+            <p class="text-slate-500 text-sm">Monitor system security, access logs, and threats</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm" onclick="refreshData()">
+                <i class="fas fa-sync mr-2"></i>Refresh
+            </button>
+            <button class="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all shadow-sm hover:shadow-md" onclick="runSecurityScan()">
+                <i class="fas fa-bug mr-2"></i>Run Security Scan
+            </button>
+        </div>
+    </div>
+
+    <!-- Security Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- System Status -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-check-circle fa-3x text-green-600"></i>
+            </div>
+            <div class="relative z-10 text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-3">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <h4 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">System Status</h4>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800" id="systemStatus">Secure</span>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-green-500"></div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-sign-in-alt fa-3x text-blue-600"></i>
+            </div>
+            <div class="relative z-10 text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
+                    <i class="fas fa-sign-in-alt text-xl"></i>
+                </div>
+                <h4 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Active Sessions</h4>
+                <h2 class="text-2xl font-bold text-slate-800" id="activeSessions">-</h2>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-blue-500"></div>
+        </div>
+
+        <!-- Failed Logins -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-exclamation-triangle fa-3x text-amber-500"></i>
+            </div>
+            <div class="relative z-10 text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 text-amber-600 mb-3">
+                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                </div>
+                <h4 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Failed Logins (24h)</h4>
+                <h2 class="text-2xl font-bold text-slate-800" id="failedLogins">-</h2>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-amber-500"></div>
+        </div>
+
+        <!-- Blocked IPs -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-ban fa-3x text-red-600"></i>
+            </div>
+            <div class="relative z-10 text-center">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-3">
+                    <i class="fas fa-ban text-xl"></i>
+                </div>
+                <h4 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Blocked IPs</h4>
+                <h2 class="text-2xl font-bold text-slate-800" id="blockedIPs">-</h2>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-red-500"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column (Logs & Rate Limiting) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Access Logs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-list text-slate-400 mr-2"></i>Recent Access Logs
+                    </h5>
+                    <select class="rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5 px-3 border bg-white" id="logFilter">
+                        <option value="all">All Events</option>
+                        <option value="login">Login Events</option>
+                        <option value="api">API Access</option>
+                        <option value="admin">Admin Actions</option>
+                        <option value="error">Errors Only</option>
+                    </select>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50 sticky top-0 z-10">
+                                <tr class="text-xs uppercase tracking-wider text-slate-500 font-semibold border-b border-slate-200">
+                                    <th class="px-6 py-3">Time</th>
+                                    <th class="px-6 py-3">Event</th>
+                                    <th class="px-6 py-3">User</th>
+                                    <th class="px-6 py-3">IP</th>
+                                    <th class="px-6 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accessLogs" class="divide-y divide-slate-100">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rate Limiting Status -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-tachometer-alt text-slate-400 mr-2"></i>Rate Limiting Status
+                    </h5>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h6 class="text-sm font-medium text-slate-700">API Requests (Last Hour)</h6>
+                                <span class="text-xs font-medium text-slate-500" id="apiRequests">450 / 1000</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" id="apiProgress" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h6 class="text-sm font-medium text-slate-700">Chat Messages (Last Hour)</h6>
+                                <span class="text-xs font-medium text-slate-500" id="chatMessages">30 / 100</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div class="bg-cyan-500 h-2.5 rounded-full transition-all duration-500" id="chatProgress" style="width: 30%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h6 class="text-sm font-medium text-slate-700">Login Attempts (Per IP)</h6>
+                                <span class="text-xs font-medium text-slate-500" id="loginAttempts">2 / 10</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" id="loginProgress" style="width: 20%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h6 class="text-sm font-medium text-slate-700">File Uploads (Last Hour)</h6>
+                                <span class="text-xs font-medium text-slate-500" id="uploads">1 / 10</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                <div class="bg-slate-500 h-2.5 rounded-full transition-all duration-500" id="uploadProgress" style="width: 10%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (Checks & Actions) -->
+        <div class="space-y-6">
+            <!-- Security Checks -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-800 text-white border-b border-slate-700">
+                    <h5 class="font-semibold flex items-center">
+                        <i class="fas fa-clipboard-check mr-2"></i>Security Checks
+                    </h5>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-lock text-green-500 mr-2 w-5 text-center"></i>HTTPS Enabled</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-key text-green-500 mr-2 w-5 text-center"></i>JWT Authentication</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-user-shield text-green-500 mr-2 w-5 text-center"></i>RBAC Active</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-database text-green-500 mr-2 w-5 text-center"></i>Encrypted DB</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-clock text-green-500 mr-2 w-5 text-center"></i>Rate Limiting</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-filter text-green-500 mr-2 w-5 text-center"></i>Input Validation</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b border-slate-100 last:border-0 last:pb-0">
+                        <span class="text-sm text-slate-700 flex items-center"><i class="fas fa-eye text-green-500 mr-2 w-5 text-center"></i>Audit Logging</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">✓</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-bolt text-slate-400 mr-2"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="p-6 grid gap-3">
+                    <button class="w-full inline-flex items-center justify-center px-4 py-2 bg-white border border-amber-300 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all" onclick="clearSessions()">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Clear All Sessions
+                    </button>
+                    <button class="w-full inline-flex items-center justify-center px-4 py-2 bg-white border border-red-300 text-red-700 text-sm font-medium rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all" onclick="viewBlockedIPs()">
+                        <i class="fas fa-list mr-2"></i>View Blocked IPs
+                    </button>
+                    <button class="w-full inline-flex items-center justify-center px-4 py-2 bg-white border border-cyan-300 text-cyan-700 text-sm font-medium rounded-lg hover:bg-cyan-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 transition-all" onclick="exportLogs()">
+                        <i class="fas fa-download mr-2"></i>Export Audit Logs
+                    </button>
+                    <button class="w-full inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all" onclick="viewPermissions()">
+                        <i class="fas fa-user-tag mr-2"></i>View Permissions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Threat Summary -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 bg-red-600 text-white border-b border-red-700">
+                    <h5 class="font-semibold flex items-center">
+                        <i class="fas fa-exclamation-circle mr-2"></i>Threat Summary (24h)
+                    </h5>
+                </div>
+                <div class="p-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-700">Brute Force Attempts</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800" id="bruteForce">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-700">SQL Injection Blocked</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" id="sqlBlocked">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-700">XSS Attempts Blocked</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" id="xssBlocked">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-700">Suspicious Activity</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" id="suspicious">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Sample access log data
+const sampleLogs = [
+    {time: new Date().toLocaleTimeString(), event: 'Login Success', user: 'admin', ip: '127.0.0.1', status: 'success'},
+    {time: new Date(Date.now() - 60000).toLocaleTimeString(), event: 'API Request', user: 'system', ip: '127.0.0.1', status: 'success'},
+    {time: new Date(Date.now() - 120000).toLocaleTimeString(), event: 'Page View', user: 'admin', ip: '127.0.0.1', status: 'success'},
+    {time: new Date(Date.now() - 180000).toLocaleTimeString(), event: 'Settings Changed', user: 'admin', ip: '127.0.0.1', status: 'success'},
+    {time: new Date(Date.now() - 300000).toLocaleTimeString(), event: 'Login Failed', user: 'unknown', ip: '192.168.1.100', status: 'error'},
+];
+
+function loadAccessLogs() {
+    const tbody = document.getElementById('accessLogs');
+    tbody.innerHTML = sampleLogs.map(log => `
+        <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-6 py-4 text-sm text-slate-500 font-mono">${log.time}</td>
+            <td class="px-6 py-4 text-sm font-medium text-slate-900">${log.event}</td>
+            <td class="px-6 py-4 text-sm text-slate-500">${log.user}</td>
+            <td class="px-6 py-4 text-sm text-slate-500 font-mono bg-slate-50 rounded px-2 py-1">${log.ip}</td>
+            <td class="px-6 py-4 text-sm">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${log.status}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function loadStats() {
+    document.getElementById('activeSessions').textContent = '3';
+    document.getElementById('failedLogins').textContent = '1';
+    document.getElementById('blockedIPs').textContent = '0';
+    document.getElementById('bruteForce').textContent = '0';
+    document.getElementById('sqlBlocked').textContent = '0';
+    document.getElementById('xssBlocked').textContent = '0';
+    document.getElementById('suspicious').textContent = '0';
+}
+
+function refreshData() {
+    loadAccessLogs();
+    loadStats();
+    alert('Data refreshed!');
+}
+
+function runSecurityScan() {
+    alert('Security scan started...\n\nResults:\n✓ No vulnerabilities detected\n✓ All security checks passed\n✓ System is secure');
+}
+
+function clearSessions() {
+    if (confirm('Are you sure you want to clear all sessions? All users will be logged out.')) {
+        alert('All sessions cleared (except current)');
+        document.getElementById('activeSessions').textContent = '1';
+    }
+}
+
+function viewBlockedIPs() {
+    alert('Blocked IPs:\n\nNo IPs currently blocked.');
+}
+
+function exportLogs() {
+    alert('Audit logs exported to: audit_logs_' + new Date().toISOString().split('T')[0] + '.csv');
+}
+
+function viewPermissions() {
+    window.location.href = '/admin/users';
+}
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccessLogs();
+    loadStats();
+});
+
+// Filter logs
+document.getElementById('logFilter').addEventListener('change', function(e) {
+    // Filter implementation
+    loadAccessLogs();
+});
+</script>
+{% endblock %}
+

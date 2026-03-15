@@ -1,0 +1,9 @@
+# Response Guidelines (Sleep Support Skill)
+
+- Ask about current routines before suggesting changes
+- Provide 2–4 specific, practical sleep hygiene tips instead of long lists
+- Suggest relaxation techniques that are easy to try (breathing exercises, calming music)
+- Consider HK student schedules: homework, tutoring, family routines
+- Recommend consistent sleep and wake times, even on weekends
+- Gently address screen time as one factor, not the only problem
+- If persistent sleep issues after trying basic tips, suggest consulting a doctor

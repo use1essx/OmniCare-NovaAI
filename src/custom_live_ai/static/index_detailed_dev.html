@@ -1,0 +1,2750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Development UI - Custom Live AI</title>
+    
+    <!-- MediaPipe JS Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    
+    <!-- face-api.js for ML-based Emotion Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" crossorigin="anonymous"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        /* Main Grid Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            height: 100vh;
+            width: 100vw;
+            gap: 10px;
+            padding: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Camera Section (Left 60%) */
+        .camera-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100%;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .camera-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .camera-header h1 {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .video-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e1e1e;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+            max-height: 100%;
+        }
+
+        #webcam {
+            display: none;
+            transform: scaleX(-1);  /* Mirror the video for selfie view */
+        }
+
+        #output_canvas {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            border-radius: 8px;
+            transform: scaleX(-1);  /* Mirror the canvas to match video */
+        }
+
+        .fps-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #00ff00;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* Sidebar Section (Right 40%) */
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100%;
+            gap: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Controls Container (Top 60% of sidebar) */
+        .controls-container {
+            flex: 0 0 60%;
+            max-height: 60%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Tab Buttons */
+        .tab-buttons {
+            display: flex;
+            gap: 0;
+            background: #f8f9fa;
+            padding: 5px;
+            border-bottom: 2px solid #667eea;
+            flex-shrink: 0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #666;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .tab-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Control Groups */
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        .button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .button-small {
+            padding: 8px;
+            font-size: 0.9em;
+        }
+
+        /* Stats Display */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        /* Toggle Buttons */
+        .toggle-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px;
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Quality Selector */
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #333;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Console Container (Bottom 40% of sidebar) */
+        .console-container {
+            flex: 0 0 40%;
+            max-height: 40%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Console Tab Buttons */
+        .console-tabs {
+            display: flex;
+            gap: 0;
+            background: #2d2d2d;
+            padding: 5px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .console-tab-button {
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #aaa;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .console-tab-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .console-tab-button.active {
+            background: #1e1e1e;
+            color: #4fc3f7;
+        }
+
+        .console-clear-btn {
+            margin-left: auto;
+            padding: 8px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .console-clear-btn:hover {
+            background: #c82333;
+        }
+
+        /* Console Display */
+        .console {
+            flex: 1;
+            min-height: 0;
+            max-height: 100%;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+            padding: 10px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        .console::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        .console::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .log-timestamp {
+            color: #888;
+            margin-right: 6px;
+        }
+
+        .log-info {
+            color: #4fc3f7;
+        }
+
+        .log-success {
+            color: #66bb6a;
+        }
+
+        .log-warning {
+            color: #ffa726;
+        }
+
+        .log-error {
+            color: #ef5350;
+            font-weight: bold;
+        }
+
+        /* Emotion Display */
+        .emotion-display {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .emotion-emoji {
+            font-size: 3em;
+            margin-bottom: 8px;
+        }
+
+        .emotion-label {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .emotion-details {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* Intervention History */
+        .intervention-item {
+            padding: 8px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .intervention-time {
+            color: #888;
+            font-size: 0.8em;
+        }
+
+        /* Scrollbar Styling */
+        .tab-content::-webkit-scrollbar,
+        select::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 60% 40%;
+            }
+        }
+
+        /* Hide default video container elements */
+        .container, .header, .card {
+            display: none !important;
+        }
+        /* Top Navigation Bar */
+        .top-nav {
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-brand {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.5em;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            🎯 Custom Live AI
+            <span class="nav-badge" style="background: linear-gradient(135deg, #ff9800, #f57c00);">DEV UI</span>
+        </div>
+        <div class="nav-links">
+            <a href="/index_detailed.html" class="nav-btn" title="Stable demo UI">
+                🎥 Demo UI
+            </a>
+            <a href="/index_detailed_dev.html" class="nav-btn active" title="Current page">
+                🔧 Dev UI
+            </a>
+            <a href="/docs" class="nav-btn" target="_blank" title="API Documentation">
+                📚 API Docs
+            </a>
+            <a href="/reports" class="nav-btn" title="View session reports">
+                📊 Reports
+            </a>
+            <a href="http://localhost:5051" class="nav-btn" target="_blank" title="Database management">
+                🗄️ PgAdmin
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Left: Camera Section (60%) -->
+        <div class="camera-section">
+            <div class="camera-header">
+                <h1>🎯 Custom Live AI - Dev Mode</h1>
+        </div>
+            <div class="video-wrapper">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="output_canvas" width="1280" height="720"></canvas>
+                <div class="fps-overlay" id="fpsOverlay">0 FPS</div>
+            </div>
+                    </div>
+                    
+        <!-- Right: Sidebar Section (40%) -->
+        <div class="sidebar-section">
+            <!-- Top: Tabbed Controls (60%) -->
+            <div class="controls-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="showControlTab('recording')">📹 Recording</button>
+                    <button class="tab-button" onclick="showControlTab('session')">🤖 Session</button>
+                    <button class="tab-button" onclick="showControlTab('emotion')">😊 Emotion</button>
+                    <button class="tab-button" onclick="showControlTab('posture')">💪 Posture</button>
+                    <button class="tab-button" onclick="showControlTab('interventions')">⚡ Interventions</button>
+                    <button class="tab-button" onclick="showControlTab('stats')">📊 Stats</button>
+                        </div>
+                <div class="tab-content">
+                    <!-- Recording Tab -->
+                    <div id="tab-recording" class="tab-panel active">
+                        <div class="control-group">
+                            <h3>📹 Camera & Recording</h3>
+                            <button class="button" onclick="startCamera()" id="startBtn">🎥 Start Camera</button>
+                            <button class="button" onclick="stopCamera()" id="stopBtn" disabled>⏹️ Stop Camera</button>
+                            <button class="button" onclick="startRecording()" id="recordBtn" disabled>⏺️ Start Recording</button>
+                            <button class="button" onclick="stopRecording()" id="stopRecordBtn" disabled>⏹️ Stop Recording</button>
+                        </div>
+                        <div class="control-group">
+                            <h3>⚙️ Recording Quality</h3>
+                            <select id="recordingQuality" onchange="updateQualityInfo()">
+                                <option value="ultralow">Ultra Low (5 FPS, ~0.6 GB/hr)</option>
+                                <option value="low">Low (10 FPS, ~1.2 GB/hr)</option>
+                                <option value="medium" selected>Medium (30 FPS, ~3.7 GB/hr)</option>
+                                <option value="high">High (60 FPS, ~7.4 GB/hr)</option>
+                            </select>
+                            <div id="qualityInfo" style="margin-top: 10px; font-size: 0.85em; color: #666;">
+                                30 FPS | ~3.7 GB/hour
+                    </div>
+                </div>
+                        <div class="control-group">
+                            <h3>📊 Session Info</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Frames Captured:</span>
+                                <span class="stat-value" id="frameCount">0</span>
+            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Recording Time:</span>
+                                <span class="stat-value" id="recordingTime">00:00:00</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Status:</span>
+                                <span class="stat-value" id="recordingStatus">Idle</span>
+                </div>
+                </div>
+                </div>
+
+                    <!-- Session Tab -->
+                    <div id="tab-session" class="tab-panel">
+                        <div class="control-group">
+                            <h3>🤖 AI Session Control</h3>
+                            <button class="button" onclick="startSession(true)" id="sessionStartBtn" disabled>▶️ Start AI Session</button>
+                            <button class="button" onclick="stopSession(true)" id="sessionStopBtn" disabled>⏹️ Stop AI Session</button>
+                            <button class="button" onclick="generateReport()">📄 Generate Report</button>
+                            <button class="button" onclick="window.location.href='/reports'" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">📊 View All Reports</button>
+                </div>
+                        <div class="control-group">
+                            <h3>📊 Session Status</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Session ID:</span>
+                                <span class="stat-value" id="sessionId">-</span>
+            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Duration:</span>
+                                <span class="stat-value" id="sessionDuration">00:00:00</span>
+            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Status:</span>
+                                <span class="stat-value" id="sessionStatus">Inactive</span>
+                </div>
+                </div>
+            </div>
+
+                    <!-- Emotion Tab -->
+                    <div id="tab-emotion" class="tab-panel">
+                        <div class="emotion-display">
+                            <div class="emotion-emoji" id="emotionEmoji">😐</div>
+                            <div class="emotion-label" id="emotionLabel">Neutral</div>
+                            <div class="emotion-details">
+                                <span id="emotionConfidence">0%</span> | 
+                                <span id="debugMethod">-</span>
+                </div>
+                </div>
+                        <div class="control-group">
+                            <h3>🧪 Emotion Controls</h3>
+                            <button class="button button-small" onclick="runEmotionTest()">🧪 Test Emotions</button>
+                            <button class="button button-small" onclick="testEmotion('happy')">😊 Test Happy</button>
+                            <button class="button button-small" onclick="testEmotion('sad')">😢 Test Sad</button>
+                            <button class="button button-small" onclick="testEmotion('angry')">😠 Test Angry</button>
+                </div>
+                        <div class="control-group">
+                            <h3>📊 Emotion Scores</h3>
+                            <div id="emotionScores">
+                                <!-- Populated dynamically -->
+                </div>
+                </div>
+            </div>
+
+                    <!-- Posture Tab -->
+                    <div id="tab-posture" class="tab-panel">
+                        <div class="control-group">
+                            <h3>💪 Body Part Detection</h3>
+                            <div class="toggle-group">
+                                <div class="toggle-btn active" id="toggle-head" onclick="togglePart('head')">👤 Head</div>
+                                <div class="toggle-btn active" id="toggle-hands" onclick="togglePart('hands')">👋 Hands</div>
+                                <div class="toggle-btn active" id="toggle-upper" onclick="togglePart('upper')">💪 Upper</div>
+                                <div class="toggle-btn active" id="toggle-lower" onclick="togglePart('lower')">🦵 Lower</div>
+                                <div class="toggle-btn active" id="toggle-skeleton" onclick="toggleSkeleton()">🎨 Skeleton</div>
+                </div>
+                </div>
+                        <div class="control-group">
+                            <h3>📊 Detection Stats</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Head:</span>
+                                <span class="stat-value" id="headConf">-</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Left Hand:</span>
+                                <span class="stat-value" id="leftHandConf">-</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Right Hand:</span>
+                                <span class="stat-value" id="rightHandConf">-</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Upper Body:</span>
+                                <span class="stat-value" id="upperConf">-</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Lower Body:</span>
+                                <span class="stat-value" id="lowerConf">-</span>
+            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Posture Quality:</span>
+                                <span class="stat-value" id="postureQuality">-</span>
+                </div>
+                    </div>
+                </div>
+                
+                    <!-- Interventions Tab -->
+                    <div id="tab-interventions" class="tab-panel">
+                        <div class="control-group">
+                            <h3>⚡ Manual Triggers</h3>
+                            <button class="button button-small" onclick="triggerIntervention('posture')">💪 Trigger Posture</button>
+                            <button class="button button-small" onclick="triggerIntervention('emotion')">😊 Trigger Emotion</button>
+                            <button class="button button-small" onclick="triggerIntervention('engagement')">🎯 Trigger Engagement</button>
+                            <button class="button button-small" onclick="triggerIntervention('break')">☕ Trigger Break</button>
+                        </div>
+                        <div class="control-group">
+                            <h3>📜 Intervention History</h3>
+                            <div id="interventionHistory" style="max-height: 300px; overflow-y: auto;">
+                                <div style="text-align: center; color: #999; padding: 20px;">
+                                    No interventions yet
+                    </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Tab -->
+                    <div id="tab-stats" class="tab-panel">
+                        <div class="control-group">
+                            <h3>📊 Real-Time Metrics</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">FPS:</span>
+                                <span class="stat-value" id="renderFps">0</span>
+                        </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Frames:</span>
+                                <span class="stat-value" id="totalFrames">0</span>
+                    </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Interventions:</span>
+                                <span class="stat-value" id="interventionCount">0</span>
+                        </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Avg Engagement:</span>
+                                <span class="stat-value" id="avgEngagement">0%</span>
+                    </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Session Time:</span>
+                                <span class="stat-value" id="totalSessionTime">00:00:00</span>
+                </div>
+            </div>
+                        <div class="control-group">
+                            <h3>🎯 Quality Metrics</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Posture Score:</span>
+                                <span class="stat-value" id="postureScore">-</span>
+                    </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Emotion Stability:</span>
+                                <span class="stat-value" id="emotionStability">-</span>
+                </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Detection Quality:</span>
+                                <span class="stat-value" id="detectionQuality">-</span>
+                    </div>
+                    </div>
+                </div>
+            </div>
+                </div>
+
+            <!-- Bottom: Console System (40%) -->
+            <div class="console-container">
+                <div class="console-tabs">
+                    <button class="console-tab-button active" onclick="showConsole('all')">All Events</button>
+                    <button class="console-tab-button" onclick="showConsole('errors')">Errors Only</button>
+                    <button class="console-tab-button" onclick="showConsole('api')">API Calls</button>
+                    <button class="console-clear-btn" onclick="clearAllConsoles()">🗑️ Clear</button>
+                    </div>
+                <div id="console-all" class="console">
+                    <div class="log-entry log-info">
+                        <span class="log-timestamp">[00:00:00]</span>
+                        <span>Console initialized. Waiting for camera...</span>
+                            </div>
+                            </div>
+                <div id="console-errors" class="console" style="display:none;">
+                    <div class="log-entry log-info">
+                        <span class="log-timestamp">[00:00:00]</span>
+                        <span>Error console initialized</span>
+                        </div>
+                    </div>
+                <div id="console-api" class="console" style="display:none;">
+                    <div class="log-entry log-info">
+                        <span class="log-timestamp">[00:00:00]</span>
+                        <span>API console initialized</span>
+                </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+    <script>
+
+        
+
+        function updateStatsDisplay() {
+            // Update various stats displays
+            const fpsEl = document.getElementById('renderFps');
+            const fpsOverlay = document.getElementById('fpsOverlay');
+            
+            if (fpsEl && fps !== undefined) {
+                fpsEl.textContent = Math.round(fps);
+            }
+            
+            if (fpsOverlay && fps !== undefined) {
+                fpsOverlay.textContent = Math.round(fps) + ' FPS';
+            }
+            
+            // Update frame count
+            const frameCountEl = document.getElementById('frameCount');
+            const totalFramesEl = document.getElementById('totalFrames');
+            if (frameCountEl && totalFrames !== undefined) {
+                frameCountEl.textContent = totalFrames;
+            }
+            if (totalFramesEl && totalFrames !== undefined) {
+                totalFramesEl.textContent = totalFrames;
+            }
+        }
+
+
+        // Wrap fetch to log all API calls
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const [url, options = {}] = args;
+            const method = options.method || 'GET';
+            
+            try {
+                const response = await originalFetch(...args);
+                logApiCall(method, url, response.status, null);
+                return response;
+            } catch (error) {
+                logToConsole(`API Error: ${method} ${url} - ${error.message}`, 'error');
+                throw error;
+            }
+        };
+
+        // ============================================
+        // Global Variables
+        // ============================================
+        let camera = null;
+        let pose = null;
+        let hands = null;
+        let faceMesh = null;
+        let webcamElement = null;
+        let canvasElement = null;
+        let canvasCtx = null;
+        
+        // Detection toggles
+        let detectHead = true;
+        let detectHands = true;
+        let detectUpper = true;
+        let detectLower = true;
+        let showSkeleton = true;
+        
+        // Performance
+        let fps = 0;
+        let frameCount = 0;
+        let totalFrames = 0;
+        let fpsUpdateTime = Date.now();
+        
+        // Detection results
+        let latestPoseResults = null;
+        let latestHandsResults = null;
+        let latestFaceMeshResults = null;
+        let bodyParts = {
+            head: null,
+            leftHand: null,
+            rightHand: null,
+            upperBody: null,
+            lowerBody: null
+        };
+        
+        // Recording
+        let isRecording = false;
+        let recordingStartTime = null;
+        let recordedFrameCount = 0;
+
+        // Emotion Tracking (Hybrid Approach - Phase 1 Improved)
+        let currentEmotion = { label: 'Neutral', confidence: 0, emoji: '😐', scores: {} };
+        let emotionHistory = [];
+        const MAX_EMOTION_HISTORY = 20;
+        const EMOTION_MAP = {
+            'happy': { emoji: '😊', color: '#4caf50', label: 'Happy' },
+            'sad': { emoji: '😢', color: '#2196f3', label: 'Sad' },
+            'angry': { emoji: '😠', color: '#f44336', label: 'Angry' },
+            'neutral': { emoji: '😐', color: '#9e9e9e', label: 'Neutral' },
+            'surprise': { emoji: '😮', color: '#ff9800', label: 'Surprised' },
+            'fear': { emoji: '😨', color: '#9c27b0', label: 'Fearful' },
+            'disgust': { emoji: '🤢', color: '#795548', label: 'Disgusted' }
+        };
+        
+        // face-api.js variables
+        let faceApiModelsLoaded = false;
+        let lastFaceApiDetection = null;
+
+        // Body part colors
+        const COLORS = {
+            head: '#FF00FF',       // Magenta
+            leftHand: '#00FFFF',   // Cyan
+            rightHand: '#FFFF00',  // Yellow
+            upperBody: '#00FF00',  // Green
+            lowerBody: '#FF9900'   // Orange
+        };
+
+        // ============================================
+        // Real-Time Console System
+        // ============================================
+        let consoleStartTime = Date.now();
+        let consolePaused = false;
+        let consoleLines = [];
+        const MAX_CONSOLE_LINES = 50;  // Reduced from 200 to prevent memory issues
+        let scrollPending = false;
+        let lastLoggedMessage = null;
+        let lastLogTime = 0;
+
+        function getTimestamp() {
+            const elapsed = Date.now() - consoleStartTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const ms = Math.floor((elapsed % 1000) / 10);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(ms).padStart(2, '0')}`;
+        }
+
+        // Smooth scroll function using requestAnimationFrame
+        function smoothScrollConsole(consoleEl) {
+            if (!consoleEl || scrollPending) return;
+            scrollPending = true;
+            
+            requestAnimationFrame(() => {
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+                scrollPending = false;
+            });
+        }
+
+        function logToConsole(message, type = 'info') {
+            // Throttle duplicate messages (prevent spam)
+            const now = Date.now();
+            if (message === lastLoggedMessage && now - lastLogTime < 1000) {
+                return; // Skip duplicate within 1 second
+            }
+            lastLoggedMessage = message;
+            lastLogTime = now;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logClass = `log-${type}`;
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            // Log to All Events console
+            const allConsole = document.getElementById('console-all');
+            if (allConsole) {
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${logClass}`;
+                entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${message}`;
+                allConsole.appendChild(entry);
+                
+                // Smooth auto-scroll
+                smoothScrollConsole(allConsole);
+                
+                // Trim to last 50 entries (reduced from 200)
+                while (allConsole.children.length > MAX_CONSOLE_LINES) {
+                    allConsole.removeChild(allConsole.firstChild);
+                }
+            }
+            
+            // If error, also log to Errors console
+            if (type === 'error' || type === 'warning') {
+                const errConsole = document.getElementById('console-errors');
+                if (errConsole) {
+                    const errEntry = document.createElement('div');
+                    errEntry.className = `log-entry ${logClass}`;
+                    errEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${message}`;
+                    errConsole.appendChild(errEntry);
+                    
+                    // Smooth auto-scroll
+                    smoothScrollConsole(errConsole);
+                    
+                    // Trim to last 50 entries
+                    while (errConsole.children.length > MAX_CONSOLE_LINES) {
+                        errConsole.removeChild(errConsole.firstChild);
+                    }
+                }
+            }
+        }
+
+        function logApiCall(method, url, status, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const apiConsole = document.getElementById('console-api');
+            if (apiConsole) {
+                const entry = document.createElement('div');
+                const statusClass = status >= 200 && status < 300 ? 'log-success' : 'log-error';
+                entry.className = `log-entry ${statusClass}`;
+                
+                // Extract just the path for cleaner logs
+                const path = url.replace('http://localhost:8001', '').replace('http://localhost', '');
+                entry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span> ${method} ${path} → ${status}`;
+                apiConsole.appendChild(entry);
+                
+                // Smooth auto-scroll
+                smoothScrollConsole(apiConsole);
+                
+                // Trim to last 50 entries
+                while (apiConsole.children.length > MAX_CONSOLE_LINES) {
+                    apiConsole.removeChild(apiConsole.firstChild);
+                }
+            }
+        }
+
+        function showControlTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const selectedPanel = document.getElementById(`tab-${tabName}`);
+            if (selectedPanel) {
+                selectedPanel.classList.add('active');
+            }
+            
+            // Activate clicked button
+            event.target.classList.add('active');
+            
+            logToConsole(`Switched to ${tabName} tab`, 'info');
+        }
+
+        function showConsole(consoleName) {
+            // Hide all consoles
+            document.querySelectorAll('.console').forEach(console => {
+                console.style.display = 'none';
+            });
+            
+            // Deactivate all console tab buttons
+            document.querySelectorAll('.console-tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected console
+            const selectedConsole = document.getElementById(`console-${consoleName}`);
+            if (selectedConsole) {
+                selectedConsole.style.display = 'block';
+            }
+            
+            // Activate clicked button
+            event.target.classList.add('active');
+        }
+
+        function clearAllConsoles() {
+            const consoles = ['console-all', 'console-errors', 'console-api'];
+            consoles.forEach(consoleId => {
+                const consoleEl = document.getElementById(consoleId);
+                if (consoleEl) {
+                    consoleEl.innerHTML = '<div class="log-entry log-info"><span class="log-timestamp">[' + 
+                        new Date().toLocaleTimeString() + ']</span> Console cleared</div>';
+                }
+            });
+            logToConsole('All consoles cleared', 'info');
+        }
+
+        // ============================================
+        // Debug Panel Functions (NEW - Phase 5)
+        // ============================================
+        let debugPanelExpanded = false;
+
+        function toggleDebugPanel() {
+            debugPanelExpanded = !debugPanelExpanded;
+            const content = document.getElementById('debugContent');
+            const icon = document.getElementById('debugToggleIcon');
+            const text = document.getElementById('debugToggleText');
+            
+            if (debugPanelExpanded) {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+                text.textContent = 'Hide Details';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+                text.textContent = 'Show Details';
+            }
+        }
+
+        function updateDebugPanel(emotionData, faceApiEmotions = null, landmarks = null) {
+            // Always update the main emotion display (visible at all times) - with null check
+            const debugMethodEl = document.getElementById('debugMethod');
+            if (debugMethodEl) {
+                debugMethodEl.textContent = emotionData.method || 'faceapi';
+            }
+            
+            // Skip detailed updates if panel is collapsed
+            if (!debugPanelExpanded) return;
+            
+            try {
+                // Update raw Face-API.js scores
+                if (emotionData.raw_scores) {
+                    updateDebugScores('debugRawScores', emotionData.raw_scores);
+                } else if (faceApiEmotions) {
+                    // Convert face-api emotions to percentage format
+                    const faceApiPercent = {};
+                    for (const [emotion, score] of Object.entries(faceApiEmotions)) {
+                        faceApiPercent[emotion] = score * 100;
+                    }
+                    updateDebugScores('debugRawScores', faceApiPercent);
+                } else {
+                    document.getElementById('debugRawScores').innerHTML = '<div style="color: #999;">No raw scores available</div>';
+                }
+                
+                // Update smoothed final scores
+                if (emotionData.scores) {
+                    updateDebugScores('debugSmoothedScores', emotionData.scores);
+                } else {
+                    document.getElementById('debugSmoothedScores').innerHTML = '<div style="color: #999;">No scores available</div>';
+                }
+                
+                // Update smoothing info (3-tier adaptive smoothing)
+                if (emotionData.tier !== undefined) {
+                    document.getElementById('debugTier').textContent = emotionData.tier || '-';
+                    document.getElementById('debugAlpha').textContent = emotionData.alpha_eff ? emotionData.alpha_eff.toFixed(2) : '-';
+                    document.getElementById('debugMargin').textContent = emotionData.margin ? emotionData.margin.toFixed(3) : '-';
+                    document.getElementById('debugEntropy').textContent = emotionData.entropy ? emotionData.entropy.toFixed(2) : '-';
+                    document.getElementById('debugCooldown').textContent = emotionData.cooldown_ms_left || '0';
+                } else {
+                    // Fallback for basic smoothing
+                    document.getElementById('debugSmoothingInfo').innerHTML = '<strong>⚙️ Smoothing:</strong> Basic EMA mode';
+                }
+                
+            } catch (error) {
+                console.error('Debug panel update error:', error);
+            }
+        }
+
+        function updateDebugScores(elementId, scores) {
+            const container = document.getElementById(elementId);
+            if (!scores || Object.keys(scores).length === 0) {
+                container.innerHTML = '<div style="color: #999;">No scores</div>';
+                return;
+            }
+            
+            // Sort scores by value (descending)
+            const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            
+            let html = '';
+            for (const [emotion, score] of sortedScores) {
+                const percentage = Math.round(score);
+                const isTop = percentage >= 50;
+                const bgColor = isTop ? '#d4edda' : '#f8f9fa';
+                const textColor = isTop ? '#155724' : '#495057';
+                const borderColor = isTop ? '#c3e6cb' : '#dee2e6';
+                
+                html += `
+                    <div style="background: ${bgColor}; padding: 5px; border-radius: 4px; border: 1px solid ${borderColor}; text-align: center;">
+                        <div style="font-weight: bold; color: ${textColor}; font-size: 0.9em;">${emotion}</div>
+                        <div style="color: ${textColor}; font-size: 0.85em;">${percentage}%</div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function updateDebugFeatures(landmarks) {
+            // Extract approximate feature values from landmarks
+            // These are simplified calculations for display only
+            const features = {};
+            
+            try {
+                // Mouth features
+                const leftCorner = landmarks[61];
+                const rightCorner = landmarks[291];
+                const upperLip = landmarks[13];
+                const lowerLip = landmarks[14];
+                
+                const mouthWidth = Math.hypot(rightCorner.x - leftCorner.x, rightCorner.y - leftCorner.y);
+                const mouthHeight = Math.hypot(upperLip.x - lowerLip.x, upperLip.y - lowerLip.y);
+                
+                features['mouth_aspect_ratio'] = mouthHeight / (mouthWidth + 0.001);
+                features['smile_lift'] = (leftCorner.y + rightCorner.y) / 2 - (upperLip.y + lowerLip.y) / 2;
+                
+                // Eye features
+                const leftEyeTop = landmarks[159];
+                const leftEyeBottom = landmarks[145];
+                const rightEyeTop = landmarks[386];
+                const rightEyeBottom = landmarks[374];
+                
+                const leftEyeHeight = Math.hypot(leftEyeTop.x - leftEyeBottom.x, leftEyeTop.y - leftEyeBottom.y);
+                const rightEyeHeight = Math.hypot(rightEyeTop.x - rightEyeBottom.x, rightEyeTop.y - rightEyeBottom.y);
+                
+                features['avg_eye_height'] = (leftEyeHeight + rightEyeHeight) / 2;
+                
+                // Brow features
+                const leftBrow = landmarks[70];
+                const rightBrow = landmarks[300];
+                const leftEye = landmarks[159];
+                const rightEye = landmarks[386];
+                
+                const leftBrowHeight = Math.hypot(leftBrow.x - leftEye.x, leftBrow.y - leftEye.y);
+                const rightBrowHeight = Math.hypot(rightBrow.x - rightEye.x, rightBrow.y - rightEye.y);
+                
+                features['avg_brow_height'] = (leftBrowHeight + rightBrowHeight) / 2;
+                
+                // Nose features (NEW)
+                const noseTip = landmarks[1];
+                const leftNostril = landmarks[129];
+                const rightNostril = landmarks[358];
+                const nostrilWidth = Math.hypot(rightNostril.x - leftNostril.x, rightNostril.y - leftNostril.y);
+                
+                features['nostril_width'] = nostrilWidth;
+                features['upper_lip_to_nose'] = Math.hypot(noseTip.x - upperLip.x, noseTip.y - upperLip.y);
+                
+                // Display features
+                let html = '';
+                for (const [name, value] of Object.entries(features)) {
+                    html += `<div style="padding: 4px; background: white; border-radius: 3px; font-size: 0.85em;"><strong>${name}:</strong> ${value.toFixed(4)}</div>`;
+                }
+                
+                document.getElementById('debugFeatures').innerHTML = html;
+                
+            } catch (error) {
+                document.getElementById('debugFeatures').innerHTML = '<div style="color: #dc3545;">Error calculating features</div>';
+                console.error('Feature calculation error:', error);
+            }
+        }
+
+        // ============================================
+        // Load face-api.js Models
+        // ============================================
+        async function loadFaceApiModels() {
+            if (faceApiModelsLoaded) {
+                console.log('✅ face-api.js models already loaded');
+                return;
+            }
+            
+            try {
+                console.log('📥 Loading face-api.js models...');
+                
+                // Load models from local folder
+                await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+                await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+                
+                faceApiModelsLoaded = true;
+                console.log('✅ face-api.js models loaded successfully!');
+                
+            } catch (error) {
+                console.error('❌ Failed to load face-api.js models:', error);
+                console.log('⚠️ Will fall back to landmark-only detection');
+            }
+        }
+
+        // ============================================
+        // Initialize MediaPipe
+        // ============================================
+        function initializeMediaPipe() {
+            console.log('🚀 Initializing MediaPipe (Body Parts Detection)...');
+            
+            webcamElement = document.getElementById('webcam');
+            canvasElement = document.getElementById('output_canvas');
+            canvasCtx = canvasElement.getContext('2d');
+
+            // Initialize Pose (LITE mode)
+            pose = new Pose({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+            });
+
+            pose.setOptions({
+                modelComplexity: 0,
+                smoothLandmarks: true,
+                enableSegmentation: false,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            pose.onResults(onPoseResults);
+
+            // Initialize Hands (LITE mode)
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 0,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            hands.onResults(onHandsResults);
+
+            // Initialize Face Mesh for detailed face tracking (468 landmarks!)
+            faceMesh = new FaceMesh({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+            });
+
+            faceMesh.setOptions({
+                maxNumFaces: 1,
+                refineLandmarks: true,  // Extra detail around eyes and lips
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            faceMesh.onResults(onFaceMeshResults);
+
+            console.log('✅ MediaPipe initialized (Pose + Hands + Face Mesh)');
+        }
+
+        // ============================================
+        // Start Camera
+        // ============================================
+        async function startCamera() {
+            try {
+                console.log('📹 Starting camera...');
+                logToConsole('📹 Starting camera...', 'info');
+                
+                if (!pose) {
+                    initializeMediaPipe();
+                    logToConsole('🚀 MediaPipe initialized (Pose + Hands + Face Mesh)', 'success');
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    }
+                });
+
+                webcamElement.srcObject = stream;
+                logToConsole('✅ Camera stream acquired (1280x720)', 'success');
+                
+                await new Promise((resolve) => {
+                    webcamElement.onloadedmetadata = () => resolve();
+                });
+
+                canvasElement.width = webcamElement.videoWidth;
+                canvasElement.height = webcamElement.videoHeight;
+
+                camera = new Camera(webcamElement, {
+                    onFrame: async () => {
+                        await pose.send({image: webcamElement});
+                        await hands.send({image: webcamElement});
+                        await faceMesh.send({image: webcamElement});
+                        updateFPS();
+                    },
+                    width: 1280,
+                    height: 720
+                });
+
+                await camera.start();
+
+                // Load face-api.js models for emotion detection
+                await loadFaceApiModels();
+
+                console.log('✅ Camera started');
+                logToConsole('✅ Camera started successfully - Ready for tracking!', 'success');
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('startBtn').textContent = '✅ Camera Running';
+                
+                // Enable session start button (in case user wants manual control)
+                const sessionStartBtn = document.getElementById('sessionStartBtn');
+                if (sessionStartBtn) {
+                    sessionStartBtn.disabled = false;
+                }
+
+                // 🎯 AUTO-START RECORDING when camera starts
+                console.log('🎬 Auto-starting recording...');
+                await startRecording();
+                logToConsole('🎬 Recording started automatically!', 'success');
+
+                // 🎯 AUTO-START AI INTERVENTION SESSION when camera starts
+                console.log('🤖 Auto-starting AI intervention session...');
+                await startSession(false); // Pass false to suppress alert popup
+                logToConsole('🤖 AI session started automatically!', 'success');
+
+            } catch (error) {
+                console.error('❌ Camera error:', error);
+                alert('Failed to start camera: ' + error.message);
+            }
+        }
+
+        // ============================================
+        // Stop Camera
+        // ============================================
+        function stopCamera() {
+            try {
+                console.log('⏹️ Stopping camera...');
+                
+                // 🎯 AUTO-STOP RECORDING when camera stops
+                if (isRecording) {
+                    console.log('🎬 Auto-stopping recording...');
+                    stopRecording();
+                }
+
+                // 🎯 AUTO-STOP AI INTERVENTION SESSION when camera stops
+                if (currentSessionId) {
+                    console.log('🤖 Auto-stopping AI intervention session...');
+                    stopSession(false); // Pass false to suppress alert popup
+                }
+                
+                // Stop camera stream
+                if (camera) {
+                    camera.stop();
+                    camera = null;
+                }
+                
+                // Stop webcam tracks
+                if (webcamElement.srcObject) {
+                    const tracks = webcamElement.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                    webcamElement.srcObject = null;
+                }
+                
+                // Clear canvas
+                if (canvasCtx) {
+                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                }
+                
+                // Reset UI
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('startBtn').textContent = '🎥 Start Camera';
+                
+                // Reset emotion display
+                document.getElementById('emotionEmoji').textContent = '😐';
+                document.getElementById('emotionLabel').textContent = 'Neutral';
+                document.getElementById('emotionConfidence').textContent = '0%';
+                
+                console.log('✅ Camera stopped');
+                
+            } catch (error) {
+                console.error('❌ Stop camera error:', error);
+            }
+        }
+
+        // ============================================
+        // Process Results
+        // ============================================
+        function onPoseResults(results) {
+            latestPoseResults = results;
+            
+            if (results.poseLandmarks) {
+                detectBodyParts(results.poseLandmarks);
+            }
+            
+            drawResults();
+        }
+
+        function onHandsResults(results) {
+            latestHandsResults = results;
+        }
+
+        let lastFaceMeshLogTime = 0;
+        
+        function onFaceMeshResults(results) {
+            latestFaceMeshResults = results;
+            
+            // Emotion Tracking (Backend-focused - Phase 1)
+            if (results && results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const faceLandmarks = results.multiFaceLandmarks[0];
+                console.log(`✅ Face Mesh detected ${faceLandmarks.length} landmarks`);
+                
+                // Log face mesh detection (throttled to every 3 seconds)
+                const now = Date.now();
+                if (now - lastFaceMeshLogTime > 3000) {
+                    logToConsole(`👤 Face Mesh: ${faceLandmarks.length} landmarks detected`, 'info');
+                    lastFaceMeshLogTime = now;
+                }
+                
+                // Call backend API for accurate emotion detection
+                analyzeEmotionHybrid(faceLandmarks);
+            } else {
+                console.warn('⚠️ No face detected by MediaPipe Face Mesh');
+            }
+            
+            drawResults();  // Redraw with face mesh
+        }
+
+        // ============================================
+        // Detect Body Parts
+        // ============================================
+        function detectBodyParts(landmarks) {
+            // Reset
+            bodyParts = {
+                head: null,
+                leftHand: null,
+                rightHand: null,
+                upperBody: null,
+                lowerBody: null
+            };
+            
+            // HEAD (nose, eyes, ears)
+            if (detectHead) {
+                const headLandmarks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                bodyParts.head = calculateBoundingBox(landmarks, headLandmarks, 'Head');
+            }
+            
+            // UPPER BODY (shoulders, elbows, wrists)
+            if (detectUpper) {
+                const upperLandmarks = [11, 12, 13, 14, 15, 16, 23, 24];
+                bodyParts.upperBody = calculateBoundingBox(landmarks, upperLandmarks, 'Upper Body');
+            }
+            
+            // LOWER BODY (hips, knees, ankles, feet)
+            if (detectLower) {
+                const lowerLandmarks = [23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+                bodyParts.lowerBody = calculateBoundingBox(landmarks, lowerLandmarks, 'Lower Body');
+            }
+            
+            // HANDS (from MediaPipe Hands)
+            if (detectHands && latestHandsResults && latestHandsResults.multiHandLandmarks) {
+                latestHandsResults.multiHandLandmarks.forEach((handLandmarks, idx) => {
+                    // MediaPipe label in camera space
+                    const mediapipeLabel = latestHandsResults.multiHandedness[idx].label;
+                    
+                    // Flip for mirror view: MediaPipe "Left" = User's Right in mirror
+                    const isLeft = mediapipeLabel === "Right";  // FLIPPED for mirror mode
+                    const box = calculateHandBox(handLandmarks, isLeft ? 'Left Hand' : 'Right Hand');
+                    
+                    if (isLeft) {
+                        bodyParts.leftHand = box;
+                    } else {
+                        bodyParts.rightHand = box;
+                    }
+                });
+            }
+            
+            // Update UI
+            updatePartStats();
+        }
+
+        function calculateBoundingBox(landmarks, indices, label) {
+            let minX = 1, minY = 1, maxX = 0, maxY = 0;
+            let visibleCount = 0;
+            let totalVisibility = 0;
+            
+            indices.forEach(i => {
+                const lm = landmarks[i];
+                if (lm && lm.visibility > 0.5) {
+                    minX = Math.min(minX, lm.x);
+                    minY = Math.min(minY, lm.y);
+                    maxX = Math.max(maxX, lm.x);
+                    maxY = Math.max(maxY, lm.y);
+                    visibleCount++;
+                    totalVisibility += lm.visibility;
+                }
+            });
+            
+            if (visibleCount === 0) return null;
+            
+            const confidence = (totalVisibility / visibleCount) * 100;
+            
+            // Add padding
+            const padding = 0.02;
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(1, maxX + padding);
+            maxY = Math.min(1, maxY + padding);
+            
+            return {
+                label: label,
+                bbox: { minX, minY, maxX, maxY },
+                confidence: confidence
+            };
+        }
+
+        function calculateHandBox(landmarks, label) {
+            let minX = 1, minY = 1, maxX = 0, maxY = 0;
+            
+            landmarks.forEach(lm => {
+                minX = Math.min(minX, lm.x);
+                minY = Math.min(minY, lm.y);
+                maxX = Math.max(maxX, lm.x);
+                maxY = Math.max(maxY, lm.y);
+            });
+            
+            // Add padding
+            const padding = 0.03;
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(1, maxX + padding);
+            maxY = Math.min(1, maxY + padding);
+            
+            return {
+                label: label,
+                bbox: { minX, minY, maxX, maxY },
+                confidence: 95 // Hands have high confidence when detected
+            };
+        }
+
+        let lastLoggedParts = null;
+        
+        function updatePartStats() {
+            let totalConf = 0;
+            let count = 0;
+            const detectedParts = [];
+            
+            // Update individual stats
+            Object.keys(bodyParts).forEach(key => {
+                const part = bodyParts[key];
+                let confElement;
+                let partName = '';
+                
+                switch(key) {
+                    case 'head':
+                        confElement = document.getElementById('headConf');
+                        partName = 'Head';
+                        break;
+                    case 'leftHand':
+                        confElement = document.getElementById('leftHandConf');
+                        partName = 'Left Hand';
+                        break;
+                    case 'rightHand':
+                        confElement = document.getElementById('rightHandConf');
+                        partName = 'Right Hand';
+                        break;
+                    case 'upperBody':
+                        confElement = document.getElementById('upperConf');
+                        partName = 'Upper Body';
+                        break;
+                    case 'lowerBody':
+                        confElement = document.getElementById('lowerConf');
+                        partName = 'Lower Body';
+                        break;
+                }
+                
+                if (confElement) {
+                    if (part) {
+                        const conf = Math.round(part.confidence);
+                        confElement.textContent = conf + '%';
+                        totalConf += conf;
+                        count++;
+                        detectedParts.push(`${partName}:${conf}%`);
+                    } else {
+                        confElement.textContent = '-';
+                    }
+                }
+            });
+            
+            // Log part detection changes (throttled)
+            const partsKey = detectedParts.sort().join(',');
+            if (partsKey !== lastLoggedParts && count > 0) {
+                logToConsole(`👁️ Body Parts: ${detectedParts.join(', ')}`, 'info');
+                lastLoggedParts = partsKey;
+            }
+        }
+
+        // ============================================
+        // Draw Results
+        // ============================================
+        function drawResults() {
+            const width = canvasElement.width;
+            const height = canvasElement.height;
+            
+            canvasCtx.clearRect(0, 0, width, height);
+            canvasCtx.save();
+            
+            // Draw body part boxes
+            if (bodyParts.head && detectHead) {
+                drawPartBox(bodyParts.head, COLORS.head, width, height);
+            }
+            if (bodyParts.leftHand && detectHands) {
+                drawPartBox(bodyParts.leftHand, COLORS.leftHand, width, height);
+            }
+            if (bodyParts.rightHand && detectHands) {
+                drawPartBox(bodyParts.rightHand, COLORS.rightHand, width, height);
+            }
+            if (bodyParts.upperBody && detectUpper) {
+                drawPartBox(bodyParts.upperBody, COLORS.upperBody, width, height);
+            }
+            if (bodyParts.lowerBody && detectLower) {
+                drawPartBox(bodyParts.lowerBody, COLORS.lowerBody, width, height);
+            }
+            
+            // Draw skeleton
+            if (showSkeleton && latestPoseResults && latestPoseResults.poseLandmarks) {
+                drawConnectors(canvasCtx, latestPoseResults.poseLandmarks, POSE_CONNECTIONS,
+                             {color: 'rgba(255, 255, 255, 0.5)', lineWidth: 2});
+                drawLandmarks(canvasCtx, latestPoseResults.poseLandmarks,
+                            {color: 'rgba(255, 255, 255, 0.7)', lineWidth: 1, radius: 3});
+            }
+            
+            // Draw hands skeleton
+            if (showSkeleton && latestHandsResults && latestHandsResults.multiHandLandmarks) {
+                for (const landmarks of latestHandsResults.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                                 {color: 'rgba(255, 255, 255, 0.5)', lineWidth: 2});
+                    drawLandmarks(canvasCtx, landmarks,
+                                {color: 'rgba(255, 255, 255, 0.7)', lineWidth: 1, radius: 2});
+                }
+            }
+            
+            // Draw detailed face mesh (468 landmarks!)
+            if (showSkeleton && latestFaceMeshResults && latestFaceMeshResults.multiFaceLandmarks) {
+                for (const landmarks of latestFaceMeshResults.multiFaceLandmarks) {
+                    // Draw face mesh connections (the 3D wireframe)
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION,
+                                 {color: 'rgba(0, 255, 255, 0.3)', lineWidth: 1});  // Cyan wireframe
+                    
+                    // Draw facial contours for better visibility
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_FACE_OVAL,
+                                 {color: 'rgba(0, 255, 255, 0.6)', lineWidth: 2});
+                    
+                    // Draw eye details
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE,
+                                 {color: 'rgba(255, 255, 0, 0.7)', lineWidth: 2});
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE,
+                                 {color: 'rgba(255, 255, 0, 0.7)', lineWidth: 2});
+                    
+                    // Draw mouth details
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_LIPS,
+                                 {color: 'rgba(255, 0, 255, 0.7)', lineWidth: 2});
+                }
+            }
+            
+            canvasCtx.restore();
+            
+            // Record if active
+            if (isRecording) {
+                recordFrame();
+            }
+        }
+
+        function drawPartBox(part, color, width, height) {
+            const box = part.bbox;
+            const x = box.minX * width;
+            const y = box.minY * height;
+            const w = (box.maxX - box.minX) * width;
+            const h = (box.maxY - box.minY) * height;
+            
+            // Draw bounding box
+            canvasCtx.strokeStyle = color;
+            canvasCtx.lineWidth = 3;
+            canvasCtx.strokeRect(x, y, w, h);
+            
+            // Draw label
+            const label = `${part.label} ${Math.round(part.confidence)}%`;
+            const fontSize = 16;
+            canvasCtx.font = `bold ${fontSize}px Arial`;
+            const textWidth = canvasCtx.measureText(label).width;
+            
+            // Save canvas state before un-flipping text
+            canvasCtx.save();
+            
+            // Un-flip the canvas for text rendering (so text is readable)
+            canvasCtx.scale(-1, 1);
+            
+            // Adjust coordinates for the flipped canvas
+            const flippedX = -x - textWidth - 16;
+            const flippedTextX = -x - textWidth - 8;
+            
+            // Label background
+            canvasCtx.fillStyle = color;
+            canvasCtx.fillRect(flippedX, y - fontSize - 8, textWidth + 16, fontSize + 8);
+            
+            // Label text
+            canvasCtx.fillStyle = '#000000';
+            canvasCtx.fillText(label, flippedTextX, y - 8);
+            
+            // Restore canvas state
+            canvasCtx.restore();
+        }
+
+        // ============================================
+        // Toggle Functions
+        // ============================================
+        function togglePart(part) {
+            switch(part) {
+                case 'head':
+                    detectHead = !detectHead;
+                    document.getElementById('toggle-head').classList.toggle('active');
+                    break;
+                case 'hands':
+                    detectHands = !detectHands;
+                    document.getElementById('toggle-hands').classList.toggle('active');
+                    break;
+                case 'upper':
+                    detectUpper = !detectUpper;
+                    document.getElementById('toggle-upper').classList.toggle('active');
+                    break;
+                case 'lower':
+                    detectLower = !detectLower;
+                    document.getElementById('toggle-lower').classList.toggle('active');
+                    break;
+            }
+        }
+
+        function toggleSkeleton() {
+            showSkeleton = !showSkeleton;
+            document.getElementById('toggle-skeleton').classList.toggle('active');
+        }
+
+        // ============================================
+        // Recording
+        // ============================================
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const response = await fetch('/api/detailed-recording/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    isRecording = true;
+                    recordingStartTime = Date.now();
+                    recordedFrameCount = 0;
+                    
+                    document.getElementById('recordBtn').textContent = '⏹️ Stop Recording';
+                    document.getElementById('recordBtn').classList.add('active');
+                    
+                    console.log('✅ Detailed recording started:', data.session_id);
+                    logToConsole(`⏺️ Recording started (Session: ${data.session_id})`, 'success');
+                    
+                    // Show success feedback
+                    const btn = document.getElementById('recordBtn');
+                    const originalBg = btn.style.background;
+                    btn.style.background = '#28a745';
+                    setTimeout(() => {
+                        btn.style.background = '';
+                    }, 300);
+                } else {
+                    throw new Error(data.error || 'Failed to start recording');
+                }
+            } catch (error) {
+                console.error('❌ Recording error:', error);
+                alert('Failed to start recording: ' + error.message);
+            }
+        }
+
+        async function stopRecording() {
+            try {
+                const response = await fetch('/api/detailed-recording/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    isRecording = false;
+                    
+                    document.getElementById('recordBtn').textContent = '⏺️ Start Recording';
+                    document.getElementById('recordBtn').classList.remove('active');
+                    
+                    logToConsole(`⏹️ Recording stopped - ${data.total_frames} frames, ${data.duration.toFixed(1)}s @ ${data.fps.toFixed(1)} FPS`, 'success');
+                    
+                    // Create a nicer alert message
+                    const message = `✅ Recording Saved Successfully!\n\n` +
+                        `📊 Session Details:\n` +
+                        `• Session ID: ${data.session_id}\n` +
+                        `• Total Frames: ${data.total_frames}\n` +
+                        `• Duration: ${data.duration.toFixed(1)} seconds\n` +
+                        `• Average FPS: ${data.fps.toFixed(1)}\n\n` +
+                        `📁 Saved Files:\n` +
+                        `• ${data.json_file.split('/').pop()}\n` +
+                        `• ${data.csv_file.split('/').pop()}\n\n` +
+                        `🎬 Ready to replay!\n` +
+                        `Open http://localhost:8001/playback to view your recording.`;
+                    
+                    alert(message);
+                    
+                    console.log('✅ Recording stopped and saved');
+                    console.log('📊 Summary:', data);
+                } else {
+                    throw new Error(data.error || 'Failed to stop recording');
+                }
+            } catch (error) {
+                console.error('❌ Stop recording error:', error);
+                alert('Failed to stop recording: ' + error.message);
+                
+                // Reset button state
+                isRecording = false;
+                document.getElementById('recordBtn').textContent = '⏺️ Start Recording';
+                document.getElementById('recordBtn').classList.remove('active');
+            }
+        }
+
+        let lastRecordTime = 0;
+        let RECORDING_FPS = 30;  // Default medium quality
+        let RECORD_INTERVAL = 1000 / RECORDING_FPS;
+        let COORDINATE_PRECISION = 4;  // Decimal places for coordinates
+        
+        // Update quality info display
+        function updateQualityInfo() {
+            const quality = document.getElementById('recordingQuality').value;
+            const info = document.getElementById('qualityInfo');
+            
+            if (quality === 'ultralow') {
+                RECORDING_FPS = 5;
+                COORDINATE_PRECISION = 3;
+                info.innerHTML = '📊 5 FPS | ~0.6 GB/hour | 3 decimal precision | Perfect for all-day (8+ hours) monitoring';
+            } else if (quality === 'low') {
+                RECORDING_FPS = 10;
+                COORDINATE_PRECISION = 3;
+                info.innerHTML = '📊 10 FPS | ~1.2 GB/hour | 3 decimal precision | Best for 1-4 hour sessions';
+            } else if (quality === 'medium') {
+                RECORDING_FPS = 30;
+                COORDINATE_PRECISION = 4;
+                info.innerHTML = '📊 30 FPS | ~3.7 GB/hour | 4 decimal precision | Good balance of detail and storage';
+            } else {  // high
+                RECORDING_FPS = 60;
+                COORDINATE_PRECISION = 5;
+                info.innerHTML = '📊 60 FPS | ~7.4 GB/hour | 5 decimal precision | Maximum detail for analysis';
+            }
+            
+            RECORD_INTERVAL = 1000 / RECORDING_FPS;
+            console.log(`📊 Quality changed to ${quality}: ${RECORDING_FPS} FPS`);
+        }
+        
+        // Helper function to round coordinates
+        function roundCoord(value) {
+            return parseFloat(value.toFixed(COORDINATE_PRECISION));
+        }
+        
+        async function recordFrame() {
+            const now = Date.now();
+            if (now - lastRecordTime < RECORD_INTERVAL) return;
+            lastRecordTime = now;
+            
+            try {
+                // Prepare detailed frame data
+                const frameData = {
+                    timestamp: (now - recordingStartTime) / 1000,
+                    bodyParts: bodyParts,
+                    pose: {
+                        landmarks: latestPoseResults && latestPoseResults.poseLandmarks ? 
+                            latestPoseResults.poseLandmarks.map(lm => ({
+                                x: roundCoord(lm.x),
+                                y: roundCoord(lm.y),
+                                z: roundCoord(lm.z),
+                                visibility: roundCoord(lm.visibility)
+                            })) : []
+                    },
+                    hands: {
+                        landmarks: latestHandsResults && latestHandsResults.multiHandLandmarks ?
+                            latestHandsResults.multiHandLandmarks.map(hand => 
+                                hand.map(lm => ({x: roundCoord(lm.x), y: roundCoord(lm.y), z: roundCoord(lm.z)}))
+                            ) : [],
+                        handedness: latestHandsResults && latestHandsResults.multiHandedness ?
+                            latestHandsResults.multiHandedness.map(h => h.label) : []
+                    },
+                    faceMesh: {
+                        landmarks: latestFaceMeshResults && latestFaceMeshResults.multiFaceLandmarks ?
+                            latestFaceMeshResults.multiFaceLandmarks.map(face =>
+                                face.map(lm => ({x: roundCoord(lm.x), y: roundCoord(lm.y), z: roundCoord(lm.z)}))
+                            ) : []
+                    },
+                    metadata: {
+                        fps: fps,
+                        partsDetected: Object.values(bodyParts).filter(p => p).length,
+                        faceMeshDetected: !!(latestFaceMeshResults && latestFaceMeshResults.multiFaceLandmarks && latestFaceMeshResults.multiFaceLandmarks.length > 0)
+                    },
+                    emotion: {
+                        label: currentEmotion.label,
+                        emoji: currentEmotion.emoji,
+                        confidence: roundCoord(currentEmotion.confidence),
+                        scores: Object.fromEntries(
+                            Object.entries(currentEmotion.scores).map(([k, v]) => [k, roundCoord(v)])
+                        )
+                    }
+                };
+                
+                await fetch('/api/detailed-recording/frame', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(frameData)
+                });
+                
+                recordedFrameCount++;
+            } catch (error) {
+                console.error('Frame recording error:', error);
+            }
+        }
+
+        // ============================================
+        // Emotion Tracking Functions (Hybrid Approach - Phase 1 Improved)
+        // ============================================
+        let emotionAnalysisInProgress = false;
+        let lastEmotionAnalysisTime = 0;
+        const EMOTION_ANALYSIS_INTERVAL = 500; // Analyze every 500ms (2 times per second)
+
+        // Run face-api.js emotion detection
+        async function detectEmotionWithFaceAPI() {
+            if (!faceApiModelsLoaded || !webcamElement) {
+                return null;
+            }
+
+            try {
+                const detections = await faceapi
+                    .detectSingleFace(webcamElement, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceExpressions();
+
+                if (detections && detections.expressions) {
+                    lastFaceApiDetection = detections.expressions;
+                    return detections.expressions;
+                }
+            } catch (error) {
+                console.error('face-api.js detection error:', error);
+            }
+            
+            return lastFaceApiDetection; // Use last successful detection
+        }
+
+        // Hybrid emotion analysis combining face-api.js + face mesh landmarks
+        async function analyzeEmotionHybrid(faceLandmarks) {
+            // Throttle emotion analysis
+            const now = Date.now();
+            if (emotionAnalysisInProgress || (now - lastEmotionAnalysisTime) < EMOTION_ANALYSIS_INTERVAL) {
+                return;
+            }
+
+            emotionAnalysisInProgress = true;
+            lastEmotionAnalysisTime = now;
+
+            try {
+                // 1. Get face-api.js emotion scores (if available)
+                const faceApiEmotions = await detectEmotionWithFaceAPI();
+
+                // 2. Convert face landmarks for backend
+                const landmarks = faceLandmarks.map(lm => ({
+                    x: lm.x,
+                    y: lm.y,
+                    z: lm.z
+                }));
+
+                console.log(`🎯 Sending ${landmarks.length} landmarks to backend, faceapi: ${faceApiEmotions ? 'yes' : 'no'}`);
+
+                // 3. Send both to backend for hybrid analysis
+                const response = await fetch('/api/emotion/hybrid-analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        landmarks: landmarks,
+                        faceapi_emotions: faceApiEmotions,
+                        session_id: null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Hybrid emotion analysis failed: ${response.status}`);
+                }
+
+                const emotionData = await response.json();
+
+                // 4. Update frontend with hybrid result
+                if (emotionData && emotionData.face_detected) {
+                    const emotionInfo = EMOTION_MAP[emotionData.dominant_emotion] || EMOTION_MAP['neutral'];
+                    
+                    const emotion = {
+                        label: emotionInfo.label,
+                        emoji: emotionData.emoji,
+                        color: emotionInfo.color,
+                        confidence: emotionData.confidence,
+                        scores: emotionData.scores,
+                        method: emotionData.method || 'hybrid',
+                        tier: emotionData.tier,
+                        alpha_eff: emotionData.alpha_eff,
+                        margin: emotionData.margin,
+                        entropy: emotionData.entropy,
+                        cooldown_ms_left: emotionData.cooldown_ms_left
+                    };
+
+                    updateEmotionDisplay(emotion);
+                    
+                    // Update debug panel (Phase 5)
+                    updateDebugPanel(emotion, faceApiEmotions, faceLandmarks);
+                }
+
+            } catch (error) {
+                console.error('Hybrid emotion analysis error:', error);
+                logToConsole(`⚠️ Emotion analysis error: ${error.message}`, 'warning');
+                // Don't crash - continue running
+            } finally {
+                emotionAnalysisInProgress = false;
+            }
+        }
+        
+        let lastLoggedEmotion = null;
+        
+        function updateEmotionDisplay(emotion) {
+            if (!emotion) return;
+            
+            // Update current emotion
+            currentEmotion = emotion;
+            
+            // Log emotion changes (throttled)
+            const emotionKey = `${emotion.label}:${Math.round(emotion.confidence)}`;
+            if (emotionKey !== lastLoggedEmotion) {
+                const topScores = emotion.scores ? Object.entries(emotion.scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([e, s]) => `${e}:${Math.round(s)}%`)
+                    .join(', ') : 'N/A';
+                logToConsole(`😊 ${emotion.emoji} ${emotion.label} (${Math.round(emotion.confidence)}%) | ${topScores}`, 'success');
+                lastLoggedEmotion = emotionKey;
+            }
+            
+            // Update main display - ALL with null checks
+            const emojiEl = document.getElementById('emotionEmoji');
+            if (emojiEl) emojiEl.textContent = emotion.emoji;
+            
+            const labelEl = document.getElementById('emotionLabel');
+            if (labelEl) labelEl.textContent = emotion.label;
+            
+            const confEl = document.getElementById('emotionConfidence');
+            if (confEl) confEl.textContent = `${Math.round(emotion.confidence)}%`;
+            
+            // Update emotion scores breakdown (only if element exists)
+            const scoresDiv = document.getElementById('emotionScores');
+            if (scoresDiv && emotion.scores) {
+                scoresDiv.innerHTML = Object.entries(emotion.scores)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, score]) => {
+                    const emotionInfo = EMOTION_MAP[name] || { emoji: '❓', label: name };
+                    return `
+                        <div class="stat-item">
+                            <span class="stat-label">${emotionInfo.emoji} ${emotionInfo.label}</span>
+                            <span class="stat-value">${Math.round(score)}%</span>
+                        </div>
+                    `;
+                })
+                .join('');
+            }
+            
+            // Update emotion history
+            emotionHistory.push({
+                emoji: emotion.emoji,
+                label: emotion.label,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last N emotions
+            if (emotionHistory.length > MAX_EMOTION_HISTORY) {
+                emotionHistory.shift();
+            }
+        }
+
+        // ============================================
+        // FPS Counter
+        // ============================================
+        let lastLoggedFPS = 0;
+        
+        function updateFPS() {
+            frameCount++;
+            totalFrames++;
+            const now = Date.now();
+            const elapsed = now - fpsUpdateTime;
+            
+            if (elapsed >= 1000) {
+                fps = Math.round((frameCount * 1000) / elapsed);
+                
+                // Update FPS displays (with null checks)
+                const renderFpsEl = document.getElementById('renderFps');
+                const fpsOverlayEl = document.getElementById('fpsOverlay');
+                
+                if (renderFpsEl) renderFpsEl.textContent = fps;
+                if (fpsOverlayEl) fpsOverlayEl.textContent = `${fps} FPS`;
+                
+                // Log FPS changes (every 5 FPS difference)
+                let fpsStatus = 'warning';
+                if (fps >= 60) {
+                    fpsStatus = 'success';
+                } else if (fps >= 30) {
+                    fpsStatus = 'warning';
+                } else {
+                    fpsStatus = 'error';
+                }
+                
+                if (Math.abs(fps - lastLoggedFPS) >= 5) {
+                    logToConsole(`⚡ FPS: ${fps} (${fpsStatus === 'success' ? 'Excellent' : fpsStatus === 'warning' ? 'Good' : 'Low'})`, fpsStatus);
+                    lastLoggedFPS = fps;
+                }
+                
+                frameCount = 0;
+                fpsUpdateTime = now;
+            }
+        }
+
+        // ============================================
+        // Emotion Test Function
+        // ============================================
+        async function runEmotionTest() {
+            const testBtn = document.getElementById('testBtn');
+            const originalText = testBtn.innerHTML;
+            
+            try {
+                // Disable button and show loading
+                testBtn.disabled = true;
+                testBtn.innerHTML = '⏳ Testing...';
+                
+                logToConsole('🧪 Starting emotion test (10s, 30 FPS)...', 'info');
+                
+                // Call test API (10 seconds, fast transitions)
+                const response = await fetch('/api/emotion/test/run?fps=30&duration=10&transition_time=2', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Test failed');
+                }
+                
+                const result = await response.json();
+                
+                // Log test results to console
+                logToConsole(`✅ Test Complete! Accuracy: ${result.accuracy.toFixed(1)}% (${result.correct_detections}/${result.total_frames} frames)`, 'success');
+                
+                // Display results in alert
+                let message = `🎯 EMOTION TEST RESULTS\n\n`;
+                message += `✅ Accuracy: ${result.accuracy.toFixed(1)}%\n`;
+                message += `📊 Frames: ${result.correct_detections}/${result.total_frames}\n\n`;
+                
+                if (result.avg_detection_time) {
+                    message += `⚡ Avg Speed: ${(result.avg_detection_time * 1000).toFixed(0)}ms\n`;
+                    message += `🏃 Fastest: ${(result.fastest_detection * 1000).toFixed(0)}ms\n`;
+                    message += `🐌 Slowest: ${(result.slowest_detection * 1000).toFixed(0)}ms\n\n`;
+                }
+                
+                message += `📈 Per-Emotion Accuracy:\n`;
+                for (const [emotion, stats] of Object.entries(result.per_emotion_accuracy)) {
+                    const emoji = {'happy': '😊', 'sad': '😢', 'angry': '😠', 'surprise': '😲', 
+                                   'fear': '😨', 'neutral': '😐', 'disgust': '🤢'}[emotion] || '❓';
+                    message += `${emoji} ${emotion}: ${stats.accuracy.toFixed(1)}%\n`;
+                    
+                    // Log per-emotion results
+                    const status = stats.accuracy >= 80 ? 'success' : stats.accuracy >= 50 ? 'warning' : 'error';
+                    logToConsole(`  ${emoji} ${emotion}: ${stats.accuracy.toFixed(1)}% (${stats.correct}/${stats.total})`, status);
+                }
+                
+                message += `\n✅ Good (>80%) | ⚠️ Needs work (<80%) | ❌ Poor (<50%)`;
+                
+                alert(message);
+                
+                // Log detailed results to console
+                console.log('🧪 Detailed Test Results:', result);
+                
+            } catch (error) {
+                console.error('Test error:', error);
+                logToConsole(`❌ Test failed: ${error.message}`, 'error');
+                alert('❌ Test failed! Check console for details.');
+            } finally {
+                // Re-enable button
+                testBtn.disabled = false;
+                testBtn.innerHTML = originalText;
+            }
+        }
+        
+        // ============================================
+        // Session & Intervention Management (NEW!)
+        // ============================================
+        let currentSessionId = null;
+        let sessionStartTime = null;
+        let sessionUpdateInterval = null;
+
+        function testEmotion(emotion) {
+            const emotionData = {
+                'happy': { emoji: '😊', label: 'Happy', confidence: 0.95 },
+                'sad': { emoji: '😢', label: 'Sad', confidence: 0.92 },
+                'angry': { emoji: '😠', label: 'Angry', confidence: 0.88 },
+                'surprised': { emoji: '😲', label: 'Surprised', confidence: 0.90 },
+                'neutral': { emoji: '😐', label: 'Neutral', confidence: 0.93 }
+            };
+            
+            const data = emotionData[emotion] || emotionData['neutral'];
+            
+            // Update emotion display
+            document.getElementById('emotionEmoji').textContent = data.emoji;
+            document.getElementById('emotionLabel').textContent = data.label;
+            document.getElementById('emotionConfidence').textContent = Math.round(data.confidence * 100) + '%';
+            document.getElementById('debugMethod').textContent = 'Test Mode';
+            
+            logToConsole(`Testing emotion: ${data.label} (${Math.round(data.confidence * 100)}%)`, 'info');
+        }
+
+
+        async function startSession(showAlert = true) {
+            try {
+                logToConsole('🎯 Starting tracking session...', 'info');
+                
+                const response = await fetch('/api/healthcare/session/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: 'test_user_001',
+                        session_type: 'testing'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                    sessionStartTime = Date.now();
+                    
+                    // Update UI
+                    document.getElementById('sessionId').textContent = currentSessionId.substring(0, 16) + '...';
+                    document.getElementById('sessionStartBtn').disabled = true;
+                    document.getElementById('sessionStopBtn').disabled = false;
+                    document.getElementById('sessionStatus').textContent = 'Active';
+                    
+                    // Start session duration counter
+                    sessionUpdateInterval = setInterval(updateSessionDuration, 1000);
+                    
+                    // Start sending real-time data
+                    startSessionDataStream();
+                    
+                    logToConsole(`✅ Session started: ${currentSessionId}`, 'success');
+                    
+                    // Only show alert if requested (not for auto-start)
+                    if (showAlert) {
+                    alert(`✅ Session Started!\n\nSession ID: ${currentSessionId}\n\nThe AI is now tracking your posture, emotions, and engagement. Interventions will be triggered automatically based on your behavior.`);
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to start session');
+                }
+            } catch (error) {
+                console.error('Session start error:', error);
+                logToConsole(`❌ Failed to start session: ${error.message}`, 'error');
+                if (showAlert) {
+                alert('Failed to start session: ' + error.message);
+                }
+            }
+        }
+
+        async function stopSession(showAlert = true) {
+            try {
+                if (!currentSessionId) return;
+                
+                logToConsole('⏹️ Stopping session...', 'info');
+                
+                const response = await fetch(`/api/healthcare/session/stop`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        session_id: currentSessionId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Clear interval
+                if (sessionUpdateInterval) {
+                    clearInterval(sessionUpdateInterval);
+                    sessionUpdateInterval = null;
+                }
+                
+                // Stop data stream
+                stopSessionDataStream();
+                
+                // Update UI
+                document.getElementById('sessionStartBtn').disabled = false;
+                document.getElementById('sessionStopBtn').disabled = true;
+                document.getElementById('sessionStatus').textContent = 'Inactive';
+                
+                logToConsole(`✅ Session stopped. Duration: ${data.duration_seconds}s, Interventions: ${data.intervention_count}`, 'success');
+                
+                // Only show alert if requested (not for auto-stop)
+                if (showAlert) {
+                alert(`✅ Session Stopped!\n\nDuration: ${Math.round(data.duration_seconds)}s\nInterventions: ${data.intervention_count}\n\nClick "Generate Report" to view detailed analytics.`);
+                }
+                
+            } catch (error) {
+                console.error('Session stop error:', error);
+                logToConsole(`❌ Failed to stop session: ${error.message}`, 'error');
+            }
+        }
+
+        async function getSessionStatus() {
+            try {
+                if (!currentSessionId) return;
+                
+                const response = await fetch(`/api/healthcare/session/${currentSessionId}/status`);
+                
+                if (!response.ok) {
+                    // Don't log every error - API might not be ready
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                // Update metrics display (with null checks)
+                const postureEl = document.getElementById('postureQuality');
+                if (postureEl) {
+                    postureEl.textContent = data.current_posture_quality || '-';
+                }
+                
+                // Update both intervention count displays
+                const interventionCount = data.intervention_count || 0;
+                const countEl = document.getElementById('interventionCount');
+                if (countEl) {
+                    countEl.textContent = interventionCount;
+                }
+                
+                const countMetricEl = document.getElementById('interventionCountMetric');
+                if (countMetricEl) {
+                    countMetricEl.textContent = interventionCount;
+                }
+                
+            } catch (error) {
+                // Silently fail - don't spam console with errors
+                console.error('Session status error:', error);
+            }
+        }
+
+        async function generateReport() {
+            try {
+                if (!currentSessionId) {
+                    alert('No session to generate report for!');
+                    return;
+                }
+                
+                logToConsole('📄 Generating session report...', 'info');
+                
+                const response = await fetch(`/api/reports/session/${currentSessionId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate report');
+                }
+                
+                // Download report as JSON
+                const report = await response.json();
+                const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `session_report_${currentSessionId}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                logToConsole(`✅ Report generated and downloaded`, 'success');
+                
+                alert(`✅ Report Generated!\n\nOverall Quality: ${Math.round(report.overall_quality_score)}/100\nDominant Emotion: ${report.emotion_timeline.dominant_emotion}\nPosture Quality: ${report.posture_analysis.average_quality}\n\nReport downloaded as JSON file.`);
+                
+            } catch (error) {
+                console.error('Report generation error:', error);
+                logToConsole(`❌ Failed to generate report: ${error.message}`, 'error');
+                alert('Failed to generate report. Make sure the session has data.');
+            }
+        }
+
+        
+
+        function addInterventionToHistory(type, message) {
+            const historyEl = document.getElementById('interventionHistory');
+            if (!historyEl) return;
+            
+            // Clear "no interventions" message if present
+            if (historyEl.textContent.includes('No interventions yet')) {
+                historyEl.innerHTML = '';
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const item = document.createElement('div');
+            item.className = 'intervention-item';
+            item.innerHTML = `
+                <div><strong>${type.toUpperCase()}</strong>: ${message}</div>
+                <div class="intervention-time">${timestamp}</div>
+            `;
+            historyEl.insertBefore(item, historyEl.firstChild);
+            
+            // Keep only last 10 items
+            while (historyEl.children.length > 10) {
+                historyEl.removeChild(historyEl.lastChild);
+            }
+            
+            // Update intervention count
+            const countEl = document.getElementById('interventionCount');
+            if (countEl) {
+                const current = parseInt(countEl.textContent) || 0;
+                countEl.textContent = current + 1;
+            }
+        }
+
+        async function triggerIntervention(type) {
+            try {
+                if (!currentSessionId) {
+                    alert('Please start a session first!');
+                    return;
+                }
+                
+                logToConsole(`🧪 Triggering manual ${type} intervention...`, 'warning');
+                
+                const response = await fetch('/api/healthcare/intervention/trigger', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        intervention_type: type,
+                        reason: `Manual test trigger - ${type}`,
+                        data: {
+                            manual_trigger: true,
+                            timestamp: Date.now()
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Add to intervention history
+                    addInterventionToHistory(type, data.message, data.tone);
+                    
+                    logToConsole(`✅ Intervention triggered: ${data.message}`, 'success');
+                    alert(`✅ Intervention Triggered!\n\nType: ${type}\nMessage: ${data.message}\nTone: ${data.tone}`);
+                } else {
+                    throw new Error(data.error || 'Failed to trigger intervention');
+                }
+                
+            } catch (error) {
+                console.error('Intervention trigger error:', error);
+                logToConsole(`❌ Failed to trigger intervention: ${error.message}`, 'error');
+                alert('Failed to trigger intervention: ' + error.message);
+            }
+        }
+
+        function addInterventionToHistory(type, message, tone) {
+            const historyDiv = document.getElementById('interventionHistory');
+            
+            // Remove "no interventions" message
+            if (historyDiv.querySelector('div[style*="text-align: center"]')) {
+                historyDiv.innerHTML = '';
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const typeEmojis = {
+                'posture': '📐',
+                'emotion': '😢',
+                'break': '☕',
+                'engagement': '👀'
+            };
+            
+            const typeColors = {
+                'posture': '#ff9800',
+                'emotion': '#e91e63',
+                'break': '#9c27b0',
+                'engagement': '#3f51b5'
+            };
+            
+            const typeGradients = {
+                'posture': 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)',
+                'emotion': 'linear-gradient(135deg, #fce4ec 0%, #ffffff 100%)',
+                'break': 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)',
+                'engagement': 'linear-gradient(135deg, #e8eaf6 0%, #ffffff 100%)'
+            };
+            
+            const entry = document.createElement('div');
+            entry.className = 'intervention-entry';
+            entry.style.cssText = `
+                padding: 16px 18px;
+                margin: 10px 0;
+                background: ${typeGradients[type] || '#ffffff'};
+                border-radius: 12px;
+                border-left: 5px solid ${typeColors[type] || '#999'};
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                transition: all 0.3s ease;
+                cursor: pointer;
+            `;
+            
+            entry.onmouseenter = function() {
+                this.style.transform = 'translateX(5px)';
+                this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+            };
+            
+            entry.onmouseleave = function() {
+                this.style.transform = 'translateX(0)';
+                this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+            };
+            
+            entry.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.5em;">${typeEmojis[type] || '🔔'}</span>
+                        <strong style="color: ${typeColors[type]}; font-size: 1em; letter-spacing: 0.3px;">${type.toUpperCase()}</strong>
+                    </div>
+                    <span style="font-size: 0.8em; color: #6c757d; font-family: 'Courier New', monospace;">${timestamp}</span>
+                </div>
+                <div style="font-size: 0.95em; color: #495057; line-height: 1.5; margin-bottom: 8px; padding-left: 28px;">${message}</div>
+                <div style="display: inline-block; background: rgba(102, 126, 234, 0.1); color: #667eea; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin-left: 28px;">
+                    Tone: ${tone || 'neutral'}
+                </div>
+            `;
+            
+            historyDiv.insertBefore(entry, historyDiv.firstChild);
+            
+            // Update intervention counts with animation
+            const countEl = document.getElementById('interventionCount');
+            const countMetricEl = document.getElementById('interventionCountMetric');
+            const currentCount = parseInt(countEl.textContent) || 0;
+            const newCount = currentCount + 1;
+            
+            // Animate count change
+            countEl.style.transform = 'scale(1.3)';
+            countEl.style.transition = 'transform 0.3s ease';
+            if (countMetricEl) {
+                countMetricEl.style.transform = 'scale(1.3)';
+                countMetricEl.style.transition = 'transform 0.3s ease';
+            }
+            
+            setTimeout(() => {
+                countEl.textContent = newCount;
+                countEl.style.transform = 'scale(1)';
+                if (countMetricEl) {
+                    countMetricEl.textContent = newCount;
+                    countMetricEl.style.transform = 'scale(1)';
+                }
+            }, 150);
+        }
+
+        function updateSessionDuration() {
+            if (!sessionStartTime) return;
+            
+            const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            
+            document.getElementById('sessionDuration').textContent = 
+                `${minutes}m ${seconds}s`;
+        }
+
+        let dataStreamInterval = null;
+
+        let dataStreamFailures = 0;
+        const MAX_FAILURES = 3;
+        
+        function startSessionDataStream() {
+            // Send frame data to intervention engine every 5 seconds (reduced frequency)
+            dataStreamInterval = setInterval(async () => {
+                // Don't require recording - session can track without recording
+                if (!currentSessionId) return;
+                
+                // Check if face is actually detected before sending
+                const faceDetected = !!(latestFaceMeshResults && 
+                                       latestFaceMeshResults.multiFaceLandmarks && 
+                                       latestFaceMeshResults.multiFaceLandmarks.length > 0);
+                
+                // Skip if no face detected - prevents 422 errors
+                if (!faceDetected) {
+                    // Only log first few times
+                    if (dataStreamFailures < 2) {
+                        logToConsole('⏸️ Waiting for face detection before sending data...', 'info');
+                        dataStreamFailures++;
+                    }
+                    return;
+                }
+                
+                // Reset failure counter on successful face detection
+                if (dataStreamFailures > 0) {
+                    logToConsole('✅ Face detected! Starting data stream...', 'success');
+                    dataStreamFailures = 0;
+                }
+                
+                try {
+                    // Collect current frame data - only send if valid
+                    const emotionLabel = currentEmotion.label ? currentEmotion.label.toLowerCase() : 'neutral';
+                    const emotionConf = currentEmotion.confidence || 0;
+                    
+                    // Only send if we have meaningful data
+                    if (emotionLabel === 'neutral' && emotionConf < 0.1) {
+                        return; // Skip sending near-zero confidence data
+                    }
+                    
+                    const frameData = {
+                        timestamp: Date.now(),
+                        emotion: emotionLabel,
+                        emotion_confidence: emotionConf,
+                        face_detected: true,
+                        pose_landmarks: latestPoseResults && latestPoseResults.poseLandmarks ? latestPoseResults.poseLandmarks : null
+                    };
+                    
+                    // Send to intervention engine via healthcare API
+                    const response = await fetch('/api/healthcare/emotion-update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            session_id: currentSessionId,
+                            ...frameData
+                        })
+                    });
+                    
+                    // Only log errors (not every successful update)
+                    if (!response.ok) {
+                        dataStreamFailures++;
+                        if (dataStreamFailures <= MAX_FAILURES) {
+                            logToConsole(`⚠️ Emotion update failed: ${response.status}`, 'warning');
+                        }
+                    } else {
+                        dataStreamFailures = 0; // Reset on success
+                    }
+                    
+                } catch (error) {
+                    dataStreamFailures++;
+                    if (dataStreamFailures <= MAX_FAILURES) {
+                        console.error('Data stream error:', error);
+                        logToConsole(`⚠️ Data stream error: ${error.message}`, 'warning');
+                    }
+                }
+            }, 5000); // Increased from 2000ms to 5000ms to reduce server load
+        }
+
+        function stopSessionDataStream() {
+            if (dataStreamInterval) {
+                clearInterval(dataStreamInterval);
+                dataStreamInterval = null;
+            }
+        }
+
+        // ============================================
+        // Enhanced UI Updates - REMOVED TO FIX ERRORS
+        // ============================================
+        // These function reassignments were causing issues
+        // All functionality is already built into the main functions
+
+        // ============================================
+        // Initialize
+        // ============================================
+        console.log('✅ Detailed Body Part Detection System loaded');
+        console.log('✅ Intervention & Session Tracking System loaded');
+    </script>
+</body>
+</html>
+

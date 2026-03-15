@@ -1,0 +1,32 @@
+{% set title = title or "Metric" %}
+{% set icon = icon or "fas fa-chart-line" %}
+{% set icon_bg = icon_bg or "bg-gradient-to-br from-blue-500 to-indigo-500" %}
+{% set value_binding = value or "" %}
+{% set fallback_value = default_value or "0" %}
+{% set subtitle = subtitle or "" %}
+{% set footer = footer or "" %}
+
+<article class="card">
+    <div class="card-body">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p class="text-sm font-medium text-slate-500">{{ title }}</p>
+                <p class="mt-3 text-3xl font-semibold text-slate-900"
+                   {% if value_binding %}x-text="{{ value_binding }}"{% endif %}>
+                    {{ fallback_value }}
+                </p>
+                {% if subtitle %}
+                <p class="mt-2 text-xs text-slate-500">{{ subtitle|safe }}</p>
+                {% endif %}
+            </div>
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl {{ icon_bg }} text-white shadow-soft">
+                <i class="{{ icon }} text-lg"></i>
+            </div>
+        </div>
+    </div>
+    {% if footer %}
+    <div class="card-footer text-xs text-slate-500">
+        {{ footer|safe }}
+    </div>
+    {% endif %}
+</article>

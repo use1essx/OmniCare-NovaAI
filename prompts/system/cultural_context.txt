@@ -1,0 +1,17 @@
+<!--
+File: prompts/system/cultural_context.txt
+Status: DEPRECATED (content merged into prompts/system/base_system.txt as of P1.2)
+Purpose: Kept only for backward compatibility. New code should NOT load this file directly.
+
+All Hong Kong cultural context content has been consolidated into the main base_system.txt
+under the "Cultural Context: HONG KONG HEALTHCARE ENVIRONMENT" section for easier maintenance
+and to ensure consistent cultural guidance across all agents.
+
+If you are loading this file dynamically, please update your code to load base_system.txt instead.
+-->
+
+# Hong Kong Cultural Context - DEPRECATED
+
+This file has been deprecated. All content has been merged into `prompts/system/base_system.txt`.
+
+Please use `base_system.txt` for all Hong Kong cultural context guidance.

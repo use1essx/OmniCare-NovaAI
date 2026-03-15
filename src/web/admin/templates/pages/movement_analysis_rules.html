@@ -1,0 +1,1722 @@
+{% extends "base.html" %}
+
+{% block title %}Movement Analysis Rules · Healthcare AI Admin{% endblock %}
+{% block page_title %}Movement Analysis Rules{% endblock %}
+
+{% block page_description %}
+<p class="max-w-3xl text-sm leading-relaxed text-slate-500">
+    Manage AI rules for pediatric movement analysis. Define evaluation criteria, AI prompts, and response templates
+    that guide the AI in analyzing child movement videos.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+{% if perms.manage_assessment_rules %}
+<button type="button"
+        class="btn btn-primary"
+        @click="openCreateRule()">
+    <i class="fas fa-plus"></i>
+    New Rule
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8"
+     x-data="assessmentRulesPage()"
+     x-init="init()"
+     x-cloak>
+
+    <!-- Summary Cards -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Total Rules</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.total">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Movement analysis rule definitions</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-soft">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Active Rules</p>
+                        <p class="mt-3 text-3xl font-semibold text-green-600" x-text="stats.active">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Available for movement analysis</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-soft">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Inactive Rules</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-400" x-text="stats.inactive">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Disabled or draft rules</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-soft">
+                        <i class="fas fa-pause-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Categories</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.categories">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Unique analysis types</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-500 text-white shadow-soft">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Tabs Navigation -->
+    <div class="border-b border-slate-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            <button type="button"
+                    class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                    :class="{'border-indigo-500 text-indigo-600': activeTab === 'rules', 'border-transparent': activeTab !== 'rules'}"
+                    @click="activeTab = 'rules'">
+                <i class="fas fa-list mr-2"></i>
+                Rules Management
+            </button>
+            <button type="button"
+                    class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                    :class="{'border-indigo-500 text-indigo-600': activeTab === 'upload', 'border-transparent': activeTab !== 'upload'}"
+                    @click="activeTab = 'upload'">
+                <i class="fas fa-upload mr-2"></i>
+                Standard Video Upload
+            </button>
+            <button type="button"
+                    class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors"
+                    :class="{'border-indigo-500 text-indigo-600': activeTab === 'analysis', 'border-transparent': activeTab !== 'analysis'}"
+                    @click="activeTab = 'analysis'">
+                <i class="fas fa-video mr-2"></i>
+                Video Analysis
+            </button>
+        </nav>
+    </div>
+
+    <!-- Upload Standard Video Tab -->
+    <section x-show="activeTab === 'upload'" x-transition class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Upload Form -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Upload Standard Tutorial Video</h3>
+                    <p class="text-sm text-slate-500 mb-6">Upload a standard movement video. AI will analyze it and create a reusable assessment rule.</p>
+                    
+                    <form @submit.prevent="uploadStandardVideo()" enctype="multipart/form-data" id="standardVideoForm">
+                        <div class="space-y-4">
+                            <!-- Movement Name -->
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                    Movement name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text"
+                                       x-model="uploadForm.movement_title"
+                                       class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                       placeholder="e.g., Single-leg stance, Toe walking, Jump landing"
+                                       required>
+                            </div>
+
+                            <!-- Video File Upload -->
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                    Upload video file <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="file"
+                                           id="standardVideoFile"
+                                           @change="handleFileSelect($event)"
+                                           accept="video/*"
+                                           class="block w-full text-sm text-slate-500
+                                                  file:mr-4 file:py-2.5 file:px-4
+                                                  file:rounded-lg file:border-0
+                                                  file:text-sm file:font-semibold
+                                                  file:bg-indigo-50 file:text-indigo-700
+                                                  hover:file:bg-indigo-100
+                                                  cursor-pointer"
+                                           required>
+                                </div>
+                                <p class="mt-2 text-xs text-slate-500">
+                                    Accepted formats: MP4, MOV, AVI, WebM (Max 150MB)
+                                </p>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit"
+                                    class="w-full px-6 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+                                    :disabled="uploading">
+                                <span x-show="!uploading">
+                                    <i class="fas fa-magic"></i> Analyze and Create Rule
+                                </span>
+                                <span x-show="uploading">
+                                    <i class="fas fa-spinner fa-spin"></i> Analyzing video...
+                                </span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Existing Rules Library -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Existing Rule Library</h3>
+                    <p class="text-sm text-slate-500 mb-4">Current assessment categories available to parents.</p>
+                    
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        <template x-for="rule in rules.slice(0, 10)" :key="rule.id">
+                            <div class="p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex-1">
+                                        <h5 class="font-medium text-slate-900" x-text="rule.category"></h5>
+                                        <p class="text-sm text-slate-500 mt-1 line-clamp-2" x-text="rule.description"></p>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <span class="badge badge-sm" :class="rule.is_active ? 'badge-success' : 'badge-neutral'">
+                                                <span x-text="rule.is_active ? 'Active' : 'Inactive'"></span>
+                                            </span>
+                                            <span class="text-xs text-slate-400" x-text="formatDate(rule.created_at)"></span>
+                                        </div>
+                                    </div>
+                                    <button type="button"
+                                            class="icon-button text-indigo-600 hover:bg-indigo-50"
+                                            @click="viewRule(rule)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="rules.length === 0">
+                            <div class="text-center py-8 text-slate-400">
+                                <i class="fas fa-inbox text-3xl mb-2"></i>
+                                <p class="text-sm">No rules yet. Upload a standard video to create one!</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Analysis Tab -->
+    <section x-show="activeTab === 'analysis'" x-transition class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Upload Form -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-2">
+                            <i class="fas fa-video text-indigo-600 mr-2"></i>
+                            Analyze Child Movement Video
+                        </h3>
+                        <p class="text-sm text-slate-500 mb-6">Upload a video of a child's movement to get AI-powered analysis and recommendations.</p>
+                        
+                        <!-- Analysis Form -->
+                        <div x-show="!analysisUploading && !analysisProcessing && !analysisComplete">
+                            <form @submit.prevent="submitVideoAnalysis()" id="videoAnalysisForm">
+                                <div class="space-y-4">
+                                    <!-- Analysis Type -->
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Analysis Type
+                                        </label>
+                                        <select x-model="analysisForm.rule_id"
+                                                class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500">
+                                            <option value="">Select analysis type...</option>
+                                            <template x-for="rule in rules.filter(r => r.is_active)" :key="rule.id">
+                                                <option :value="rule.id" x-text="rule.category"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+
+                                    <!-- Child Age Information -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                                Child's Age
+                                            </label>
+                                            <input type="number"
+                                                   x-model="analysisForm.age_value"
+                                                   min="0"
+                                                   max="18"
+                                                   step="0.5"
+                                                   placeholder="Age"
+                                                   class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                                Unit
+                                            </label>
+                                            <select x-model="analysisForm.age_unit"
+                                                    class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500">
+                                                <option value="year">Years</option>
+                                                <option value="month">Months</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Notes -->
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Notes (Optional)
+                                        </label>
+                                        <textarea x-model="analysisForm.child_description"
+                                                  rows="2"
+                                                  placeholder="Any additional notes about the child..."
+                                                  class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 resize-vertical"></textarea>
+                                    </div>
+
+                                    <!-- Video File Upload -->
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                            Video File <span class="text-red-500">*</span>
+                                        </label>
+                                        <div @click="$refs.videoAnalysisFile.click()"
+                                             class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200"
+                                             :class="analysisForm.video_file ? 'border-green-400 bg-green-50' : 'border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-indigo-50'">
+                                            <div class="text-5xl mb-3">📹</div>
+                                            <p class="text-sm font-medium mb-1"
+                                               :class="analysisForm.video_file ? 'text-green-700' : 'text-slate-700'"
+                                               x-text="analysisForm.video_file ? '✅ ' + analysisForm.video_file.name : 'Click to select a video file'"></p>
+                                            <p class="text-xs text-slate-500">MP4, MOV, AVI, WebM (max 100MB)</p>
+                                            <p x-show="analysisForm.video_file" 
+                                               class="text-xs text-green-600 mt-2"
+                                               x-text="analysisForm.video_file ? '(' + (analysisForm.video_file.size / 1024 / 1024).toFixed(1) + 'MB)' : ''"></p>
+                                        </div>
+                                        <input type="file"
+                                               x-ref="videoAnalysisFile"
+                                               @change="handleAnalysisVideoSelect($event)"
+                                               accept="video/*"
+                                               class="hidden">
+                                        <button type="button"
+                                                x-show="analysisForm.video_file"
+                                                @click.stop="clearAnalysisVideo()"
+                                                class="mt-2 text-sm text-red-600 hover:text-red-700 font-medium">
+                                            <i class="fas fa-times-circle mr-1"></i> Clear Selection
+                                        </button>
+                                    </div>
+
+                                    <!-- Submit Button -->
+                                    <button type="submit"
+                                            :disabled="!analysisForm.video_file"
+                                            class="w-full px-6 py-3 rounded-lg font-medium shadow-lg transition-all flex items-center justify-center gap-2"
+                                            :class="analysisForm.video_file ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-300 text-slate-500 cursor-not-allowed'">
+                                        <i class="fas fa-rocket"></i>
+                                        <span>Start Analysis</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div x-show="analysisUploading" class="text-center py-8">
+                            <div class="text-5xl mb-4">📤</div>
+                            <h4 class="text-lg font-semibold text-slate-900 mb-2">Uploading Video...</h4>
+                            <p class="text-sm text-slate-500 mb-4">Please wait while we upload your video</p>
+                            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full animate-pulse" style="width: 60%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Processing Progress -->
+                        <div x-show="analysisProcessing && !analysisComplete" class="text-center py-8">
+                            <div class="text-5xl mb-4">⏳</div>
+                            <h4 class="text-lg font-semibold text-slate-900 mb-2">Processing Video...</h4>
+                            <p class="text-sm text-slate-500 mb-4" x-text="analysisStatus"></p>
+                            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                                     :style="`width: ${analysisProgress}%`"></div>
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2" x-text="`${analysisProgress}% complete`"></p>
+                        </div>
+
+                        <!-- Analysis Complete -->
+                        <div x-show="analysisComplete" class="py-6">
+                            <div class="text-center mb-6">
+                                <div class="text-5xl mb-3">✅</div>
+                                <h4 class="text-xl font-semibold text-green-600 mb-2">Analysis Complete!</h4>
+                                <p class="text-sm text-slate-500">Your movement analysis results are ready</p>
+                            </div>
+
+                            <!-- Result Display -->
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 max-h-96 overflow-y-auto">
+                                <div x-html="formatAnalysisResult(analysisResult)"></div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-3 mt-6">
+                                <button @click="resetAnalysisForm()"
+                                        class="flex-1 px-6 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-all">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Analyze Another Video
+                                </button>
+                                <button @click="downloadAnalysisResult()"
+                                        class="px-6 py-3 rounded-lg bg-slate-200 text-slate-700 font-medium hover:bg-slate-300 transition-all">
+                                    <i class="fas fa-download mr-2"></i>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info & Recent History -->
+            <div class="space-y-6">
+                <!-- Info Card -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="font-semibold text-slate-900 mb-3">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            How It Works
+                        </h4>
+                        <ol class="space-y-2 text-sm text-slate-600">
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">1.</span>
+                                <span>Select analysis type and provide child's age</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">2.</span>
+                                <span>Upload video of child's movement</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">3.</span>
+                                <span>AI analyzes movement patterns</span>
+                            </li>
+                            <li class="flex gap-2">
+                                <span class="font-semibold text-indigo-600">4.</span>
+                                <span>Get detailed recommendations</span>
+                            </li>
+                        </ol>
+                        
+                        <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p class="text-xs text-amber-800">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                <strong>Note:</strong> Analysis may take 2-5 minutes depending on video length
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="font-semibold text-slate-900 mb-3">
+                            <i class="fas fa-chart-bar text-purple-500 mr-2"></i>
+                            Available Analysis Types
+                        </h4>
+                        <div class="space-y-2">
+                            <template x-for="rule in rules.filter(r => r.is_active).slice(0, 5)" :key="rule.id">
+                                <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                                    <span class="text-sm text-slate-700" x-text="rule.category"></span>
+                                    <span class="badge badge-sm badge-success">Active</span>
+                                </div>
+                            </template>
+                            <template x-if="rules.filter(r => r.is_active).length === 0">
+                                <p class="text-sm text-slate-500 text-center py-4">No active rules available</p>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rules Management Tab -->
+    <section x-show="activeTab === 'rules'" x-transition class="card">
+        <div class="card-body">
+            <!-- Table Header -->
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+                <h3 class="text-lg font-semibold text-slate-900">Movement Analysis Rules</h3>
+                <div class="flex gap-2">
+                    <div class="relative">
+                        <input type="text"
+                               class="form-control pl-10"
+                               placeholder="Search rules..."
+                               x-model="searchQuery"
+                               @input.debounce.300ms="loadRules()">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    </div>
+                    <select class="form-control"
+                            x-model="activeFilter"
+                            @change="loadRules()">
+                        <option value="all">All Status</option>
+                        <option value="active">Active Only</option>
+                        <option value="inactive">Inactive Only</option>
+                    </select>
+                    <button type="button"
+                            class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2btn btn-primary whitespace-nowrap"
+                            @click="openCreateRule()">
+                        <i class="fas fa-plus mr-2"></i>
+                        New Rule
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div x-show="loading" class="py-12 text-center">
+                <i class="fas fa-spinner fa-spin text-3xl text-slate-400"></i>
+                <p class="mt-3 text-slate-500">Loading rules...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div x-show="!loading && rules.length === 0" class="py-12 text-center">
+                <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                    <i class="fas fa-clipboard-list text-2xl text-slate-400"></i>
+                </div>
+                <h3 class="mt-4 text-lg font-medium text-slate-900">No movement analysis rules</h3>
+                <p class="mt-2 text-sm text-slate-500">Get started by creating your first movement analysis rule.</p>
+                {% if perms.manage_assessment_rules %}
+                <button type="button"
+                        class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+                        @click="openCreateRule()">
+                    <i class="fas fa-plus"></i>
+                    Create Rule
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Rules List -->
+            <div x-show="!loading && rules.length > 0" class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-left">
+                            <th class="pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Category</th>
+                            <th class="pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">AI Role</th>
+                            <th class="pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                            <th class="pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Created</th>
+                            <th class="pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="rule in rules" :key="rule.id">
+                            <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                                <td class="py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
+                                            <i class="fas fa-clipboard-check"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" x-text="rule.category"></p>
+                                            <p class="text-xs text-slate-500 truncate max-w-xs" x-text="rule.description || 'No description'"></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4">
+                                    <span class="text-sm text-slate-600" x-text="rule.ai_role || 'Not specified'"></span>
+                                </td>
+                                <td class="py-4">
+                                    <span class="badge"
+                                          :class="rule.is_active ? 'badge-success' : 'badge-neutral'"
+                                          x-text="rule.is_active ? 'Active' : 'Inactive'"></span>
+                                </td>
+                                <td class="py-4">
+                                    <span class="text-sm text-slate-500" x-text="formatDate(rule.created_at)"></span>
+                                </td>
+                                <td class="py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button"
+                                                class="icon-button"
+                                                title="View Details"
+                                                @click="viewRule(rule)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if perms.manage_assessment_rules %}
+                                        <button type="button"
+                                                class="icon-button"
+                                                title="Edit Rule"
+                                                @click="editRule(rule)">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="icon-button"
+                                                :title="rule.is_active ? 'Deactivate' : 'Activate'"
+                                                @click="toggleRule(rule)">
+                                            <i :class="rule.is_active ? 'fas fa-toggle-on text-green-500' : 'fas fa-toggle-off text-slate-400'"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="icon-button text-red-500 hover:bg-red-50"
+                                                title="Delete Rule"
+                                                @click="confirmDelete(rule)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div x-show="totalPages > 1" class="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
+                <p class="text-sm text-slate-500">
+                    Showing <span x-text="((currentPage - 1) * pageSize) + 1"></span> to 
+                    <span x-text="Math.min(currentPage * pageSize, totalRules)"></span> of 
+                    <span x-text="totalRules"></span> rules
+                </p>
+                <div class="flex gap-2">
+                    <button type="button"
+                            class="btn btn-secondary btn-sm"
+                            :disabled="currentPage === 1"
+                            @click="goToPage(currentPage - 1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <template x-for="page in visiblePages" :key="page">
+                        <button type="button"
+                                class="btn btn-sm"
+                                :class="page === currentPage ? 'btn-primary' : 'btn-secondary'"
+                                @click="goToPage(page)"
+                                x-text="page"></button>
+                    </template>
+                    <button type="button"
+                            class="btn btn-secondary btn-sm"
+                            :disabled="currentPage === totalPages"
+                            @click="goToPage(currentPage + 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create/Edit Rule Modal -->
+    <div x-show="showModal"
+         x-transition:enter="ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="closeModal()"></div>
+            
+            <!-- Modal Content -->
+            <div class="relative w-full max-w-5xl rounded-2xl bg-white shadow-2xl transform transition-all"
+                 @click.away="closeModal()">
+                <div class="flex flex-col max-h-[90vh]">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900" x-text="editingRule ? 'Edit Rule' : 'Create New Rule'"></h2>
+                            <p class="mt-1 text-sm text-slate-500">Configure movement analysis parameters and AI instructions</p>
+                        </div>
+                        <button type="button" class="icon-button hover:bg-slate-100 rounded-full p-2 transition-colors" @click="closeModal()">
+                            <i class="fas fa-times text-lg text-slate-400 hover:text-slate-600"></i>
+                        </button>
+                    </div>
+
+                    <!-- Scrollable Content -->
+                    <div class="flex-1 overflow-y-auto px-8 py-6">
+                        <form @submit.prevent="saveRule()" id="ruleForm">
+                            <div class="space-y-8">
+                                <!-- Section: Basic Information -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-info-circle"></i> Basic Information
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- Category -->
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Category <span class="text-red-500">*</span></label>
+                                            <input type="text"
+                                                   class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                                   x-model="formData.category"
+                                                   placeholder="e.g., Walking and Leg Alignment"
+                                                   required>
+                                        </div>
+
+                                        <!-- Index Code -->
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Index Code</label>
+                                            <div class="relative">
+                                                <input type="text"
+                                                       class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm"
+                                                       x-model="formData.index_code"
+                                                       placeholder="e.g., 01_Core_Gait_and_Alignment">
+                                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                    <span class="text-xs text-slate-400">Unique ID</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+                                            <textarea class="form-control w-full px-4 py-3 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                                      rows="2"
+                                                      x-model="formData.description"
+                                                      placeholder="Brief description of what this rule assesses"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-100">
+
+                                <!-- Section: AI Configuration -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-robot"></i> AI Configuration
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <!-- AI Role -->
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">AI Role</label>
+                                            <input type="text"
+                                                   class="form-control w-full px-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                                   x-model="formData.ai_role"
+                                                   placeholder="e.g., Pediatric Gait Specialist">
+                                            <p class="mt-1.5 text-xs text-slate-500">The persona the AI should adopt during analysis</p>
+                                        </div>
+
+                                        <!-- Reference Video URL -->
+                                        <div class="col-span-1">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Reference Video URL</label>
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <i class="fas fa-link text-slate-400"></i>
+                                                </div>
+                                                <input type="text"
+                                                       class="form-control w-full pl-10 pr-4 py-2.5 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                                       x-model="formData.reference_video_url"
+                                                       placeholder="https://...">
+                                            </div>
+                                        </div>
+
+                                        <!-- Reference Description -->
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Reference Description</label>
+                                            <textarea class="form-control w-full px-4 py-3 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
+                                                      rows="3"
+                                                      x-model="formData.reference_description"
+                                                      placeholder="Describe the standard or ideal movement pattern..."></textarea>
+                                        </div>
+
+                                        <!-- Analysis Instruction -->
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Analysis Instructions</label>
+                                            <div class="relative">
+                                                <textarea class="form-control w-full px-4 py-3 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 bg-slate-50"
+                                                          rows="5"
+                                                          x-model="formData.analysis_instruction"
+                                                          placeholder="Detailed step-by-step instructions for the AI..."></textarea>
+                                                <div class="absolute top-3 right-3">
+                                                    <i class="fas fa-magic text-indigo-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-100">
+
+                                <!-- Section: Standards & Validation -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-clipboard-check"></i> Standards & Validation
+                                    </h3>
+                                    <div class="grid grid-cols-1 gap-6">
+                                        <!-- Text Standards (JSON) -->
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <label class="block text-sm font-semibold text-slate-700">Text Standards (JSON)</label>
+                                                <span class="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">JSON Format</span>
+                                            </div>
+                                            <textarea class="form-control w-full px-4 py-3 rounded-lg border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm bg-slate-900 text-slate-200"
+                                                      rows="8"
+                                                      x-model="formData.text_standards_str"
+                                                      placeholder='{
+  "source_files": "...",
+  "rubric": "..."
+}'></textarea>
+                                        </div>
+
+                                        <!-- Upload Reference Documents -->
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <label class="block text-sm font-semibold text-slate-700">
+                                                    <i class="fas fa-file-upload text-indigo-500 mr-2"></i>
+                                                    Upload Reference Documents
+                                                </label>
+                                                <span class="text-xs text-slate-500 bg-blue-50 text-blue-700 px-2 py-1 rounded">Optional</span>
+                                            </div>
+                                            <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-indigo-400 transition-colors bg-slate-50">
+                                                <input type="file"
+                                                       id="ruleDocuments"
+                                                       @change="handleRuleDocuments($event)"
+                                                       accept=".pdf,.txt,.doc,.docx,.md"
+                                                       multiple
+                                                       class="block w-full text-sm text-slate-500
+                                                              file:mr-4 file:py-2.5 file:px-4
+                                                              file:rounded-lg file:border-0
+                                                              file:text-sm file:font-semibold
+                                                              file:bg-indigo-50 file:text-indigo-700
+                                                              hover:file:bg-indigo-100
+                                                              cursor-pointer">
+                                                <p class="mt-2 text-xs text-slate-500">
+                                                    <i class="fas fa-info-circle mr-1"></i>
+                                                    Upload PDF, TXT, DOC, DOCX, or MD files containing assessment criteria, rubrics, or reference materials (Max 10MB per file)
+                                                </p>
+                                                
+                                                <!-- Existing Files (from database) -->
+                                                <div x-show="formData.existing_files && formData.existing_files.length > 0" class="mt-4 space-y-2">
+                                                    <p class="text-xs font-semibold text-green-600 uppercase tracking-wider">
+                                                        <i class="fas fa-check-circle mr-1"></i>Saved Files:
+                                                    </p>
+                                                    <template x-for="(file, index) in formData.existing_files" :key="'existing-' + index">
+                                                        <div class="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
+                                                            <div class="flex items-center gap-2">
+                                                                <i class="fas fa-file-alt text-green-600"></i>
+                                                                <span class="text-sm text-slate-700" x-text="file.filename"></span>
+                                                                <span class="text-xs text-slate-400" x-text="`(${(file.size / 1024).toFixed(1)} KB)`"></span>
+                                                            </div>
+                                                            <button type="button"
+                                                                    @click="removeExistingFile(index)"
+                                                                    class="text-red-500 hover:text-red-700 text-sm"
+                                                                    title="Remove this file">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                                
+                                                <!-- Uploaded Files List (new uploads) -->
+                                                <div x-show="formData.uploaded_files && formData.uploaded_files.length > 0" class="mt-4 space-y-2">
+                                                    <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                                                        <i class="fas fa-upload mr-1"></i>New Files to Upload:
+                                                    </p>
+                                                    <template x-for="(file, index) in formData.uploaded_files" :key="'new-' + index">
+                                                        <div class="flex items-center justify-between p-2 bg-indigo-50 rounded border border-indigo-200">
+                                                            <div class="flex items-center gap-2">
+                                                                <i class="fas fa-file-alt text-indigo-600"></i>
+                                                                <span class="text-sm text-slate-700" x-text="file.name"></span>
+                                                                <span class="text-xs text-slate-400" x-text="`(${(file.size / 1024).toFixed(1)} KB)`"></span>
+                                                            </div>
+                                                            <button type="button"
+                                                                    @click="removeUploadedFile(index)"
+                                                                    class="text-red-500 hover:text-red-700 text-sm"
+                                                                    title="Remove this file">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Active Status -->
+                                        <div class="flex items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                            <div class="flex items-center h-5">
+                                                <input type="checkbox"
+                                                       id="is_active"
+                                                       class="w-5 h-5 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                                       x-model="formData.is_active">
+                                            </div>
+                                            <div class="ml-3 text-sm">
+                                                <label for="is_active" class="font-medium text-slate-900">Active Rule</label>
+                                                <p class="text-slate-500">Enable this rule to be selectable in movement analysis assessments</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center rounded-b-2xl">
+                        <button type="button" 
+                                class="px-6 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-white hover:border-slate-400 transition-colors" 
+                                @click="closeModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                form="ruleForm"
+                                class="px-6 py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2" 
+                                :disabled="saving">
+                            <span x-show="!saving" x-text="editingRule ? 'Update Rule' : 'Create Rule'"></span>
+                            <span x-show="saving"><i class="fas fa-spinner fa-spin"></i> Saving...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Rule Modal -->
+    <div x-show="showViewModal"
+         x-transition:enter="ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showViewModal = false"></div>
+            
+            <div class="relative w-full max-w-4xl rounded-2xl bg-white shadow-2xl transform transition-all"
+                 @click.away="showViewModal = false">
+                <div class="flex flex-col max-h-[90vh]">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-8 py-6 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Rule Details</h2>
+                            <p class="mt-1 text-sm text-slate-500">Comprehensive view of rule configuration</p>
+                        </div>
+                        <button type="button" class="icon-button hover:bg-slate-100 rounded-full p-2 transition-colors" @click="showViewModal = false">
+                            <i class="fas fa-times text-lg text-slate-400 hover:text-slate-600"></i>
+                        </button>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 overflow-y-auto px-8 py-6">
+                        <template x-if="viewingRule">
+                            <div class="space-y-8">
+                                <!-- Section: Basic Info -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-info-circle"></i> Basic Information
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Category</label>
+                                            <p class="mt-1 text-lg font-medium text-slate-900" x-text="viewingRule.category"></p>
+                                        </div>
+                                        <div x-show="viewingRule.index_code">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Index Code</label>
+                                            <p class="mt-1 text-slate-900 font-mono bg-slate-50 inline-block px-2 py-1 rounded border border-slate-200" x-text="viewingRule.index_code"></p>
+                                        </div>
+                                        <div class="col-span-1 md:col-span-2" x-show="viewingRule.description">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Description</label>
+                                            <p class="mt-1 text-slate-700 leading-relaxed" x-text="viewingRule.description"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-100">
+
+                                <!-- Section: AI Config -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-robot"></i> AI Configuration
+                                    </h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div x-show="viewingRule.ai_role">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">AI Role</label>
+                                            <p class="mt-1 text-slate-900 font-medium" x-text="viewingRule.ai_role"></p>
+                                        </div>
+                                        <div x-show="viewingRule.reference_video_url">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Reference Video</label>
+                                            <a :href="viewingRule.reference_video_url" target="_blank" class="mt-1 flex items-center gap-2 text-indigo-600 hover:text-indigo-800 hover:underline truncate">
+                                                <i class="fas fa-external-link-alt text-xs"></i>
+                                                <span x-text="viewingRule.reference_video_url"></span>
+                                            </a>
+                                        </div>
+                                        <div class="col-span-1 md:col-span-2" x-show="viewingRule.reference_description">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Reference Description</label>
+                                            <div class="mt-2 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                                                <p class="text-slate-700 whitespace-pre-wrap leading-relaxed" x-text="viewingRule.reference_description"></p>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-1 md:col-span-2" x-show="viewingRule.analysis_instruction">
+                                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Analysis Instructions</label>
+                                            <div class="mt-2 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                                                <p class="text-slate-700 whitespace-pre-wrap leading-relaxed" x-text="viewingRule.analysis_instruction"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-100">
+
+                                <!-- Section: Standards -->
+                                <div>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-600 mb-4 flex items-center gap-2">
+                                        <i class="fas fa-clipboard-check"></i> Standards & Validation
+                                    </h3>
+                                    <div x-show="viewingRule.text_standards">
+                                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 block">Text Standards (JSON)</label>
+                                        <pre class="p-4 bg-slate-900 text-slate-200 rounded-lg text-sm overflow-x-auto font-mono shadow-inner" x-text="JSON.stringify(viewingRule.text_standards, null, 2)"></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-8 py-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center rounded-b-2xl">
+                        <div class="flex items-center gap-4">
+                            <span class="badge" :class="viewingRule?.is_active ? 'badge-success' : 'badge-neutral'" x-text="viewingRule?.is_active ? 'Active' : 'Inactive'"></span>
+                            <span class="text-sm text-slate-500">Created: <span x-text="formatDate(viewingRule?.created_at)"></span></span>
+                        </div>
+                        <button type="button" 
+                                class="px-6 py-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors shadow-sm" 
+                                @click="showViewModal = false">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal"
+         x-transition
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div class="fixed inset-0 bg-black/50" @click="showDeleteModal = false"></div>
+            
+            <div class="relative w-full max-w-md rounded-2xl bg-white shadow-xl p-6">
+                <div class="text-center">
+                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600"></i>
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-slate-900">Delete Movement Analysis Rule</h3>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Are you sure you want to delete "<span x-text="deletingRule?.category" class="font-medium"></span>"? This action cannot be undone.
+                    </p>
+                    <div class="flex justify-center gap-3 mt-6">
+                        <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
+                        <button type="button" class="btn bg-red-600 text-white hover:bg-red-700" @click="deleteRule()">
+                            <i class="fas fa-trash"></i> Delete Rule
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assessmentRulesPage() {
+    return {
+        rules: [],
+        loading: true,
+        searchQuery: '',
+        activeFilter: 'all',
+        currentPage: 1,
+        pageSize: 20,
+        totalRules: 0,
+        totalPages: 0,
+        
+        // Tab state
+        activeTab: 'rules',  // 'rules', 'upload', or 'analysis'
+        
+        stats: {
+            total: 0,
+            active: 0,
+            inactive: 0,
+            categories: 0
+        },
+        
+        showModal: false,
+        showViewModal: false,
+        showDeleteModal: false,
+        
+        editingRule: null,
+        viewingRule: null,
+        deletingRule: null,
+        saving: false,
+        
+        // Standard video upload
+        uploading: false,
+        uploadForm: {
+            movement_title: '',
+            video_file: null
+        },
+        
+        formData: {
+            category: '',
+            index_code: '',
+            description: '',
+            ai_role: '',
+            reference_video_url: '',
+            reference_description: '',
+            analysis_instruction: '',
+            text_standards_str: '',
+            is_active: true
+        },
+        
+        async init() {
+            await this.loadRules();
+        },
+        
+        async loadRules() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({
+                    page: this.currentPage,
+                    limit: this.pageSize,
+                    active_only: this.activeFilter === 'active'
+                });
+                
+                if (this.searchQuery) {
+                    params.append('category', this.searchQuery);
+                }
+                
+                const response = await fetch(`/api/v1/movement-analysis/rules?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load rules');
+                
+                const data = await response.json();
+                this.rules = data.rules || [];
+                this.totalRules = data.total || 0;
+                this.totalPages = data.pages || 1;
+                
+                // Calculate stats
+                this.stats.total = this.totalRules;
+                this.stats.active = this.rules.filter(r => r.is_active).length;
+                this.stats.inactive = this.rules.filter(r => !r.is_active).length;
+                const categories = new Set(this.rules.map(r => r.category));
+                this.stats.categories = categories.size;
+                
+            } catch (error) {
+                console.error('Error loading rules:', error);
+                Alpine.store('toast')?.show('Failed to load movement analysis rules', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        get visiblePages() {
+            const pages = [];
+            const start = Math.max(1, this.currentPage - 2);
+            const end = Math.min(this.totalPages, this.currentPage + 2);
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            return pages;
+        },
+        
+        goToPage(page) {
+            if (page >= 1 && page <= this.totalPages) {
+                this.currentPage = page;
+                this.loadRules();
+            }
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        },
+        
+        openCreateRule() {
+            this.editingRule = null;
+            this.formData = {
+                category: '',
+                index_code: '',
+                description: '',
+                ai_role: '',
+                reference_video_url: '',
+                reference_description: '',
+                analysis_instruction: '',
+                text_standards_str: '',
+                is_active: true,
+                uploaded_files: [],
+                existing_files: []
+            };
+            this.showModal = true;
+        },
+        
+        editRule(rule) {
+            this.editingRule = rule;
+            
+            // Extract existing uploaded documents from text_standards
+            console.log('Editing rule:', rule);
+            console.log('text_standards:', rule.text_standards);
+            const existingFiles = rule.text_standards?.uploaded_documents || [];
+            console.log('Existing files found:', existingFiles);
+            
+            this.formData = {
+                category: rule.category || '',
+                index_code: rule.index_code || '',
+                description: rule.description || '',
+                ai_role: rule.ai_role || '',
+                reference_video_url: rule.reference_video_url || '',
+                reference_description: rule.reference_description || '',
+                analysis_instruction: rule.analysis_instruction || '',
+                text_standards_str: rule.text_standards ? JSON.stringify(rule.text_standards, null, 2) : '',
+                is_active: rule.is_active,
+                uploaded_files: [],
+                existing_files: existingFiles.map(f => ({
+                    filename: f.filename,
+                    size: f.size,
+                    content_type: f.content_type,
+                    isExisting: true
+                }))
+            };
+            console.log('Form data existing_files:', this.formData.existing_files);
+            this.showModal = true;
+        },
+        
+        handleRuleDocuments(event) {
+            const files = Array.from(event.target.files);
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            console.log('Files selected:', files);
+            
+            for (const file of files) {
+                if (file.size > maxSize) {
+                    Alpine.store('toast')?.show(`File "${file.name}" is too large. Maximum size is 10MB`, 'error');
+                    continue;
+                }
+                
+                // Check if file already exists
+                const exists = this.formData.uploaded_files.some(f => f.name === file.name);
+                if (!exists) {
+                    this.formData.uploaded_files.push(file);
+                    console.log('Added file:', file.name, 'Size:', file.size);
+                }
+            }
+            
+            console.log('Total uploaded_files:', this.formData.uploaded_files.length);
+            
+            // Reset input to allow re-uploading same file
+            event.target.value = '';
+        },
+        
+        removeUploadedFile(index) {
+            this.formData.uploaded_files.splice(index, 1);
+        },
+        
+        removeExistingFile(index) {
+            this.formData.existing_files.splice(index, 1);
+        },
+        
+        viewRule(rule) {
+            this.viewingRule = rule;
+            this.showViewModal = true;
+        },
+        
+        closeModal() {
+            this.showModal = false;
+            this.editingRule = null;
+        },
+        
+        async saveRule() {
+            this.saving = true;
+            try {
+                console.log('=== SAVE RULE START ===');
+                console.log('Editing rule:', this.editingRule);
+                console.log('Uploaded files count:', this.formData.uploaded_files?.length || 0);
+                console.log('Existing files count:', this.formData.existing_files?.length || 0);
+                
+                // Parse text_standards JSON
+                let textStandards = null;
+                if (this.formData.text_standards_str) {
+                    try {
+                        textStandards = JSON.parse(this.formData.text_standards_str);
+                    } catch (e) {
+                        Alpine.store('toast')?.show('Invalid JSON in Text Standards', 'error');
+                        this.saving = false;
+                        return;
+                    }
+                }
+                
+                // Preserve existing files when editing
+                if (this.editingRule && this.formData.existing_files && this.formData.existing_files.length > 0) {
+                    if (!textStandards) {
+                        textStandards = {};
+                    }
+                    // Keep the existing files that weren't removed
+                    textStandards.uploaded_documents = this.formData.existing_files.map(f => ({
+                        filename: f.filename,
+                        size: f.size,
+                        content_type: f.content_type
+                    }));
+                    console.log('Preserved existing files:', textStandards.uploaded_documents.length);
+                }
+                
+                const url = this.editingRule 
+                    ? (this.formData.uploaded_files && this.formData.uploaded_files.length > 0 
+                        ? `/api/v1/movement-analysis/rules/upload/${this.editingRule.id}`
+                        : `/api/v1/movement-analysis/rules/${this.editingRule.id}`)
+                    : (this.formData.uploaded_files && this.formData.uploaded_files.length > 0 
+                        ? '/api/v1/movement-analysis/rules/upload'
+                        : '/api/v1/movement-analysis/rules');
+                
+                console.log('Request URL:', url);
+                console.log('Method:', this.editingRule ? 'PUT' : 'POST');
+                
+                const method = this.editingRule ? 'PUT' : 'POST';
+                
+                let response;
+                
+                // If there are uploaded files, use FormData
+                if (this.formData.uploaded_files && this.formData.uploaded_files.length > 0) {
+                    console.log('Using FormData (has new files)');
+                    const formData = new FormData();
+                    formData.append('category', this.formData.category);
+                    if (this.formData.index_code) formData.append('index_code', this.formData.index_code);
+                    if (this.formData.description) formData.append('description', this.formData.description);
+                    if (this.formData.ai_role) formData.append('ai_role', this.formData.ai_role);
+                    if (this.formData.reference_video_url) formData.append('reference_video_url', this.formData.reference_video_url);
+                    if (this.formData.reference_description) formData.append('reference_description', this.formData.reference_description);
+                    if (this.formData.analysis_instruction) formData.append('analysis_instruction', this.formData.analysis_instruction);
+                    if (textStandards) {
+                        console.log('Adding text_standards to FormData:', textStandards);
+                        formData.append('text_standards', JSON.stringify(textStandards));
+                    }
+                    formData.append('is_active', this.formData.is_active);
+                    
+                    // Append new files
+                    for (const file of this.formData.uploaded_files) {
+                        formData.append('documents', file);
+                        console.log('Appending file:', file.name);
+                    }
+                    
+                    response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: formData
+                    });
+                } else {
+                    console.log('Using JSON (no new files)');
+                    const payload = {
+                        category: this.formData.category,
+                        index_code: this.formData.index_code || null,
+                        description: this.formData.description || null,
+                        ai_role: this.formData.ai_role || null,
+                        reference_video_url: this.formData.reference_video_url || null,
+                        reference_description: this.formData.reference_description || null,
+                        analysis_instruction: this.formData.analysis_instruction || null,
+                        text_standards: textStandards,
+                        is_active: this.formData.is_active
+                    };
+                    
+                    response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    
+                    // Check if it's an auth error
+                    if (response.status === 401) {
+                        Alpine.store('toast')?.show(
+                            'Your session has expired. Please refresh the page or log in again.',
+                            'error',
+                            8000
+                        );
+                        throw new Error('Session expired');
+                    }
+                    
+                    throw new Error(error.detail || 'Failed to save rule');
+                }
+                
+                const result = await response.json();
+                
+                Alpine.store('toast')?.show(
+                    this.editingRule ? 'Rule updated successfully' : 'Rule created successfully',
+                    'success'
+                );
+                
+                this.closeModal();
+                await this.loadRules();
+                
+            } catch (error) {
+                console.error('Error saving rule:', error);
+                Alpine.store('toast')?.show(error.message, 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+        
+        async toggleRule(rule) {
+            try {
+                const response = await fetch(`/api/v1/movement-analysis/rules/${rule.id}/toggle?is_active=${!rule.is_active}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to toggle rule');
+                
+                rule.is_active = !rule.is_active;
+                Alpine.store('toast')?.show(
+                    `Rule ${rule.is_active ? 'activated' : 'deactivated'}`,
+                    'success'
+                );
+                
+            } catch (error) {
+                console.error('Error toggling rule:', error);
+                Alpine.store('toast')?.show('Failed to update rule status', 'error');
+            }
+        },
+        
+        confirmDelete(rule) {
+            this.deletingRule = rule;
+            this.showDeleteModal = true;
+        },
+        
+        async deleteRule() {
+            if (!this.deletingRule) return;
+            
+            try {
+                const response = await fetch(`/api/v1/movement-analysis/rules/${this.deletingRule.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete rule');
+                
+                Alpine.store('toast')?.show('Rule deleted successfully', 'success');
+                this.showDeleteModal = false;
+                this.deletingRule = null;
+                await this.loadRules();
+                
+            } catch (error) {
+                console.error('Error deleting rule:', error);
+                Alpine.store('toast')?.show('Failed to delete rule', 'error');
+            }
+        },
+        
+        // Standard Video Upload Functions
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.uploadForm.video_file = file;
+                console.log('Selected file:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            }
+        },
+        
+        async uploadStandardVideo() {
+            if (!this.uploadForm.movement_title || !this.uploadForm.video_file) {
+                Alpine.store('toast')?.show('Please provide both movement name and video file', 'error');
+                return;
+            }
+            
+            // Validate file size (150MB)
+            const maxSize = 150 * 1024 * 1024;
+            if (this.uploadForm.video_file.size > maxSize) {
+                Alpine.store('toast')?.show('Video file is too large. Maximum size is 150MB', 'error');
+                return;
+            }
+            
+            this.uploading = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('movement_title', this.uploadForm.movement_title);
+                formData.append('video', this.uploadForm.video_file);
+                
+                const response = await fetch('/api/v1/movement-analysis/upload-standard-video', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    
+                    // Check if it's an auth error
+                    if (response.status === 401) {
+                        Alpine.store('toast')?.show(
+                            'Your session has expired. Please refresh the page or log in again.',
+                            'error',
+                            8000
+                        );
+                        throw new Error('Session expired');
+                    }
+                    
+                    throw new Error(error.detail || 'Upload failed');
+                }
+                
+                const result = await response.json();
+                
+                Alpine.store('toast')?.show(
+                    `✨ ${result.message}! Rule created: "${result.rule.category}" (inactive - review and activate)`,
+                    'success',
+                    5000
+                );
+                
+                // Reset form
+                this.uploadForm.movement_title = '';
+                this.uploadForm.video_file = null;
+                document.getElementById('standardVideoFile').value = '';
+                
+                // Reload rules and switch to rules tab
+                await this.loadRules();
+                this.activeTab = 'rules';
+                
+                // Optionally open the newly created rule for editing
+                if (result.rule) {
+                    setTimeout(() => {
+                        this.editRule(result.rule);
+                    }, 500);
+                }
+                
+            } catch (error) {
+                console.error('Error uploading standard video:', error);
+                Alpine.store('toast')?.show(
+                    error.message || 'Failed to upload and analyze video',
+                    'error'
+                );
+            } finally {
+                this.uploading = false;
+            }
+        },
+        
+        // Video Analysis Functions
+        analysisForm: {
+            rule_id: '',
+            age_value: '',
+            age_unit: 'year',
+            child_description: '',
+            video_file: null
+        },
+        analysisUploading: false,
+        analysisProcessing: false,
+        analysisComplete: false,
+        analysisProgress: 0,
+        analysisStatus: 'Extracting frames and analyzing...',
+        analysisResult: null,
+        currentAssessmentId: null,
+        analysisPollInterval: null,
+        
+        handleAnalysisVideoSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            if (!allowedTypes.includes(file.type)) {
+                Alpine.store('toast')?.show('Please select a valid video file (MP4, MOV, AVI, or WebM)', 'error');
+                return;
+            }
+            
+            // Validate file size (100MB)
+            const maxSize = 100 * 1024 * 1024;
+            if (file.size > maxSize) {
+                Alpine.store('toast')?.show('Video file is too large. Maximum size is 100MB', 'error');
+                return;
+            }
+            
+            this.analysisForm.video_file = file;
+        },
+        
+        clearAnalysisVideo() {
+            this.analysisForm.video_file = null;
+            const fileInput = this.$refs.videoAnalysisFile;
+            if (fileInput) fileInput.value = '';
+        },
+        
+        async submitVideoAnalysis() {
+            if (!this.analysisForm.video_file) {
+                Alpine.store('toast')?.show('Please select a video file first', 'error');
+                return;
+            }
+            
+            this.analysisUploading = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('video', this.analysisForm.video_file);
+                
+                if (this.analysisForm.rule_id) formData.append('rule_id', this.analysisForm.rule_id);
+                if (this.analysisForm.age_value) formData.append('age_value', this.analysisForm.age_value);
+                if (this.analysisForm.age_unit) formData.append('age_unit', this.analysisForm.age_unit);
+                if (this.analysisForm.child_description) formData.append('child_description', this.analysisForm.child_description);
+                
+                const response = await fetch('/api/v1/movement-analysis/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Upload failed');
+                }
+                
+                const result = await response.json();
+                this.currentAssessmentId = result.assessment_id;
+                
+                // Switch to processing state
+                this.analysisUploading = false;
+                this.analysisProcessing = true;
+                this.analysisProgress = 30;
+                
+                // Start polling for status
+                this.startAnalysisPolling();
+                
+            } catch (error) {
+                console.error('Video analysis upload error:', error);
+                Alpine.store('toast')?.show(error.message || 'Failed to upload video', 'error');
+                this.analysisUploading = false;
+            }
+        },
+        
+        startAnalysisPolling() {
+            let pollCount = 0;
+            const maxPolls = 60; // 5 minutes max
+            
+            this.analysisPollInterval = setInterval(async () => {
+                pollCount++;
+                
+                if (pollCount > maxPolls) {
+                    clearInterval(this.analysisPollInterval);
+                    this.analysisStatus = 'Analysis timed out. Please try again.';
+                    Alpine.store('toast')?.show('Analysis timed out', 'error');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/v1/movement-analysis/status/${this.currentAssessmentId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to get status');
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(this.analysisPollInterval);
+                        this.analysisProcessing = false;
+                        this.analysisComplete = true;
+                        this.analysisProgress = 100;
+                        this.analysisResult = data.result;
+                        Alpine.store('toast')?.show('Analysis complete!', 'success');
+                    } else if (data.status === 'failed') {
+                        clearInterval(this.analysisPollInterval);
+                        this.analysisProcessing = false;
+                        this.analysisStatus = `Error: ${data.error_message || 'Processing failed'}`;
+                        Alpine.store('toast')?.show('Analysis failed', 'error');
+                    } else {
+                        // Still processing
+                        this.analysisProgress = Math.min(30 + pollCount * 2, 90);
+                        this.analysisStatus = 'Extracting frames and analyzing movement patterns...';
+                    }
+                } catch (error) {
+                    console.error('Error polling status:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        },
+        
+        formatAnalysisResult(result) {
+            if (!result) return '<p class="text-slate-500">No result available</p>';
+            
+            if (result.user_view_md) {
+                // Simple markdown-to-HTML conversion
+                let html = result.user_view_md
+                    .replace(/^### (.*$)/gm, '<h4 class="text-lg font-semibold text-indigo-700 mt-4 mb-2">$1</h4>')
+                    .replace(/^## (.*$)/gm, '<h3 class="text-xl font-semibold text-indigo-800 mt-5 mb-3">$1</h3>')
+                    .replace(/^# (.*$)/gm, '<h2 class="text-2xl font-bold text-indigo-900 mt-6 mb-4">$1</h2>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-900">$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+                    .replace(/\n\n/g, '</p><p class="text-slate-700 leading-relaxed mb-3">')
+                    .replace(/\n/g, '<br>');
+                
+                return `<div class="prose prose-sm max-w-none"><p class="text-slate-700 leading-relaxed mb-3">${html}</p></div>`;
+            }
+            
+            return '<p class="text-slate-500">Analysis completed. Results are being processed.</p>';
+        },
+        
+        resetAnalysisForm() {
+            this.analysisForm = {
+                rule_id: '',
+                age_value: '',
+                age_unit: 'year',
+                child_description: '',
+                video_file: null
+            };
+            this.analysisUploading = false;
+            this.analysisProcessing = false;
+            this.analysisComplete = false;
+            this.analysisProgress = 0;
+            this.analysisStatus = 'Extracting frames and analyzing...';
+            this.analysisResult = null;
+            this.currentAssessmentId = null;
+            
+            if (this.analysisPollInterval) {
+                clearInterval(this.analysisPollInterval);
+                this.analysisPollInterval = null;
+            }
+            
+            // Clear file input
+            const fileInput = this.$refs.videoAnalysisFile;
+            if (fileInput) fileInput.value = '';
+        },
+        
+        downloadAnalysisResult() {
+            if (!this.analysisResult || !this.analysisResult.user_view_md) {
+                Alpine.store('toast')?.show('No result available to download', 'error');
+                return;
+            }
+            
+            // Create a blob from the markdown content
+            const blob = new Blob([this.analysisResult.user_view_md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `movement-analysis-${this.currentAssessmentId || 'result'}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Alpine.store('toast')?.show('Result downloaded', 'success');
+        }
+    };
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movement Analysis - Healthcare AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            color: var(--gray-700);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--gray-900);
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray-500);
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary);
+            background: var(--gray-100);
+        }
+        
+        .nav-link.active {
+            color: var(--primary);
+            background: #dbeafe;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-50);
+        }
+        
+        .page-header {
+            margin-bottom: 32px;
+        }
+        
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .page-header p {
+            color: var(--gray-500);
+            font-size: 1rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .card-body {
+            padding: 24px;
+        }
+        
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-700);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .drop-zone {
+            border: 2px dashed var(--gray-200);
+            border-radius: 16px;
+            padding: 48px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--gray-50);
+        }
+        
+        .drop-zone:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: #dbeafe;
+        }
+        
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .drop-zone-text {
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+        
+        .drop-zone-hint {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+        
+        .file-selected {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #ecfdf5;
+            border-radius: 10px;
+            margin-top: 12px;
+        }
+        
+        .file-selected i {
+            color: var(--success);
+        }
+        
+        .file-name {
+            flex: 1;
+            font-weight: 500;
+            color: var(--success);
+        }
+        
+        .file-remove {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            gap: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            background: #eff6ff;
+        }
+        
+        .history-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .history-icon.completed {
+            background: #dcfce7;
+            color: var(--success);
+        }
+        
+        .history-icon.pending {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+        
+        .history-icon.failed {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+        
+        .history-content {
+            flex: 1;
+        }
+        
+        .history-title {
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+        
+        .history-meta {
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-badge.processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: var(--gray-500);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .progress-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        
+        .progress-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .progress-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8b5cf6);
+            border-radius: 3px;
+            transition: width 0.5s;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--gray-100);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/live2d" class="logo">
+                <div class="logo-icon">🏥</div>
+                <span class="logo-text">Healthcare AI</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/live2d" class="nav-link">Live2D Chat</a>
+                <a href="/movement-analysis" class="nav-link active">Movement Analysis</a>
+                {% if is_authenticated %}
+                <a href="/movement-analysis/history" class="nav-link">History</a>
+                {% if can_manage_rules %}
+                <a href="/admin/movement-analysis-rules" class="nav-link">Manage Rules</a>
+                {% endif %}
+                <span class="user-badge">
+                    <i class="fas fa-user"></i>
+                    {{ user.username if user else 'User' }}
+                </span>
+                {% else %}
+                <a href="/live2d/auth" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>🎬 Movement Analysis</h1>
+            <p>Upload a video of your child's movement for AI-powered screening</p>
+        </div>
+
+        <div class="upload-section">
+            <!-- Upload Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-cloud-arrow-up" style="color: var(--primary); margin-right: 8px;"></i>
+                        Upload Video
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form id="assessmentForm">
+                        <div class="form-group">
+                            <label class="form-label">Analysis Type</label>
+                            <select id="ruleSelect" class="form-control">
+                                <option value="">Select analysis type...</option>
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label class="form-label">Child's Age</label>
+                                <input type="number" id="ageValue" class="form-control" min="0" max="18" step="0.5" placeholder="Age">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Unit</label>
+                                <select id="ageUnit" class="form-control">
+                                    <option value="year">Years</option>
+                                    <option value="month">Months</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Notes (Optional)</label>
+                            <textarea id="notes" class="form-control" rows="2" placeholder="Any additional notes about the child..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Video File</label>
+                            <div class="drop-zone" id="dropZone">
+                                <div class="drop-zone-icon">📹</div>
+                                <p class="drop-zone-text">Drag & drop your video here or click to browse</p>
+                                <p class="drop-zone-hint">MP4, MOV, AVI, WebM (max 100MB)</p>
+                            </div>
+                            <input type="file" id="videoInput" accept="video/*" style="display: none;">
+                            <div id="fileSelected" class="file-selected" style="display: none;">
+                                <i class="fas fa-video"></i>
+                                <span class="file-name" id="fileName"></span>
+                                <button type="button" class="file-remove" onclick="clearFile()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            <i class="fas fa-rocket"></i> Start Analysis
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent History -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-history" style="color: var(--primary); margin-right: 8px;"></i>
+                        Recent Analyses
+                    </h2>
+                    {% if is_authenticated %}
+                    <a href="/movement-analysis/history" class="btn btn-secondary btn-sm">View All</a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div id="historyList" class="history-list">
+                        <div class="empty-state">
+                            <i class="fas fa-clipboard-list"></i>
+                            <p>No analyses yet</p>
+                            <p style="font-size: 13px;">Upload a video to get started</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Progress Modal -->
+    <div id="progressModal" class="progress-modal" style="display: none;">
+        <div class="progress-card">
+            <div class="progress-icon">⏳</div>
+            <h3 style="margin-bottom: 8px;">Processing Video...</h3>
+            <p id="progressStatus" style="color: var(--gray-500);">Extracting frames and analyzing...</p>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 30%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let assessmentRules = [];
+        let currentAssessmentId = null;
+        let pollInterval = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadRules();
+            await loadHistory();
+            setupDropZone();
+            setupForm();
+        });
+
+        async function loadRules() {
+            try {
+                const response = await fetch('/api/v1/assessment/rules/active');
+                if (response.ok) {
+                    const data = await response.json();
+                    assessmentRules = data.rules || [];
+                    const select = document.getElementById('ruleSelect');
+                    assessmentRules.forEach(rule => {
+                        const option = document.createElement('option');
+                        option.value = rule.id;
+                        option.textContent = rule.category;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading rules:', error);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/v1/assessment/history/me', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderHistory(data.history || []);
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('historyList');
+            
+            if (!history.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No movement analyses yet</p>
+                        <p style="font-size: 13px;">Upload a video to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = history.slice(0, 5).map(item => `
+                <div class="history-item" onclick="window.location.href='/movement-analysis/${item.id}'">
+                    <div class="history-icon ${item.status}">
+                        <i class="fas ${item.status === 'completed' ? 'fa-check' : item.status === 'failed' ? 'fa-times' : 'fa-clock'}"></i>
+                    </div>
+                    <div class="history-content">
+                        <div class="history-title">${item.rule_category || 'General Assessment'}</div>
+                        <div class="history-meta">
+                            ${item.age_value ? `Age: ${item.age_value} ${item.age_unit || 'years'} · ` : ''}
+                            ${formatDate(item.created_at)}
+                        </div>
+                    </div>
+                    <span class="status-badge ${item.status}">${item.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function setupDropZone() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('videoInput');
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFileSelect(file);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFileSelect(file);
+            });
+        }
+
+        function handleFileSelect(file) {
+            const allowedTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please select a valid video file (MP4, MOV, AVI, or WebM)');
+                return;
+            }
+
+            if (file.size > 100 * 1024 * 1024) {
+                alert('Video file is too large. Maximum size is 100MB.');
+                return;
+            }
+
+            selectedFile = file;
+            document.getElementById('fileName').textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+            document.getElementById('fileSelected').style.display = 'flex';
+            document.getElementById('dropZone').style.display = 'none';
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('videoInput').value = '';
+            document.getElementById('fileSelected').style.display = 'none';
+            document.getElementById('dropZone').style.display = 'block';
+        }
+
+        function setupForm() {
+            document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (!selectedFile) {
+                    alert('Please select a video file first.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('video', selectedFile);
+                
+                const ruleId = document.getElementById('ruleSelect').value;
+                const age = document.getElementById('ageValue').value;
+                const ageUnit = document.getElementById('ageUnit').value;
+                const notes = document.getElementById('notes').value;
+                
+                if (ruleId) formData.append('rule_id', ruleId);
+                if (age) formData.append('age_value', age);
+                if (ageUnit) formData.append('age_unit', ageUnit);
+                if (notes) formData.append('child_description', notes);
+
+                // Show progress modal
+                document.getElementById('progressModal').style.display = 'flex';
+
+                try {
+                    const response = await fetch('/api/v1/assessment/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Upload failed');
+                    }
+
+                    const result = await response.json();
+                    currentAssessmentId = result.assessment_id;
+                    pollStatus();
+
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    document.getElementById('progressStatus').textContent = `Error: ${error.message}`;
+                    document.getElementById('progressFill').style.background = 'var(--danger)';
+                }
+            });
+        }
+
+        function pollStatus() {
+            let pollCount = 0;
+            const maxPolls = 60;
+
+            pollInterval = setInterval(async () => {
+                pollCount++;
+
+                if (pollCount > maxPolls) {
+                    clearInterval(pollInterval);
+                    document.getElementById('progressStatus').textContent = 'Assessment timed out. Please check history.';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/v1/assessment/status/${currentAssessmentId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to get status');
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        window.location.href = `/movement-analysis/${currentAssessmentId}`;
+                    } else if (data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        document.getElementById('progressStatus').textContent = `Error: ${data.error_message || 'Processing failed'}`;
+                        document.getElementById('progressFill').style.background = 'var(--danger)';
+                    } else {
+                        const progress = Math.min(30 + pollCount * 2, 90);
+                        document.getElementById('progressFill').style.width = `${progress}%`;
+                    }
+                } catch (error) {
+                    console.error('Error polling status:', error);
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

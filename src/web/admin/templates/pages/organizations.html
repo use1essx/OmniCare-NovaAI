@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Organizations Management{% endblock %}
+
+{% block content %}
+<div class="w-full px-6 py-6 mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-1 flex items-center">
+                <i class="fas fa-building text-blue-600 mr-3"></i>Organizations Management
+            </h2>
+            <p class="text-slate-500 text-sm">Manage healthcare organizations and their settings</p>
+        </div>
+        <button class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm hover:shadow-md" data-bs-toggle="modal" data-bs-target="#addOrgModal">
+            <i class="fas fa-plus mr-2"></i>Add Organization
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Organizations -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-building fa-3x text-blue-600"></i>
+            </div>
+            <div class="relative z-10">
+                <h6 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Total Organizations</h6>
+                <h2 class="text-3xl font-bold text-slate-800" id="totalOrgs">-</h2>
+                <div class="mt-2 text-xs text-green-600 flex items-center font-medium">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span>12% increase</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+        </div>
+
+        <!-- Active Organizations -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-check-circle fa-3x text-green-600"></i>
+            </div>
+            <div class="relative z-10">
+                <h6 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Active</h6>
+                <h2 class="text-3xl font-bold text-slate-800" id="activeOrgs">-</h2>
+                <div class="mt-2 text-xs text-slate-400 flex items-center font-medium">
+                    <span>Currently operational</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-500"></div>
+        </div>
+
+        <!-- Total Users -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-users fa-3x text-cyan-600"></i>
+            </div>
+            <div class="relative z-10">
+                <h6 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Total Users</h6>
+                <h2 class="text-3xl font-bold text-slate-800" id="totalUsers">-</h2>
+                <div class="mt-2 text-xs text-cyan-600 flex items-center font-medium">
+                    <i class="fas fa-user-plus mr-1"></i>
+                    <span>5 new today</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
+        </div>
+
+        <!-- Hospitals -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fas fa-hospital fa-3x text-rose-500"></i>
+            </div>
+            <div class="relative z-10">
+                <h6 class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-1">Hospitals</h6>
+                <h2 class="text-3xl font-bold text-slate-800" id="hospitalCount">-</h2>
+                <div class="mt-2 text-xs text-slate-400 flex items-center font-medium">
+                    <span>Major partners</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-rose-500"></div>
+        </div>
+    </div>
+
+    <!-- Organizations Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/50">
+            <h5 class="font-semibold text-slate-800">Organizations List</h5>
+            <div class="relative w-full md:w-64">
+                <input type="text" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" id="searchOrg" placeholder="Search organizations...">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="orgsTable">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                        <th class="px-6 py-4">ID</th>
+                        <th class="px-6 py-4">Name</th>
+                        <th class="px-6 py-4">Type</th>
+                        <th class="px-6 py-4">Users</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Created</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="orgsTableBody" class="divide-y divide-slate-100">
+                    <tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination (Static for now) -->
+        <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
+            <div class="text-xs text-slate-500">Showing <span class="font-medium text-slate-700">1</span> to <span class="font-medium text-slate-700">10</span> of <span class="font-medium text-slate-700">24</span> results</div>
+            <div class="flex gap-2">
+                <button class="px-3 py-1 border border-slate-200 rounded text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50" disabled>Previous</button>
+                <button class="px-3 py-1 border border-slate-200 rounded text-xs font-medium text-slate-600 hover:bg-slate-50">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Organization Modal -->
+<div id="addOrgModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="toggleModal('addOrgModal')"></div>
+
+        <!-- Modal panel -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-building text-blue-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">Add New Organization</h3>
+                        <div class="mt-4">
+                            <form id="addOrgForm" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Organization Name</label>
+                                    <input type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border" name="name" required placeholder="e.g. City General Hospital">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                                    <select class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border bg-white" name="type" required>
+                                        <option value="hospital">Hospital</option>
+                                        <option value="clinic">Clinic</option>
+                                        <option value="ngo">NGO</option>
+                                        <option value="social_service">Social Service</option>
+                                        <option value="mental_health">Mental Health Center</option>
+                                        <option value="research">Research Institution</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                    <textarea class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border" name="description" rows="3" placeholder="Brief description..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm" onclick="createOrg()">
+                    Create
+                </button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModal('addOrgModal')">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Organization Modal -->
+<div id="editOrgModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="toggleModal('editOrgModal')"></div>
+
+        <!-- Modal panel -->
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-edit text-amber-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900" id="edit-modal-title">Edit Organization</h3>
+                        <div class="mt-4">
+                            <form id="editOrgForm" class="space-y-4">
+                                <input type="hidden" id="editOrgId" name="id">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Organization Name</label>
+                                    <input type="text" class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border" id="editOrgName" name="name" required placeholder="e.g. City General Hospital">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                                    <select class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border bg-white" id="editOrgType" name="type" required>
+                                        <option value="hospital">Hospital</option>
+                                        <option value="clinic">Clinic</option>
+                                        <option value="ngo">NGO</option>
+                                        <option value="social_service">Social Service</option>
+                                        <option value="mental_health">Mental Health Center</option>
+                                        <option value="research">Research Institution</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                    <textarea class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 px-3 border" id="editOrgDescription" name="description" rows="3" placeholder="Brief description..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-amber-600 text-base font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 sm:ml-3 sm:w-auto sm:text-sm" onclick="updateOrg()">
+                    Update
+                </button>
+                <button type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModal('editOrgModal')">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div></div>
+
+<script>
+// Modal Toggle Helper
+function toggleModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+// Bind modal trigger
+document.querySelectorAll('[data-bs-toggle="modal"]').forEach(trigger => {
+    trigger.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-bs-target').substring(1); // remove #
+        toggleModal(targetId);
+    });
+});
+
+async function loadOrganizations() {
+    try {
+        const response = await fetch('/api/v1/organizations/');
+        const data = await response.json();
+        
+        const orgs = data.organizations || data || [];
+        
+        // Update stats
+        document.getElementById('totalOrgs').textContent = orgs.length;
+        document.getElementById('activeOrgs').textContent = orgs.filter(o => o.is_active !== false).length;
+        document.getElementById('hospitalCount').textContent = orgs.filter(o => o.type === 'hospital').length;
+        
+        // Calculate total users
+        let totalUsers = 0;
+        orgs.forEach(o => totalUsers += (o.user_count || 0));
+        document.getElementById('totalUsers').textContent = totalUsers;
+        
+        // Render table
+        const tbody = document.getElementById('orgsTableBody');
+        if (orgs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No organizations found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = orgs.map(org => `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-4 text-sm text-slate-500 font-mono">${org.id}</td>
+                <td class="px-6 py-4 text-sm font-medium text-slate-900">${org.name}</td>
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ${org.type || 'N/A'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-500">${org.user_count || 0}</td>
+                <td class="px-6 py-4 text-sm">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full ${org.is_active !== false ? 'bg-green-500' : 'bg-red-500'}"></span>
+                        ${org.is_active !== false ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-500">${org.created_at ? new Date(org.created_at).toLocaleDateString() : 'N/A'}</td>
+                <td class="px-6 py-4 text-sm text-right space-x-2">
+                    <button class="text-blue-600 hover:text-blue-900 transition-colors" onclick="editOrg(${org.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-900 transition-colors" onclick="deleteOrg(${org.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading organizations:', error);
+        document.getElementById('orgsTableBody').innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-red-500">Error loading data</td></tr>';
+    }
+}
+
+async function createOrg() {
+    const form = document.getElementById('addOrgForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/v1/organizations/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            toggleModal('addOrgModal');
+            form.reset();
+            loadOrganizations();
+            // You might want to replace this with a toast notification
+            alert('Organization created successfully!');
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.detail || 'Failed to create organization'));
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function deleteOrg(id) {
+    if (!confirm('Are you sure you want to delete this organization?')) return;
+    
+    try {
+        const response = await fetch(`/api/v1/organizations/${id}`, {method: 'DELETE'});
+        if (response.ok) {
+            loadOrganizations();
+        } else {
+            alert('Failed to delete organization');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function editOrg(id) {
+    try {
+        // Fetch organization details
+        const response = await fetch(`/api/v1/organizations/${id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch organization details');
+        }
+        
+        const org = await response.json();
+        
+        // Populate the edit form
+        document.getElementById('editOrgId').value = org.id;
+        document.getElementById('editOrgName').value = org.name || '';
+        document.getElementById('editOrgType').value = org.type || 'hospital';
+        document.getElementById('editOrgDescription').value = org.description || '';
+        
+        // Show the edit modal
+        toggleModal('editOrgModal');
+    } catch (error) {
+        console.error('Error loading organization:', error);
+        alert('Error: Failed to load organization details');
+    }
+}
+
+async function updateOrg() {
+    const form = document.getElementById('editOrgForm');
+    const formData = new FormData(form);
+    const orgId = document.getElementById('editOrgId').value;
+    
+    const data = {
+        name: formData.get('name'),
+        type: formData.get('type'),
+        description: formData.get('description')
+    };
+    
+    try {
+        const response = await fetch(`/api/v1/organizations/${orgId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            toggleModal('editOrgModal');
+            form.reset();
+            loadOrganizations();
+            alert('Organization updated successfully!');
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.detail || 'Failed to update organization'));
+        }
+    } catch (error) {
+        console.error('Error updating organization:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+// Search functionality
+document.getElementById('searchOrg').addEventListener('input', function(e) {
+    const search = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#orgsTableBody tr');
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none';
+    });
+});
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', loadOrganizations);
+</script>
+{% endblock %}
+
+

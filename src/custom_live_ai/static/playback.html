@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Playback - Custom Live AI</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .recordings-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .recording-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .recording-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .recording-item.selected {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .rec-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .rec-stats {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .rec-stats div {
+            margin: 3px 0;
+        }
+
+        .playback-container {
+            display: none;
+        }
+
+        .playback-container.active {
+            display: block;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #playbackCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.playing {
+            background: #dc3545;
+        }
+
+        .timeline {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .timeline input {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .timeline input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .time-display {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+
+        .legend-color {
+            width: 25px;
+            height: 15px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .info-box {
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 Session Playback Viewer</h1>
+            <p>Load and replay recorded sessions with full body part detection</p>
+        </div>
+
+        <!-- Recordings List -->
+        <div class="card">
+            <h2>📁 Available Recordings</h2>
+            
+            <div class="info-box">
+                💡 <strong>Select a recording below to play it back.</strong> All body parts, landmarks, and detection data will be recreated exactly as recorded!
+            </div>
+            
+            <button class="button" onclick="loadRecordingsList()" style="margin-bottom: 15px;">
+                🔄 Refresh List
+            </button>
+            
+            <div id="recordingsList" class="recordings-list">
+                <div style="text-align: center; padding: 40px; opacity: 0.5;">
+                    Click "Refresh List" to load recordings
+                </div>
+            </div>
+        </div>
+
+        <!-- Playback Container -->
+        <div id="playbackContainer" class="playback-container">
+            <div class="card">
+                <h2>▶️ Playback Controls</h2>
+                
+                <!-- Canvas -->
+                <div class="canvas-container">
+                    <canvas id="playbackCanvas" width="1280" height="720"></canvas>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline">
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" oninput="seekToFrame(this.value)">
+                    <div class="time-display" id="timeDisplay">
+                        00:00 / 00:00 | Frame 0 / 0
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="button" onclick="playPause()" id="playBtn">
+                        ▶️ Play
+                    </button>
+                    <button class="button" onclick="stopPlayback()" id="stopBtn">
+                        ⏹️ Stop
+                    </button>
+                    <button class="button" onclick="previousFrame()">
+                        ⏮️ Previous
+                    </button>
+                    <button class="button" onclick="nextFrame()">
+                        ⏭️ Next
+                    </button>
+                    <button class="button" onclick="changeSpeed(-0.5)" id="slowerBtn">
+                        🐌 Slower
+                    </button>
+                    <button class="button" onclick="changeSpeed(0.5)" id="fasterBtn">
+                        🐇 Faster
+                    </button>
+                </div>
+
+                <!-- Color Legend -->
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF00FF;"></div>
+                        <span>Head</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00FFFF;"></div>
+                        <span>Left Hand</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFFF00;"></div>
+                        <span>Right Hand</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00FF00;"></div>
+                        <span>Upper Body</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF9900;"></div>
+                        <span>Lower Body</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Session ID</div>
+                        <div class="stat-value" id="sessionId" style="font-size: 0.8em;">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Frames</div>
+                        <div class="stat-value" id="totalFrames">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Duration</div>
+                        <div class="stat-value" id="duration">0s</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Playback Speed</div>
+                        <div class="stat-value" id="playbackSpeed">1.0x</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Current Frame</div>
+                        <div class="stat-value" id="currentFrameNum">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Parts Detected</div>
+                        <div class="stat-value" id="partsDetected">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Global Variables
+        // ============================================
+        let recordingData = null;
+        let currentFrameIndex = 0;
+        let isPlaying = false;
+        let playbackSpeed = 1.0;
+        let playbackInterval = null;
+        let canvas = null;
+        let ctx = null;
+
+        const COLORS = {
+            head: '#FF00FF',
+            leftHand: '#00FFFF',
+            rightHand: '#FFFF00',
+            upperBody: '#00FF00',
+            lowerBody: '#FF9900',
+            skeleton: 'rgba(255, 255, 255, 0.5)',
+            landmarks: 'rgba(255, 255, 255, 0.7)'
+        };
+
+        // ============================================
+        // Initialize
+        // ============================================
+        window.onload = function() {
+            canvas = document.getElementById('playbackCanvas');
+            ctx = canvas.getContext('2d');
+            
+            console.log('✅ Playback viewer loaded');
+        };
+
+        // ============================================
+        // Load Recordings List
+        // ============================================
+        async function loadRecordingsList() {
+            try {
+                const response = await fetch('/api/detailed-recording/list');
+                const data = await response.json();
+                
+                const listEl = document.getElementById('recordingsList');
+                
+                if (data.success && data.recordings.length > 0) {
+                    listEl.innerHTML = data.recordings.map(rec => `
+                        <div class="recording-item" onclick="loadRecording('${rec.session_id}', this)">
+                            <div class="rec-title">${rec.session_id}</div>
+                            <div class="rec-stats">
+                                <div>📅 ${new Date(rec.modified * 1000).toLocaleString()}</div>
+                                <div>📦 ${(rec.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">No recordings found</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load recordings:', error);
+                alert('Failed to load recordings list');
+            }
+        }
+
+        // ============================================
+        // Load Recording
+        // ============================================
+        async function loadRecording(sessionId, clickedElement) {
+            try {
+                console.log(`Loading recording: ${sessionId}`);
+                
+                const response = await fetch(`/api/detailed-recording/load/${sessionId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    recordingData = data.data;
+                    currentFrameIndex = 0;
+                    
+                    // Show playback container
+                    document.getElementById('playbackContainer').classList.add('active');
+                    
+                    // Update UI
+                    document.getElementById('sessionId').textContent = sessionId.substring(0, 20) + '...';
+                    document.getElementById('totalFrames').textContent = recordingData.total_frames;
+                    document.getElementById('duration').textContent = recordingData.duration.toFixed(1) + 's';
+                    
+                    // Update timeline
+                    document.getElementById('timelineSlider').max = recordingData.total_frames - 1;
+                    
+                    // Highlight selected recording
+                    document.querySelectorAll('.recording-item').forEach(el => el.classList.remove('selected'));
+                    if (clickedElement) {
+                        clickedElement.classList.add('selected');
+                    }
+                    
+                    // Draw first frame
+                    drawFrame(0);
+                    
+                    console.log(`✅ Loaded ${recordingData.total_frames} frames`);
+                } else {
+                    alert('Failed to load recording: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Failed to load recording:', error);
+                alert('Failed to load recording');
+            }
+        }
+
+        // ============================================
+        // Draw Frame
+        // ============================================
+        function drawFrame(frameIndex) {
+            if (!recordingData || !recordingData.frames || frameIndex >= recordingData.frames.length) {
+                return;
+            }
+            
+            const frame = recordingData.frames[frameIndex];
+            currentFrameIndex = frameIndex;
+            
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw skeleton FIRST (underneath boxes)
+            if (frame.pose && frame.pose.landmarks && frame.pose.landmarks.length > 0) {
+                drawPoseSkeleton(frame.pose.landmarks);
+            }
+            
+            if (frame.hands && frame.hands.landmarks && frame.hands.landmarks.length > 0) {
+                drawHandsSkeleton(frame.hands.landmarks);
+            }
+            
+            // Draw face mesh
+            if (frame.faceMesh && frame.faceMesh.landmarks && frame.faceMesh.landmarks.length > 0) {
+                drawFaceMesh(frame.faceMesh.landmarks);
+            }
+            
+            // Draw body part boxes ON TOP
+            const bodyParts = frame.bodyParts || {};
+            
+            if (bodyParts.head) drawBodyPart(bodyParts.head, COLORS.head);
+            if (bodyParts.leftHand) drawBodyPart(bodyParts.leftHand, COLORS.leftHand);
+            if (bodyParts.rightHand) drawBodyPart(bodyParts.rightHand, COLORS.rightHand);
+            if (bodyParts.upperBody) drawBodyPart(bodyParts.upperBody, COLORS.upperBody);
+            if (bodyParts.lowerBody) drawBodyPart(bodyParts.lowerBody, COLORS.lowerBody);
+            
+            // Update stats
+            const partsCount = Object.values(bodyParts).filter(p => p).length;
+            document.getElementById('partsDetected').textContent = partsCount;
+            document.getElementById('currentFrameNum').textContent = frameIndex + 1;
+            
+            // Update timeline
+            document.getElementById('timelineSlider').value = frameIndex;
+            
+            // Update time display
+            const currentTime = frame.timestamp;
+            const totalTime = recordingData.duration;
+            document.getElementById('timeDisplay').textContent = 
+                `${formatTime(currentTime)} / ${formatTime(totalTime)} | Frame ${frameIndex + 1} / ${recordingData.total_frames}`;
+        }
+
+        function drawBodyPart(part, color) {
+            if (!part || !part.bbox) return;
+            
+            const bbox = part.bbox;
+            const x = bbox.minX * canvas.width;
+            const y = bbox.minY * canvas.height;
+            const w = (bbox.maxX - bbox.minX) * canvas.width;
+            const h = (bbox.maxY - bbox.minY) * canvas.height;
+            
+            // Draw box
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, w, h);
+            
+            // Draw label
+            const label = `${part.label} ${Math.round(part.confidence)}%`;
+            ctx.font = 'bold 16px Arial';
+            const textWidth = ctx.measureText(label).width;
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y - 24, textWidth + 16, 24);
+            
+            ctx.fillStyle = '#000';
+            ctx.fillText(label, x + 8, y - 8);
+        }
+
+        function drawPoseSkeleton(landmarks) {
+            if (!landmarks || landmarks.length === 0) return;
+            
+            // MediaPipe Pose connections
+            const POSE_CONNECTIONS = [
+                [0, 1], [1, 2], [2, 3], [3, 7],  // Face
+                [0, 4], [4, 5], [5, 6], [6, 8],  // Face
+                [9, 10],  // Mouth
+                [11, 12],  // Shoulders
+                [11, 13], [13, 15], [15, 17], [15, 19], [15, 21],  // Left arm
+                [12, 14], [14, 16], [16, 18], [16, 20], [16, 22],  // Right arm
+                [11, 23], [12, 24], [23, 24],  // Torso
+                [23, 25], [25, 27], [27, 29], [27, 31],  // Left leg
+                [24, 26], [26, 28], [28, 30], [28, 32]   // Right leg
+            ];
+            
+            // Draw connections
+            ctx.strokeStyle = COLORS.skeleton;
+            ctx.lineWidth = 2;
+            
+            POSE_CONNECTIONS.forEach(([start, end]) => {
+                if (landmarks[start] && landmarks[end]) {
+                    const startPoint = landmarks[start];
+                    const endPoint = landmarks[end];
+                    
+                    // Check visibility
+                    if (startPoint.visibility > 0.5 && endPoint.visibility > 0.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+                        ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+                        ctx.stroke();
+                    }
+                }
+            });
+            
+            // Draw landmarks
+            ctx.fillStyle = COLORS.landmarks;
+            landmarks.forEach(landmark => {
+                if (landmark.visibility > 0.5) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        3,
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function drawHandsSkeleton(handsLandmarks) {
+            if (!handsLandmarks || handsLandmarks.length === 0) return;
+            
+            // MediaPipe Hand connections
+            const HAND_CONNECTIONS = [
+                // Thumb
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                // Index finger
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                // Middle finger
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                // Ring finger
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                // Pinky
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                // Palm
+                [5, 9], [9, 13], [13, 17]
+            ];
+            
+            // Draw each hand
+            handsLandmarks.forEach(handLandmarks => {
+                // Draw connections
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                
+                HAND_CONNECTIONS.forEach(([start, end]) => {
+                    if (handLandmarks[start] && handLandmarks[end]) {
+                        const startPoint = handLandmarks[start];
+                        const endPoint = handLandmarks[end];
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+                        ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+                        ctx.stroke();
+                    }
+                });
+                
+                // Draw landmarks
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                handLandmarks.forEach(landmark => {
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        2,
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
+                });
+            });
+        }
+
+        function drawFaceMesh(faceMeshLandmarks) {
+            if (!faceMeshLandmarks || faceMeshLandmarks.length === 0) return;
+            
+            // Face oval (outline)
+            const FACE_OVAL = [
+                [10, 338], [338, 297], [297, 332], [332, 284], [284, 251], [251, 389], [389, 356], [356, 454],
+                [454, 323], [323, 361], [361, 288], [288, 397], [397, 365], [365, 379], [379, 378], [378, 400],
+                [400, 377], [377, 152], [152, 148], [148, 176], [176, 149], [149, 150], [150, 136], [136, 172],
+                [172, 58], [58, 132], [132, 93], [93, 234], [234, 127], [127, 162], [162, 21], [21, 54],
+                [54, 103], [103, 67], [67, 109], [109, 10]
+            ];
+            
+            // Eyes
+            const LEFT_EYE = [
+                [33, 7], [7, 163], [163, 144], [144, 145], [145, 153], [153, 154], [154, 155], [155, 133],
+                [133, 173], [173, 157], [157, 158], [158, 159], [159, 160], [160, 161], [161, 246], [246, 33]
+            ];
+            
+            const RIGHT_EYE = [
+                [263, 249], [249, 390], [390, 373], [373, 374], [374, 380], [380, 381], [381, 382], [382, 362],
+                [362, 398], [398, 384], [384, 385], [385, 386], [386, 387], [387, 388], [388, 466], [466, 263]
+            ];
+            
+            // Lips
+            const LIPS = [
+                [61, 146], [146, 91], [91, 181], [181, 84], [84, 17], [17, 314], [314, 405], [405, 321], [321, 375],
+                [375, 291], [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409],
+                [409, 291], [78, 95], [95, 88], [88, 178], [178, 87], [87, 14], [14, 317], [317, 402], [402, 318], [318, 324],
+                [324, 308], [78, 191], [191, 80], [80, 81], [81, 82], [82, 13], [13, 312], [312, 311], [311, 310], [310, 415],
+                [415, 308]
+            ];
+            
+            // Draw each face
+            faceMeshLandmarks.forEach(landmarks => {
+                // Helper function to draw connections
+                const drawConnections = (connections, color, lineWidth) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    
+                    connections.forEach(([start, end]) => {
+                        if (landmarks[start] && landmarks[end]) {
+                            ctx.beginPath();
+                            ctx.moveTo(landmarks[start].x * canvas.width, landmarks[start].y * canvas.height);
+                            ctx.lineTo(landmarks[end].x * canvas.width, landmarks[end].y * canvas.height);
+                            ctx.stroke();
+                        }
+                    });
+                };
+                
+                // Draw face oval (cyan)
+                drawConnections(FACE_OVAL, 'rgba(0, 255, 255, 0.6)', 2);
+                
+                // Draw eyes (yellow)
+                drawConnections(LEFT_EYE, 'rgba(255, 255, 0, 0.7)', 2);
+                drawConnections(RIGHT_EYE, 'rgba(255, 255, 0, 0.7)', 2);
+                
+                // Draw lips (magenta)
+                drawConnections(LIPS, 'rgba(255, 0, 255, 0.7)', 2);
+                
+                // Optional: Draw a few key landmark points (very subtle)
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                // Just draw a few key points: nose tip, eye centers, mouth center
+                const keyPoints = [1, 168, 6, 61, 291];  // Nose, left eye, right eye, mouth corners
+                keyPoints.forEach(idx => {
+                    if (landmarks[idx]) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            landmarks[idx].x * canvas.width,
+                            landmarks[idx].y * canvas.height,
+                            2,
+                            0,
+                            2 * Math.PI
+                        );
+                        ctx.fill();
+                    }
+                });
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // ============================================
+        // Playback Controls
+        // ============================================
+        let pausedAtTime = 0;
+
+        function playPause() {
+            if (!recordingData) return;
+            
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            
+            if (isPlaying) {
+                btn.textContent = '⏸️ Pause';
+                btn.classList.add('playing');
+                startPlayback();
+            } else {
+                btn.textContent = '▶️ Play';
+                btn.classList.remove('playing');
+                
+                // Save current position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+                
+                stopPlaybackLoop();
+            }
+        }
+
+        function startPlayback() {
+            // Use requestAnimationFrame for smooth real-time playback
+            const startTime = performance.now();
+            const startOffset = pausedAtTime;  // Resume from paused position
+            
+            function animate(currentTime) {
+                if (!isPlaying) return;
+                
+                // Calculate elapsed time (accounts for playback speed and resume position)
+                const elapsed = startOffset + ((currentTime - startTime) / 1000) * playbackSpeed;
+                
+                // Find the frame that should be displayed at this time
+                let targetFrameIndex = 0;
+                for (let i = 0; i < recordingData.frames.length; i++) {
+                    if (recordingData.frames[i].timestamp <= elapsed) {
+                        targetFrameIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Draw the frame if it changed
+                if (targetFrameIndex !== currentFrameIndex) {
+                    currentFrameIndex = targetFrameIndex;
+                    drawFrame(currentFrameIndex);
+                }
+                
+                // Check if we reached the end
+                if (currentFrameIndex >= recordingData.total_frames - 1) {
+                    stopPlayback();
+                    return;
+                }
+                
+                // Continue animation
+                playbackInterval = requestAnimationFrame(animate);
+            }
+            
+            // Start animation
+            playbackInterval = requestAnimationFrame(animate);
+        }
+
+        function stopPlaybackLoop() {
+            if (playbackInterval) {
+                cancelAnimationFrame(playbackInterval);
+                playbackInterval = null;
+            }
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            stopPlaybackLoop();
+            currentFrameIndex = 0;
+            pausedAtTime = 0;  // Reset to beginning
+            drawFrame(0);
+            
+            const btn = document.getElementById('playBtn');
+            btn.textContent = '▶️ Play';
+            btn.classList.remove('playing');
+        }
+
+        function previousFrame() {
+            if (!recordingData) return;
+            if (currentFrameIndex > 0) {
+                currentFrameIndex--;
+                drawFrame(currentFrameIndex);
+                
+                // Update paused position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+            }
+        }
+
+        function nextFrame() {
+            if (!recordingData) return;
+            if (currentFrameIndex < recordingData.total_frames - 1) {
+                currentFrameIndex++;
+                drawFrame(currentFrameIndex);
+                
+                // Update paused position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+            }
+        }
+
+        function seekToFrame(frameIndex) {
+            if (!recordingData) return;
+            const index = parseInt(frameIndex);
+            currentFrameIndex = index;
+            drawFrame(index);
+            
+            // Update paused position
+            if (recordingData.frames[index]) {
+                pausedAtTime = recordingData.frames[index].timestamp;
+            }
+        }
+
+        function changeSpeed(delta) {
+            playbackSpeed += delta;
+            playbackSpeed = Math.max(0.25, Math.min(4.0, playbackSpeed));
+            
+            document.getElementById('playbackSpeed').textContent = playbackSpeed.toFixed(2) + 'x';
+            
+            // Restart playback with new speed if currently playing
+            if (isPlaying) {
+                // Save current position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+                
+                stopPlaybackLoop();
+                startPlayback();
+            }
+        }
+
+        // ============================================
+        // Auto-load recordings on page load
+        // ============================================
+        window.addEventListener('load', () => {
+            loadRecordingsList();
+        });
+    </script>
+</body>
+</html>
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Playback - Custom Live AI</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .recordings-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .recording-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .recording-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .recording-item.selected {
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .rec-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .rec-stats {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .rec-stats div {
+            margin: 3px 0;
+        }
+
+        .playback-container {
+            display: none;
+        }
+
+        .playback-container.active {
+            display: block;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #playbackCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.playing {
+            background: #dc3545;
+        }
+
+        .timeline {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .timeline input {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .timeline input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .time-display {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+        }
+
+        .legend-color {
+            width: 25px;
+            height: 15px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .info-box {
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 Session Playback Viewer</h1>
+            <p>Load and replay recorded sessions with full body part detection</p>
+        </div>
+
+        <!-- Recordings List -->
+        <div class="card">
+            <h2>📁 Available Recordings</h2>
+            
+            <div class="info-box">
+                💡 <strong>Select a recording below to play it back.</strong> All body parts, landmarks, and detection data will be recreated exactly as recorded!
+            </div>
+            
+            <button class="button" onclick="loadRecordingsList()" style="margin-bottom: 15px;">
+                🔄 Refresh List
+            </button>
+            
+            <div id="recordingsList" class="recordings-list">
+                <div style="text-align: center; padding: 40px; opacity: 0.5;">
+                    Click "Refresh List" to load recordings
+                </div>
+            </div>
+        </div>
+
+        <!-- Playback Container -->
+        <div id="playbackContainer" class="playback-container">
+            <div class="card">
+                <h2>▶️ Playback Controls</h2>
+                
+                <!-- Canvas -->
+                <div class="canvas-container">
+                    <canvas id="playbackCanvas" width="1280" height="720"></canvas>
+                </div>
+
+                <!-- Timeline -->
+                <div class="timeline">
+                    <input type="range" id="timelineSlider" min="0" max="100" value="0" oninput="seekToFrame(this.value)">
+                    <div class="time-display" id="timeDisplay">
+                        00:00 / 00:00 | Frame 0 / 0
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="button" onclick="playPause()" id="playBtn">
+                        ▶️ Play
+                    </button>
+                    <button class="button" onclick="stopPlayback()" id="stopBtn">
+                        ⏹️ Stop
+                    </button>
+                    <button class="button" onclick="previousFrame()">
+                        ⏮️ Previous
+                    </button>
+                    <button class="button" onclick="nextFrame()">
+                        ⏭️ Next
+                    </button>
+                    <button class="button" onclick="changeSpeed(-0.5)" id="slowerBtn">
+                        🐌 Slower
+                    </button>
+                    <button class="button" onclick="changeSpeed(0.5)" id="fasterBtn">
+                        🐇 Faster
+                    </button>
+                </div>
+
+                <!-- Color Legend -->
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF00FF;"></div>
+                        <span>Head</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00FFFF;"></div>
+                        <span>Left Hand</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFFF00;"></div>
+                        <span>Right Hand</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00FF00;"></div>
+                        <span>Upper Body</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF9900;"></div>
+                        <span>Lower Body</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Session ID</div>
+                        <div class="stat-value" id="sessionId" style="font-size: 0.8em;">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Frames</div>
+                        <div class="stat-value" id="totalFrames">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Duration</div>
+                        <div class="stat-value" id="duration">0s</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Playback Speed</div>
+                        <div class="stat-value" id="playbackSpeed">1.0x</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Current Frame</div>
+                        <div class="stat-value" id="currentFrameNum">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Parts Detected</div>
+                        <div class="stat-value" id="partsDetected">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Global Variables
+        // ============================================
+        let recordingData = null;
+        let currentFrameIndex = 0;
+        let isPlaying = false;
+        let playbackSpeed = 1.0;
+        let playbackInterval = null;
+        let canvas = null;
+        let ctx = null;
+
+        const COLORS = {
+            head: '#FF00FF',
+            leftHand: '#00FFFF',
+            rightHand: '#FFFF00',
+            upperBody: '#00FF00',
+            lowerBody: '#FF9900',
+            skeleton: 'rgba(255, 255, 255, 0.5)',
+            landmarks: 'rgba(255, 255, 255, 0.7)'
+        };
+
+        // ============================================
+        // Initialize
+        // ============================================
+        window.onload = function() {
+            canvas = document.getElementById('playbackCanvas');
+            ctx = canvas.getContext('2d');
+            
+            console.log('✅ Playback viewer loaded');
+        };
+
+        // ============================================
+        // Load Recordings List
+        // ============================================
+        async function loadRecordingsList() {
+            try {
+                const response = await fetch('/api/detailed-recording/list');
+                const data = await response.json();
+                
+                const listEl = document.getElementById('recordingsList');
+                
+                if (data.success && data.recordings.length > 0) {
+                    listEl.innerHTML = data.recordings.map(rec => `
+                        <div class="recording-item" onclick="loadRecording('${rec.session_id}', this)">
+                            <div class="rec-title">${rec.session_id}</div>
+                            <div class="rec-stats">
+                                <div>📅 ${new Date(rec.modified * 1000).toLocaleString()}</div>
+                                <div>📦 ${(rec.size / 1024).toFixed(1)} KB</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = '<div style="text-align: center; padding: 40px; opacity: 0.5;">No recordings found</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load recordings:', error);
+                alert('Failed to load recordings list');
+            }
+        }
+
+        // ============================================
+        // Load Recording
+        // ============================================
+        async function loadRecording(sessionId, clickedElement) {
+            try {
+                console.log(`Loading recording: ${sessionId}`);
+                
+                const response = await fetch(`/api/detailed-recording/load/${sessionId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    recordingData = data.data;
+                    currentFrameIndex = 0;
+                    
+                    // Show playback container
+                    document.getElementById('playbackContainer').classList.add('active');
+                    
+                    // Update UI
+                    document.getElementById('sessionId').textContent = sessionId.substring(0, 20) + '...';
+                    document.getElementById('totalFrames').textContent = recordingData.total_frames;
+                    document.getElementById('duration').textContent = recordingData.duration.toFixed(1) + 's';
+                    
+                    // Update timeline
+                    document.getElementById('timelineSlider').max = recordingData.total_frames - 1;
+                    
+                    // Highlight selected recording
+                    document.querySelectorAll('.recording-item').forEach(el => el.classList.remove('selected'));
+                    if (clickedElement) {
+                        clickedElement.classList.add('selected');
+                    }
+                    
+                    // Draw first frame
+                    drawFrame(0);
+                    
+                    console.log(`✅ Loaded ${recordingData.total_frames} frames`);
+                } else {
+                    alert('Failed to load recording: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Failed to load recording:', error);
+                alert('Failed to load recording');
+            }
+        }
+
+        // ============================================
+        // Draw Frame
+        // ============================================
+        function drawFrame(frameIndex) {
+            if (!recordingData || !recordingData.frames || frameIndex >= recordingData.frames.length) {
+                return;
+            }
+            
+            const frame = recordingData.frames[frameIndex];
+            currentFrameIndex = frameIndex;
+            
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw skeleton FIRST (underneath boxes)
+            if (frame.pose && frame.pose.landmarks && frame.pose.landmarks.length > 0) {
+                drawPoseSkeleton(frame.pose.landmarks);
+            }
+            
+            if (frame.hands && frame.hands.landmarks && frame.hands.landmarks.length > 0) {
+                drawHandsSkeleton(frame.hands.landmarks);
+            }
+            
+            // Draw face mesh
+            if (frame.faceMesh && frame.faceMesh.landmarks && frame.faceMesh.landmarks.length > 0) {
+                drawFaceMesh(frame.faceMesh.landmarks);
+            }
+            
+            // Draw body part boxes ON TOP
+            const bodyParts = frame.bodyParts || {};
+            
+            if (bodyParts.head) drawBodyPart(bodyParts.head, COLORS.head);
+            if (bodyParts.leftHand) drawBodyPart(bodyParts.leftHand, COLORS.leftHand);
+            if (bodyParts.rightHand) drawBodyPart(bodyParts.rightHand, COLORS.rightHand);
+            if (bodyParts.upperBody) drawBodyPart(bodyParts.upperBody, COLORS.upperBody);
+            if (bodyParts.lowerBody) drawBodyPart(bodyParts.lowerBody, COLORS.lowerBody);
+            
+            // Update stats
+            const partsCount = Object.values(bodyParts).filter(p => p).length;
+            document.getElementById('partsDetected').textContent = partsCount;
+            document.getElementById('currentFrameNum').textContent = frameIndex + 1;
+            
+            // Update timeline
+            document.getElementById('timelineSlider').value = frameIndex;
+            
+            // Update time display
+            const currentTime = frame.timestamp;
+            const totalTime = recordingData.duration;
+            document.getElementById('timeDisplay').textContent = 
+                `${formatTime(currentTime)} / ${formatTime(totalTime)} | Frame ${frameIndex + 1} / ${recordingData.total_frames}`;
+        }
+
+        function drawBodyPart(part, color) {
+            if (!part || !part.bbox) return;
+            
+            const bbox = part.bbox;
+            const x = bbox.minX * canvas.width;
+            const y = bbox.minY * canvas.height;
+            const w = (bbox.maxX - bbox.minX) * canvas.width;
+            const h = (bbox.maxY - bbox.minY) * canvas.height;
+            
+            // Draw box
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, w, h);
+            
+            // Draw label
+            const label = `${part.label} ${Math.round(part.confidence)}%`;
+            ctx.font = 'bold 16px Arial';
+            const textWidth = ctx.measureText(label).width;
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y - 24, textWidth + 16, 24);
+            
+            ctx.fillStyle = '#000';
+            ctx.fillText(label, x + 8, y - 8);
+        }
+
+        function drawPoseSkeleton(landmarks) {
+            if (!landmarks || landmarks.length === 0) return;
+            
+            // MediaPipe Pose connections
+            const POSE_CONNECTIONS = [
+                [0, 1], [1, 2], [2, 3], [3, 7],  // Face
+                [0, 4], [4, 5], [5, 6], [6, 8],  // Face
+                [9, 10],  // Mouth
+                [11, 12],  // Shoulders
+                [11, 13], [13, 15], [15, 17], [15, 19], [15, 21],  // Left arm
+                [12, 14], [14, 16], [16, 18], [16, 20], [16, 22],  // Right arm
+                [11, 23], [12, 24], [23, 24],  // Torso
+                [23, 25], [25, 27], [27, 29], [27, 31],  // Left leg
+                [24, 26], [26, 28], [28, 30], [28, 32]   // Right leg
+            ];
+            
+            // Draw connections
+            ctx.strokeStyle = COLORS.skeleton;
+            ctx.lineWidth = 2;
+            
+            POSE_CONNECTIONS.forEach(([start, end]) => {
+                if (landmarks[start] && landmarks[end]) {
+                    const startPoint = landmarks[start];
+                    const endPoint = landmarks[end];
+                    
+                    // Check visibility
+                    if (startPoint.visibility > 0.5 && endPoint.visibility > 0.5) {
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+                        ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+                        ctx.stroke();
+                    }
+                }
+            });
+            
+            // Draw landmarks
+            ctx.fillStyle = COLORS.landmarks;
+            landmarks.forEach(landmark => {
+                if (landmark.visibility > 0.5) {
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        3,
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
+                }
+            });
+        }
+        
+        function drawHandsSkeleton(handsLandmarks) {
+            if (!handsLandmarks || handsLandmarks.length === 0) return;
+            
+            // MediaPipe Hand connections
+            const HAND_CONNECTIONS = [
+                // Thumb
+                [0, 1], [1, 2], [2, 3], [3, 4],
+                // Index finger
+                [0, 5], [5, 6], [6, 7], [7, 8],
+                // Middle finger
+                [0, 9], [9, 10], [10, 11], [11, 12],
+                // Ring finger
+                [0, 13], [13, 14], [14, 15], [15, 16],
+                // Pinky
+                [0, 17], [17, 18], [18, 19], [19, 20],
+                // Palm
+                [5, 9], [9, 13], [13, 17]
+            ];
+            
+            // Draw each hand
+            handsLandmarks.forEach(handLandmarks => {
+                // Draw connections
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 2;
+                
+                HAND_CONNECTIONS.forEach(([start, end]) => {
+                    if (handLandmarks[start] && handLandmarks[end]) {
+                        const startPoint = handLandmarks[start];
+                        const endPoint = handLandmarks[end];
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+                        ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+                        ctx.stroke();
+                    }
+                });
+                
+                // Draw landmarks
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                handLandmarks.forEach(landmark => {
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        2,
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
+                });
+            });
+        }
+
+        function drawFaceMesh(faceMeshLandmarks) {
+            if (!faceMeshLandmarks || faceMeshLandmarks.length === 0) return;
+            
+            // Face oval (outline)
+            const FACE_OVAL = [
+                [10, 338], [338, 297], [297, 332], [332, 284], [284, 251], [251, 389], [389, 356], [356, 454],
+                [454, 323], [323, 361], [361, 288], [288, 397], [397, 365], [365, 379], [379, 378], [378, 400],
+                [400, 377], [377, 152], [152, 148], [148, 176], [176, 149], [149, 150], [150, 136], [136, 172],
+                [172, 58], [58, 132], [132, 93], [93, 234], [234, 127], [127, 162], [162, 21], [21, 54],
+                [54, 103], [103, 67], [67, 109], [109, 10]
+            ];
+            
+            // Eyes
+            const LEFT_EYE = [
+                [33, 7], [7, 163], [163, 144], [144, 145], [145, 153], [153, 154], [154, 155], [155, 133],
+                [133, 173], [173, 157], [157, 158], [158, 159], [159, 160], [160, 161], [161, 246], [246, 33]
+            ];
+            
+            const RIGHT_EYE = [
+                [263, 249], [249, 390], [390, 373], [373, 374], [374, 380], [380, 381], [381, 382], [382, 362],
+                [362, 398], [398, 384], [384, 385], [385, 386], [386, 387], [387, 388], [388, 466], [466, 263]
+            ];
+            
+            // Lips
+            const LIPS = [
+                [61, 146], [146, 91], [91, 181], [181, 84], [84, 17], [17, 314], [314, 405], [405, 321], [321, 375],
+                [375, 291], [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409],
+                [409, 291], [78, 95], [95, 88], [88, 178], [178, 87], [87, 14], [14, 317], [317, 402], [402, 318], [318, 324],
+                [324, 308], [78, 191], [191, 80], [80, 81], [81, 82], [82, 13], [13, 312], [312, 311], [311, 310], [310, 415],
+                [415, 308]
+            ];
+            
+            // Draw each face
+            faceMeshLandmarks.forEach(landmarks => {
+                // Helper function to draw connections
+                const drawConnections = (connections, color, lineWidth) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    
+                    connections.forEach(([start, end]) => {
+                        if (landmarks[start] && landmarks[end]) {
+                            ctx.beginPath();
+                            ctx.moveTo(landmarks[start].x * canvas.width, landmarks[start].y * canvas.height);
+                            ctx.lineTo(landmarks[end].x * canvas.width, landmarks[end].y * canvas.height);
+                            ctx.stroke();
+                        }
+                    });
+                };
+                
+                // Draw face oval (cyan)
+                drawConnections(FACE_OVAL, 'rgba(0, 255, 255, 0.6)', 2);
+                
+                // Draw eyes (yellow)
+                drawConnections(LEFT_EYE, 'rgba(255, 255, 0, 0.7)', 2);
+                drawConnections(RIGHT_EYE, 'rgba(255, 255, 0, 0.7)', 2);
+                
+                // Draw lips (magenta)
+                drawConnections(LIPS, 'rgba(255, 0, 255, 0.7)', 2);
+                
+                // Optional: Draw a few key landmark points (very subtle)
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+                // Just draw a few key points: nose tip, eye centers, mouth center
+                const keyPoints = [1, 168, 6, 61, 291];  // Nose, left eye, right eye, mouth corners
+                keyPoints.forEach(idx => {
+                    if (landmarks[idx]) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            landmarks[idx].x * canvas.width,
+                            landmarks[idx].y * canvas.height,
+                            2,
+                            0,
+                            2 * Math.PI
+                        );
+                        ctx.fill();
+                    }
+                });
+            });
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // ============================================
+        // Playback Controls
+        // ============================================
+        let pausedAtTime = 0;
+
+        function playPause() {
+            if (!recordingData) return;
+            
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            
+            if (isPlaying) {
+                btn.textContent = '⏸️ Pause';
+                btn.classList.add('playing');
+                startPlayback();
+            } else {
+                btn.textContent = '▶️ Play';
+                btn.classList.remove('playing');
+                
+                // Save current position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+                
+                stopPlaybackLoop();
+            }
+        }
+
+        function startPlayback() {
+            // Use requestAnimationFrame for smooth real-time playback
+            const startTime = performance.now();
+            const startOffset = pausedAtTime;  // Resume from paused position
+            
+            function animate(currentTime) {
+                if (!isPlaying) return;
+                
+                // Calculate elapsed time (accounts for playback speed and resume position)
+                const elapsed = startOffset + ((currentTime - startTime) / 1000) * playbackSpeed;
+                
+                // Find the frame that should be displayed at this time
+                let targetFrameIndex = 0;
+                for (let i = 0; i < recordingData.frames.length; i++) {
+                    if (recordingData.frames[i].timestamp <= elapsed) {
+                        targetFrameIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // Draw the frame if it changed
+                if (targetFrameIndex !== currentFrameIndex) {
+                    currentFrameIndex = targetFrameIndex;
+                    drawFrame(currentFrameIndex);
+                }
+                
+                // Check if we reached the end
+                if (currentFrameIndex >= recordingData.total_frames - 1) {
+                    stopPlayback();
+                    return;
+                }
+                
+                // Continue animation
+                playbackInterval = requestAnimationFrame(animate);
+            }
+            
+            // Start animation
+            playbackInterval = requestAnimationFrame(animate);
+        }
+
+        function stopPlaybackLoop() {
+            if (playbackInterval) {
+                cancelAnimationFrame(playbackInterval);
+                playbackInterval = null;
+            }
+        }
+
+        function stopPlayback() {
+            isPlaying = false;
+            stopPlaybackLoop();
+            currentFrameIndex = 0;
+            pausedAtTime = 0;  // Reset to beginning
+            drawFrame(0);
+            
+            const btn = document.getElementById('playBtn');
+            btn.textContent = '▶️ Play';
+            btn.classList.remove('playing');
+        }
+
+        function previousFrame() {
+            if (!recordingData) return;
+            if (currentFrameIndex > 0) {
+                currentFrameIndex--;
+                drawFrame(currentFrameIndex);
+                
+                // Update paused position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+            }
+        }
+
+        function nextFrame() {
+            if (!recordingData) return;
+            if (currentFrameIndex < recordingData.total_frames - 1) {
+                currentFrameIndex++;
+                drawFrame(currentFrameIndex);
+                
+                // Update paused position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+            }
+        }
+
+        function seekToFrame(frameIndex) {
+            if (!recordingData) return;
+            const index = parseInt(frameIndex);
+            currentFrameIndex = index;
+            drawFrame(index);
+            
+            // Update paused position
+            if (recordingData.frames[index]) {
+                pausedAtTime = recordingData.frames[index].timestamp;
+            }
+        }
+
+        function changeSpeed(delta) {
+            playbackSpeed += delta;
+            playbackSpeed = Math.max(0.25, Math.min(4.0, playbackSpeed));
+            
+            document.getElementById('playbackSpeed').textContent = playbackSpeed.toFixed(2) + 'x';
+            
+            // Restart playback with new speed if currently playing
+            if (isPlaying) {
+                // Save current position
+                if (recordingData.frames[currentFrameIndex]) {
+                    pausedAtTime = recordingData.frames[currentFrameIndex].timestamp;
+                }
+                
+                stopPlaybackLoop();
+                startPlayback();
+            }
+        }
+
+        // ============================================
+        // Auto-load recordings on page load
+        // ============================================
+        window.addEventListener('load', () => {
+            loadRecordingsList();
+        });
+    </script>
+</body>
+</html>
+
+
+

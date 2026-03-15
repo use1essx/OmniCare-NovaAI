@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Social Worker Hub · Healthcare AI Admin{% endblock %}
+{% block page_title %}Social Worker Hub{% endblock %}
+
+{% block page_description %}
+<p class="max-w-3xl text-sm leading-relaxed text-slate-500">
+    Patient management dashboard for social workers. Monitor assigned children, track critical alerts,
+    and review emotional well-being indicators across your caseload.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+<button type="button" class="btn btn-secondary" onclick="Alpine.store('socialWorkerDash').refreshAll()">
+    <i class="fas fa-sync"></i>
+    Refresh
+</button>
+<button type="button" class="btn btn-primary" onclick="Alpine.store('socialWorkerDash').showAssignPatient()">
+    <i class="fas fa-user-plus"></i>
+    Assign Patient
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8" x-data="socialWorkerDashboard()" x-init="init()">
+    <!-- Social Worker Selection -->
+    <section class="card">
+        <div class="card-body">
+            <div class="flex flex-wrap items-center gap-4">
+                <label class="flex items-center gap-3 text-sm font-medium text-slate-600">
+                    <span>Social Worker ID:</span>
+                    <input type="number" x-model.number="socialWorkerId" min="1" class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30 w-32">
+                </label>
+                <button type="button" class="btn btn-primary" @click="loadDashboard()">
+                    <i class="fas fa-search"></i>
+                    Load Dashboard
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" x-show="loaded">
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Assigned Patients</p>
+                        <p class="mt-3 text-2xl font-semibold text-slate-900" x-text="stats.total_patients || 0"></p>
+                        <p class="mt-2 text-xs text-slate-500">Under your care</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-soft">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Critical Alerts</p>
+                        <p class="mt-3 text-2xl font-semibold text-rose-600" x-text="stats.critical_alerts || 0"></p>
+                        <p class="mt-2 text-xs text-slate-500">Requiring immediate attention</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white shadow-soft">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Total Alerts</p>
+                        <p class="mt-3 text-2xl font-semibold text-slate-900" x-text="stats.total_alerts || 0"></p>
+                        <p class="mt-2 text-xs text-slate-500">All severity levels</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-soft">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Recent Conversations</p>
+                        <p class="mt-3 text-2xl font-semibold text-slate-900" x-text="stats.recent_conversations || 0"></p>
+                        <p class="mt-2 text-xs text-slate-500">Last 24 hours</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-soft">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Alerts Section -->
+    <section class="card" x-show="loaded && alerts.length > 0">
+        <div class="card-header">
+            <h2 class="text-lg font-semibold text-slate-900">Recent Alerts</h2>
+            <p class="text-sm text-slate-500">Critical and warning alerts from your patients</p>
+        </div>
+        <div class="card-body">
+            <div class="space-y-3">
+                <template x-for="alert in alerts.slice(0, 5)" :key="alert.id">
+                    <div class="rounded-2xl border p-4 transition hover:shadow-soft"
+                         :class="{
+                             'border-rose-200 bg-rose-50/70': alert.severity_level === 'critical',
+                             'border-amber-200 bg-amber-50/70': alert.severity_level === 'warning',
+                             'border-slate-200 bg-slate-50/70': alert.severity_level === 'info'
+                         }">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="chip" :data-tone="alert.severity_level === 'critical' ? 'red' : (alert.severity_level === 'warning' ? 'orange' : 'blue')" x-text="alert.severity_level"></span>
+                                    <span class="text-sm font-semibold text-slate-900" x-text="alert.event_type"></span>
+                                </div>
+                                <p class="mt-2 text-sm text-slate-700" x-text="alert.event_description"></p>
+                                <p class="mt-2 text-xs text-slate-500" x-text="'User ID: ' + (alert.user_id || 'Anonymous') + ' · ' + formatDate(alert.created_at)"></p>
+                            </div>
+                            <button type="button" class="btn-ghost border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-health-blue hover:text-health-blue" @click="viewAlertDetails(alert)">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+
+    <!-- Patients Grid -->
+    <section x-show="loaded">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold text-slate-900">Your Patients</h2>
+            <p class="text-sm text-slate-500">Currently assigned children under your care</p>
+        </div>
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <template x-if="patients.length === 0">
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-inbox text-5xl text-slate-300 mb-4"></i>
+                    <p class="text-slate-500">No patients assigned</p>
+                </div>
+            </template>
+            <template x-for="patient in patients" :key="patient.id">
+                <article class="card hover:-translate-y-0.5 transition-transform">
+                    <div class="card-body">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900" x-text="patient.username"></p>
+                                <p class="text-xs text-slate-400" x-text="'ID: ' + patient.id"></p>
+                            </div>
+                            <span class="chip" :data-tone="patient.is_active ? 'green' : 'gray'" x-text="patient.is_active ? 'Active' : 'Inactive'"></span>
+                        </div>
+                        <div class="space-y-2 text-xs text-slate-500 mb-4">
+                            <p><i class="fas fa-envelope mr-2 text-slate-400"></i> <span x-text="patient.email || 'No email'"></span></p>
+                            <p><i class="fas fa-language mr-2 text-slate-400"></i> <span x-text="patient.language_preference || 'Not set'"></span></p>
+                            <p><i class="fas fa-heart mr-2 text-slate-400"></i> Recent emotion: <span x-text="patient.recent_emotion || 'None'"></span></p>
+                        </div>
+                        <div class="flex items-center gap-2 pt-3 border-t border-slate-200">
+                            <button type="button" class="btn-ghost flex-1 border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-health-blue hover:text-health-blue">
+                                View History
+                            </button>
+                            <button type="button" class="btn-ghost border border-emerald-200 px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-500 hover:text-white">
+                                Contact
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            </template>
+        </div>
+    </section>
+</div>
+
+<script>
+function socialWorkerDashboard() {
+    return {
+        socialWorkerId: 1,
+        loaded: false,
+        stats: {},
+        patients: [],
+        alerts: [],
+
+        init() {
+            this.loadDashboard();
+        },
+
+        async loadDashboard() {
+            try {
+                // Load stats
+                const statsRes = await fetch(`/api/v1/social-worker/info/${this.socialWorkerId}`);
+                this.stats = await statsRes.json();
+
+                // Load patients
+                const patientsRes = await fetch(`/api/v1/social-worker/patients/${this.socialWorkerId}`);
+                this.patients = await patientsRes.json();
+
+                // Load alerts
+                const alertsRes = await fetch(`/api/v1/social-worker/alerts/${this.socialWorkerId}`);
+                this.alerts = await alertsRes.json();
+
+                this.loaded = true;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Error loading dashboard data');
+            }
+        },
+
+        refreshAll() {
+            this.loadDashboard();
+        },
+
+        showAssignPatient() {
+            alert('Assign Patient feature coming soon!');
+        },
+
+        viewAlertDetails(alert) {
+            alert('Alert Details:\n\n' + JSON.stringify(alert, null, 2));
+        },
+
+        formatDate(dateString) {
+            return new Date(dateString).toLocaleString();
+        }
+    };
+}
+</script>
+{% endblock %}
+
+

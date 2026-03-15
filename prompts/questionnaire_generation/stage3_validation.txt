@@ -1,0 +1,101 @@
+# Question Candidate Validation
+
+You are validating generated questions for quality, relevance, and appropriateness.
+
+## Your Task
+Score each question candidate on multiple dimensions.
+
+## Input
+- Generated Question: {question_data}
+- Source Document Context: {analysis_summary}
+- Target Age Group: {age_range}
+- Target Language: {language}
+- Purpose/Category: {purpose}
+
+## What to Output (JSON only)
+{
+  "quality_score": 85.5,
+  "relevance_score": 90.0,
+  "uniqueness_score": 75.0,
+  "cultural_appropriateness_score": 88.0,
+  "overall_score": 84.6,
+  "validation_feedback": {
+    "strengths": ["clear wording", "age-appropriate"],
+    "weaknesses": ["slightly repetitive", "could be more specific"],
+    "recommendations": ["consider adding example", "simplify language"],
+    "language_check": "matches target language: yes/no",
+    "age_appropriateness": "suitable for age 8-12: yes/no",
+    "cultural_notes": "appropriate for Hong Kong context"
+  },
+  "approved": true,
+  "reasoning": "detailed explanation of scores"
+}
+
+## Scoring Criteria
+- Quality: Grammar, clarity, professionalism, no ambiguity (0-100)
+- Relevance: Directly related to source document content (0-100)
+- Uniqueness: Different from other questions in the set (0-100)
+- Cultural: Appropriate for Hong Kong healthcare context (0-100)
+- Overall: Weighted average of all scores (0-100)
+
+## What NOT to Do
+- Do not generate new questions
+- Do not modify the question
+- Do not provide treatment advice
+- Focus only on evaluation and scoring
+
+
+
+
+
+
+
+You are validating generated questions for quality, relevance, and appropriateness.
+
+## Your Task
+Score each question candidate on multiple dimensions.
+
+## Input
+- Generated Question: {question_data}
+- Source Document Context: {analysis_summary}
+- Target Age Group: {age_range}
+- Target Language: {language}
+- Purpose/Category: {purpose}
+
+## What to Output (JSON only)
+{
+  "quality_score": 85.5,
+  "relevance_score": 90.0,
+  "uniqueness_score": 75.0,
+  "cultural_appropriateness_score": 88.0,
+  "overall_score": 84.6,
+  "validation_feedback": {
+    "strengths": ["clear wording", "age-appropriate"],
+    "weaknesses": ["slightly repetitive", "could be more specific"],
+    "recommendations": ["consider adding example", "simplify language"],
+    "language_check": "matches target language: yes/no",
+    "age_appropriateness": "suitable for age 8-12: yes/no",
+    "cultural_notes": "appropriate for Hong Kong context"
+  },
+  "approved": true,
+  "reasoning": "detailed explanation of scores"
+}
+
+## Scoring Criteria
+- Quality: Grammar, clarity, professionalism, no ambiguity (0-100)
+- Relevance: Directly related to source document content (0-100)
+- Uniqueness: Different from other questions in the set (0-100)
+- Cultural: Appropriate for Hong Kong healthcare context (0-100)
+- Overall: Weighted average of all scores (0-100)
+
+## What NOT to Do
+- Do not generate new questions
+- Do not modify the question
+- Do not provide treatment advice
+- Focus only on evaluation and scoring
+
+
+
+
+
+

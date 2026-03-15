@@ -1,0 +1,927 @@
+{% extends "base.html" %}
+
+{% block title %}User Management · Healthcare AI Admin{% endblock %}
+{% block page_title %}Directory & Organizations{% endblock %}
+
+{% block page_description %}
+<p class="max-w-3xl text-sm leading-relaxed text-slate-500">
+    Govern platform access, roles, and partner organizations. Track activation health across teams, invite collaborators,
+    and review directory activity with guardrails that respect your permission level.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+<button type="button"
+        class="btn btn-primary"
+        @click="$dispatch('open-admin-modal', { target: 'user' })">
+    <i class="fas fa-user-plus mr-2"></i>
+    Invite User
+</button>
+{% if is_super_admin %}
+<button type="button"
+        class="btn btn-secondary"
+        @click="$dispatch('open-admin-modal', { target: 'organization' })">
+    <i class="fas fa-building mr-2"></i>
+    New Organization
+</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8"
+     x-data="userManagementPage({
+         currentUserRole: '{{ user.role }}',
+         currentUserId: {{ user.id if user else 'null' }},
+         canManageUsers: {{ 'true' if permissions.manage_users else 'false' }},
+         isSuperAdmin: {{ 'true' if is_super_admin else 'false' }},
+         isOrgAdmin: {{ 'true' if is_org_admin else 'false' }},
+         currentUserOrgId: {{ user.organization_id if user and user.organization_id else 'null' }},
+         currentUserOrgName: '{{ user.organization.name if user and user.organization else "N/A" }}'
+     })"
+     x-init="init()"
+     x-on:open-admin-modal.window="
+        if ($event.detail?.target === 'user') { openCreateUser(); }
+        if ($event.detail?.target === 'organization') { openCreateOrganization(); }
+     "
+     x-cloak>
+
+    <!-- Organization Context Banner for Org Admins -->
+    {% if is_org_admin %}
+    <section class="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 p-4 shadow-soft">
+        <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md">
+                <i class="fas fa-building text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-slate-900">Organization Scope</h3>
+                <p class="mt-1 text-sm text-slate-600">
+                    You're managing users for <strong class="font-semibold text-blue-700">{{ user.organization.name if user and user.organization else "your organization" }}</strong>.
+                    You can view and manage users within your organization only.
+                </p>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Summary -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Total Users</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.totalUsers ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Across every organization and access tier.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 text-white shadow-soft">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Admin Seats</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.adminUsers ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Super admin &amp; admin roles across the stack.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 text-white shadow-soft">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Active Users</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.activeUsers ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Logged in during the current reporting window.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-soft">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Organizations</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900" x-text="stats.organizations ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Hospitals, clinics, and partner teams onboarded.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-soft">
+                        <i class="fas fa-building-columns"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <template x-if="error">
+        <div class="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-600 shadow-soft flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold" x-text="error.title"></p>
+                <p class="text-sm text-rose-500" x-text="error.message"></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        class="btn-secondary px-4 py-2 text-sm font-semibold"
+                        @click="retry(error.scope)">
+                    <i class="fas fa-rotate-right"></i>
+                    Retry
+                </button>
+                <button type="button"
+                        class="btn-ghost border border-transparent px-3 py-2 text-sm font-semibold text-rose-500 hover:text-rose-700"
+                        @click="clearError()">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Page Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">All Users</h2>
+            <p class="text-sm text-slate-500">Manage user accounts, roles, and permissions.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" @click="openOrgModal()" class="btn btn-secondary text-sm">
+                <i class="fas fa-building mr-2"></i>
+                Manage Organizations
+            </button>
+            <button type="button"
+                        class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-sm"
+                        @click="openCreateUser()">
+                    <i class="fas fa-user-plus mr-2"></i>
+                   Invite User
+              </button>
+        </div>
+    </div>
+
+
+    <!-- Filters & Search -->
+    <div class="card mb-6">
+        <div class="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Search -->
+            <div class="relative w-full md:w-96">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" 
+                       x-model="search" 
+                       @input.debounce.300ms="filterUsers()"
+                       placeholder="Search by name, email, or role..." 
+                       class="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none text-sm">
+            </div>
+
+            <!-- Filters -->
+            <div class="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                <select x-model="roleFilter" @change="filterUsers()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:border-blue-500 outline-none">
+                    <option value="">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="user">User</option>
+                </select>
+                
+                <select x-model="organizationFilter" @change="filterUsers()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:border-blue-500 outline-none">
+                    <option value="">All Organizations</option>
+                    <template x-for="org in organizations" :key="org.id">
+                        <option :value="org.id" x-text="org.name"></option>
+                    </template>
+                </select>
+                
+                <select x-model="statusFilter" @change="filterUsers()" class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600 focus:border-blue-500 outline-none">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+        <article class="card">
+            <div class="card-header flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">
+                        Users
+                        <span class="text-sm font-medium text-slate-400" x-text="`(${filteredUsers.length})`"></span>
+                    </h2>
+                    <p class="text-sm text-slate-500">Directory view by platform account. Choose a record to inspect or edit.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-clock text-[0.6rem]"></i>
+                        <span>Synced</span>
+                        <span class="font-semibold text-slate-500" x-text="lastSyncedLabel()"></span>
+                    </span>
+                    <button type="button"
+                            class="btn-ghost hidden items-center gap-2 rounded-full border border-slate-200/80 px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:border-health-blue hover:text-health-blue md:flex"
+                            @click="loadUsers()">
+                        <i class="fas fa-rotate-right"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <template x-if="loadingUsers">
+                    <div class="space-y-3 p-6">
+                        <div class="skeleton h-16"></div>
+                        <div class="skeleton h-16"></div>
+                        <div class="skeleton h-16"></div>
+                    </div>
+                </template>
+
+                <template x-if="!loadingUsers && filteredUsers.length">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-fixed divide-y divide-slate-200">
+                            <colgroup>
+                                <col style="width: 20%;">  <!-- User -->
+                                <col style="width: 18%;">  <!-- Email -->
+                                <col style="width: 14%;">  <!-- Organization -->
+                                <col style="width: 11%;">  <!-- Role -->
+                                <col style="width: 9%;">   <!-- Status -->
+                                <col style="width: 10%;">  <!-- Last Login -->
+                                <col style="width: 18%;">  <!-- Actions -->
+                            </colgroup>
+                            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left">User</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Email</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Organization</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Role</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Status</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Last Login</th>
+                                    <th scope="col" class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 bg-white text-sm text-slate-600">
+                                <template x-for="user in filteredUsers" :key="user.id">
+                                    <tr class="group hover:bg-slate-50/70">
+                                        <td class="px-4 py-3.5">
+                                            <div class="flex items-center gap-2.5">
+                                                <button type="button"
+                                                        class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-hover:bg-health-blue group-hover:text-white"
+                                                        @click="openUserDetails(user)">
+                                                    <i class="fas fa-user text-xs"></i>
+                                                </button>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-sm font-semibold text-slate-900" x-text="user.full_name || user.username" :title="user.full_name || user.username"></p>
+                                                    <p class="truncate text-xs text-slate-400" x-text="`@${user.username}`" :title="`@${user.username}`"></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <p class="truncate text-xs text-slate-500" x-text="user.email" :title="user.email"></p>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <p class="truncate text-xs text-slate-500" x-text="user.organization_name || 'Unassigned'" :title="user.organization_name || 'Unassigned'"></p>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="chip whitespace-nowrap" data-tone="blue" x-text="roleLabel(user.role)"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="chip whitespace-nowrap" :data-tone="user.is_active ? 'green' : 'rose'" x-text="user.is_active ? 'Active' : 'Suspended'"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="whitespace-nowrap text-xs text-slate-500" x-text="formatRelative(user.last_login)"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <div class="flex items-center justify-end gap-1.5">
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-health-blue hover:text-health-blue"
+                                                        @click="openUserDetails(user)"
+                                                        title="View details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-secondary rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                                                        x-show="canEditUser(user)"
+                                                        @click="openEditUser(user)"
+                                                        title="Edit user">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-indigo-200 px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 hover:border-indigo-500"
+                                                        x-show="canAssignUser(user)"
+                                                        @click="openAssignModal(user)"
+                                                        title="Assign to staff">
+                                                    <i class="fas fa-user-tag"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-amber-500 hover:text-amber-600"
+                                                        x-show="canSuspendUser(user) && user.is_active"
+                                                        @click="toggleUserStatus(user)"
+                                                        title="Suspend user">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50"
+                                                        x-show="canSuspendUser(user) && !user.is_active"
+                                                        @click="toggleUserStatus(user)"
+                                                        title="Activate user">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                        x-show="canDeleteUser(user)"
+                                                        @click="deleteUser(user)"
+                                                        title="Remove user">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
+                <template x-if="!loadingUsers && filteredUsers.length === 0">
+                    <div class="py-12 text-center text-sm text-slate-500">
+                        <i class="fas fa-search text-lg text-slate-300"></i>
+                        <p class="mt-2 font-semibold text-slate-700">No users match your filters.</p>
+                        <p>Adjust filters or invite someone new.</p>
+                    </div>
+                </template>
+            </div>
+        </article>
+    </section>
+
+    <!-- Organizations -->
+    <section x-show="activeTab === 'organizations'" x-cloak class="space-y-6">
+        <article class="card">
+            <div class="card-body space-y-4">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="w-full lg:max-w-xl">
+                        <label class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Search Organizations</label>
+                        <div class="relative mt-2">
+                            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                                <i class="fas fa-magnifying-glass text-sm"></i>
+                            </span>
+                            <input type="search"
+                                   class="w-full rounded-xl border border-slate-200 bg-white px-10 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 placeholder:text-slate-400"
+                                   placeholder="Search by name, type, or contact..."
+                                   x-model="orgSearch"
+                                   @input.debounce.250ms="filterOrganizations()">
+                        </div>
+                    </div>
+                    <button type="button"
+                            class="btn btn-secondary w-full shrink-0 sm:w-auto"
+                            @click="openCreateOrganization()">
+                        <i class="fas fa-building-circle-arrow-right"></i>
+                        Add Organization
+                    </button>
+                </div>
+                <div class="text-xs text-slate-400">
+                    <span x-text="`${filteredOrganizations.length} result(s)`"></span>
+                    <template x-if="filteredOrganizations.length !== organizations.length">
+                        <span class="ml-1 text-slate-300">·</span>
+                    </template>
+                    <template x-if="filteredOrganizations.length !== organizations.length">
+                        <span class="ml-1" x-text="`Showing filtered out of ${organizations.length}`"></span>
+                    </template>
+                </div>
+            </div>
+        </article>
+
+        <article class="card" id="organizations">
+            <div class="card-header flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">
+                        Organizations
+                        <span class="text-sm font-medium text-slate-400" x-text="`(${filteredOrganizations.length})`"></span>
+                    </h2>
+                    <p class="text-sm text-slate-500">Track enrolment and ownership across healthcare partners.</p>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <template x-if="loadingOrganizations">
+                    <div class="space-y-3 p-6">
+                        <div class="skeleton h-16"></div>
+                        <div class="skeleton h-16"></div>
+                    </div>
+                </template>
+
+                <template x-if="!loadingOrganizations && filteredOrganizations.length">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-fixed divide-y divide-slate-200">
+                            <colgroup>
+                                <col style="width: 30%;">  <!-- Organization -->
+                                <col style="width: 13%;">  <!-- Type -->
+                                <col style="width: 10%;">  <!-- Users -->
+                                <col style="width: 20%;">  <!-- Contact -->
+                                <col style="width: 11%;">  <!-- Status -->
+                                <col style="width: 16%;">  <!-- Actions -->
+                            </colgroup>
+                            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-left">Organization</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Type</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Users</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Contact</th>
+                                    <th scope="col" class="px-4 py-3 text-left">Status</th>
+                                    <th scope="col" class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 bg-white text-sm text-slate-600">
+                                <template x-for="org in filteredOrganizations" :key="org.id">
+                                    <tr class="group hover:bg-slate-50/70">
+                                        <td class="px-4 py-3.5">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-600">
+                                                    <i class="fas fa-building text-xs"></i>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-sm font-semibold text-slate-900" x-text="org.name" :title="org.name"></p>
+                                                    <p class="truncate text-xs text-slate-400" x-text="org.email || 'No contact email'" :title="org.email || 'No contact email'"></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="whitespace-nowrap text-xs text-slate-500" x-text="formatOrganizationType(org.type)"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700" x-text="org.user_count != null ? org.user_count : 0"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <p class="truncate text-xs text-slate-500" x-text="org.contact || '—'" :title="org.contact || '—'"></p>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <span class="chip whitespace-nowrap" :data-tone="org.is_active ? 'green' : 'rose'" x-text="org.is_active ? 'Active' : 'Disabled'"></span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            <div class="flex items-center justify-end gap-1.5">
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-health-blue hover:text-health-blue"
+                                                        @click="openOrganizationDetails(org)"
+                                                        title="View details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-secondary rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                                                        @click="openEditOrganization(org)"
+                                                        title="Edit organization">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-ghost rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-500 hover:text-white"
+                                                        @click="deleteOrganization(org)"
+                                                        title="Remove organization">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+
+                <template x-if="!loadingOrganizations && filteredOrganizations.length === 0">
+                    <div class="py-12 text-center text-sm text-slate-500">
+                        <i class="fas fa-building-circle-exclamation text-lg text-slate-300"></i>
+                        <p class="mt-2 font-semibold text-slate-700">No organizations found.</p>
+                        <p>Use the action above to register a new partner.</p>
+                    </div>
+                </template>
+            </div>
+        </article>
+    </section>
+
+    <!-- View User Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showViewUserModal"
+         x-cloak
+         @keydown.escape.window="closeUserDetails()"
+         @click.self="closeUserDetails()">
+        <div class="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    User Profile
+                </h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="closeUserDetails()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <template x-if="selectedUser">
+                <div class="space-y-5 px-6 py-6">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p class="text-lg font-semibold text-slate-900" x-text="selectedUser.full_name || selectedUser.username"></p>
+                            <p class="text-sm text-slate-500" x-text="selectedUser.email"></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="chip" data-tone="blue" x-text="roleLabel(selectedUser.role)"></span>
+                            <span class="chip"
+                                  :data-tone="selectedUser.is_active ? 'green' : 'rose'"
+                                  x-text="selectedUser.is_active ? 'Active' : 'Suspended'"></span>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Organization</p>
+                            <p class="text-sm font-semibold text-slate-700" x-text="selectedUser.organization_name || 'Not assigned'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Role</p>
+                            <p class="text-sm font-semibold text-slate-700" x-text="roleLabel(selectedUser.role)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Created</p>
+                            <p class="text-sm font-semibold text-slate-700" x-text="formatDate(selectedUser.created_at)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Last Login</p>
+                            <p class="text-sm font-semibold text-slate-700" x-text="formatDate(selectedUser.last_login)"></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+                        <button type="button"
+                                class="btn-secondary px-4 py-2 text-sm font-semibold"
+                                x-show="canEditUser(selectedUser)"
+                                @click="const userToEdit = selectedUser; closeUserDetails(); $nextTick(() => openEditUser(userToEdit));">
+                            <i class="fas fa-pen"></i>
+                            Edit User
+                        </button>
+                        <button type="button"
+                                class="btn-ghost border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-500 hover:text-white"
+                                x-show="canDeleteUser(selectedUser)"
+                                @click="deleteUser(selectedUser)">
+                            <i class="fas fa-user-xmark"></i>
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showAddUserModal"
+         x-cloak
+         @keydown.escape.window="showAddUserModal = false"
+         @click.self="showAddUserModal = false">
+        <div class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Invite New User</h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="showAddUserModal = false">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <form @submit.prevent="createUser()" class="space-y-5 px-6 py-6">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Username
+                        <input type="text" x-model.trim="newUser.username" required
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Email
+                        <input type="email" x-model.trim="newUser.email" required
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Password
+                        <input type="password" x-model="newUser.password" required minlength="8"
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Full Name
+                        <input type="text" x-model.trim="newUser.full_name" required
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Role
+                        <select x-model="newUser.role" required
+                                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <template x-for="role in filteredRoles()" :key="role.value">
+                                <option :value="role.value" x-text="role.label"></option>
+                            </template>
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Organization
+                        <select x-model="newUser.organization_id"
+                                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <option value="">Not assigned</option>
+                            <template x-for="org in organizations" :key="org.id">
+                                <option :value="String(org.id)" x-text="org.name"></option>
+                            </template>
+                        </select>
+                    </label>
+                </div>
+                <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
+                    <input type="checkbox" class="rounded border-slate-300 text-health-blue focus:ring-health-blue/40"
+                           x-model="newUser.is_active">
+                    Activate immediately
+                </label>
+                <div class="flex flex-col gap-2 text-xs text-slate-400">
+                    <span class="font-semibold uppercase tracking-[0.2em] text-slate-500">Access Policy</span>
+                    <p>Invitations include a welcome email with activation instructions. Roles can always be adjusted later.</p>
+                </div>
+                <div class="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                    <button type="button"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                            @click="showAddUserModal = false">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Send Invite
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showEditUserModal"
+         x-cloak
+         @keydown.escape.window="showEditUserModal = false"
+         @click.self="showEditUserModal = false">
+        <div class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Edit User</h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="showEditUserModal = false">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <template x-if="editUserForm.id">
+                <form @submit.prevent="updateUser()" class="space-y-5 px-6 py-6">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            Username
+                            <input type="text" x-model.trim="editUserForm.username" required
+                                   class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            Email
+                            <input type="email" x-model.trim="editUserForm.email" required
+                                   class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            Full Name
+                            <input type="text" x-model.trim="editUserForm.full_name" required
+                                   class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            Role
+                            <select x-model="editUserForm.role" required
+                                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30"
+                                    :disabled="!canEditUserByRole(editUserForm)">
+                                <template x-for="role in filteredRoles()" :key="role.value">
+                                    <option :value="role.value" x-text="role.label"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            Organization
+                            <select x-model="editUserForm.organization_id"
+                                    class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                                <option value="">Not assigned</option>
+                                <template x-for="org in organizations" :key="org.id">
+                                    <option :value="String(org.id)" x-text="org.name"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                            New Password <span class="text-xs font-normal text-slate-400">(optional)</span>
+                            <input type="password" x-model="editUserForm.password" minlength="8"
+                                   placeholder="Leave blank to keep current password"
+                                   class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                        </label>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
+                        <input type="checkbox" class="rounded border-slate-300 text-health-blue focus:ring-health-blue/40"
+                               x-model="editUserForm.is_active">
+                        Active account
+                    </label>
+                    <div class="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                        <button type="button"
+                                class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                @click="showEditUserModal = false">
+                            Cancel
+                        </button>
+                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            <i class="fas fa-floppy-disk mr-2"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <!-- Add Organization Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showAddOrgModal"
+         x-cloak
+         @keydown.escape.window="showAddOrgModal = false"
+         @click.self="showAddOrgModal = false">
+        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Register Organization</h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="showAddOrgModal = false">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <form @submit.prevent="createOrganization()" class="space-y-5 px-6 py-6">
+                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                    Organization Name
+                    <input type="text" x-model.trim="newOrg.name" required
+                           class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                </label>
+                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                    Type
+                    <select x-model="newOrg.type" required
+                            class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                        <template x-for="type in organizationTypes" :key="type.value">
+                            <option :value="type.value" x-text="type.label"></option>
+                        </template>
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                    Email
+                    <input type="email" x-model.trim="newOrg.email" required
+                           class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                </label>
+                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                    Contact Person
+                    <input type="text" x-model.trim="newOrg.contact" required
+                           class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                </label>
+                <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
+                    <input type="checkbox" class="rounded border-slate-300 text-health-blue focus:ring-health-blue/40"
+                           x-model="newOrg.is_active">
+                    Active organization
+                </label>
+                <div class="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                    <button type="button"
+                            class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                            @click="showAddOrgModal = false">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        <i class="fas fa-building-check mr-2"></i>
+                        Create Organization
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Organization Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showEditOrgModal"
+         x-cloak
+         @keydown.escape.window="showEditOrgModal = false"
+         @click.self="showEditOrgModal = false">
+        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Edit Organization</h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="showEditOrgModal = false">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <template x-if="editOrgForm.id">
+                <form @submit.prevent="updateOrganization()" class="space-y-5 px-6 py-6">
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Organization Name
+                        <input type="text" x-model.trim="editOrgForm.name" required
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Type
+                        <select x-model="editOrgForm.type" required
+                                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                            <template x-for="type in organizationTypes" :key="type.value">
+                                <option :value="type.value" x-text="type.label"></option>
+                            </template>
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Email
+                        <input type="email" x-model.trim="editOrgForm.email"
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Contact Person
+                        <input type="text" x-model.trim="editOrgForm.contact"
+                               class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                    </label>
+                    <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
+                        <input type="checkbox" class="rounded border-slate-300 text-health-blue focus:ring-health-blue/40"
+                               x-model="editOrgForm.is_active">
+                        Active organization
+                    </label>
+                    <div class="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                        <button type="button"
+                                class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                @click="showEditOrgModal = false">
+                            Cancel
+                        </button>
+                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            <i class="fas fa-floppy-disk mr-2"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
+
+    <!-- Assign User Modal -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6"
+         x-show="showAssignModal"
+         x-cloak
+         @keydown.escape.window="showAssignModal = false"
+         @click.self="showAssignModal = false">
+        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 class="text-lg font-semibold text-slate-900">Assign User to Staff</h3>
+                <button type="button"
+                        class="btn-ghost h-9 w-9 rounded-full border border-slate-200/80 text-slate-400 hover:text-slate-700"
+                        @click="showAssignModal = false">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <template x-if="selectedUserForAssignment">
+                <form @submit.prevent="assignUser()" class="space-y-5 px-6 py-6">
+                    <div class="rounded-xl border border-indigo-200 bg-indigo-50/50 p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900" x-text="selectedUserForAssignment.full_name || selectedUserForAssignment.username"></p>
+                                <p class="text-xs text-slate-500" x-text="roleLabel(selectedUserForAssignment.role)"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Assign to Healthcare Staff
+                        <select x-model="assignForm.assigned_to_id" required
+                                class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/30">
+                            <option value="">Select staff member...</option>
+                            <template x-for="staff in healthcareStaff()" :key="staff.id">
+                                <option :value="String(staff.id)" x-text="`${staff.full_name || staff.username} (${roleLabel(staff.role)})`"></option>
+                            </template>
+                        </select>
+                    </label>
+                    
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-start gap-2 text-xs text-slate-600">
+                            <i class="fas fa-circle-info mt-0.5 text-indigo-500"></i>
+                            <div>
+                                <p class="font-semibold text-slate-700">Assignment Purpose</p>
+                                <p class="mt-1">The assigned staff member will be able to manage this user's data, conversations, and documents. Only assign to trusted healthcare professionals.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col justify-end gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+                        <button type="button"
+                                class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                @click="showAssignModal = false">
+                            Cancel
+                        </button>
+                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            <i class="fas fa-user-tag mr-2"></i>
+                            Assign User
+                        </button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="/static/js/pages/user-management.js?v=2025020105"></script>
+{% endblock %}

@@ -1,0 +1,348 @@
+{% extends "social_worker/base_sw.html" %}
+
+{% block title %}Dashboard - Social Worker Hub{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+{% block page_subtitle %}Welcome back! Here's what needs your attention.{% endblock %}
+
+{% block content %}
+<div x-data="dashboardData()" x-init="init()">
+    
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        
+        <!-- Active Cases -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-teal-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 font-medium">Active Cases</p>
+                    <p class="text-3xl font-bold text-gray-800" x-text="metrics.active_cases || 0"></p>
+                </div>
+                <div class="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-folder-open text-teal-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-gray-500">Assigned to you</span>
+            </div>
+        </div>
+        
+        <!-- High Risk Cases -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 font-medium">High Risk</p>
+                    <p class="text-3xl font-bold text-red-600" x-text="metrics.high_risk_cases || 0"></p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-red-500">Requires immediate attention</span>
+            </div>
+        </div>
+        
+        <!-- Unresolved Alerts -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-amber-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 font-medium">Unresolved Alerts</p>
+                    <p class="text-3xl font-bold text-amber-600" x-text="metrics.unresolved_alerts || 0"></p>
+                </div>
+                <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-bell text-amber-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-gray-500">Last 24 hours</span>
+            </div>
+        </div>
+        
+        <!-- New Alerts Today -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 font-medium">New Today</p>
+                    <p class="text-3xl font-bold text-blue-600" x-text="metrics.new_alerts_today || 0"></p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-plus-circle text-blue-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-gray-500">Alerts received</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Recent Alerts (Left Column) -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-bell mr-2 text-amber-500"></i>
+                        Recent Alerts
+                    </h3>
+                    <a href="/admin/social-worker/alerts" class="text-sm text-teal-600 hover:text-teal-700">
+                        View All <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="divide-y divide-gray-100">
+                <template x-for="alert in recentAlerts" :key="alert.id">
+                    <div class="p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                                     :class="getAlertClass(alert.severity)">
+                                    <i class="fas" :class="alert.severity >= 4 ? 'fa-exclamation' : 'fa-info'"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800" x-text="alert.title"></h4>
+                                    <p class="text-sm text-gray-500 line-clamp-2" x-text="alert.message"></p>
+                                    <p class="text-xs text-gray-400 mt-1" x-text="formatTime(alert.created_at)"></p>
+                                </div>
+                            </div>
+                            <button @click="resolveAlert(alert.id)" 
+                                    class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                    x-show="!alert.resolved">
+                                Resolve
+                            </button>
+                        </div>
+                    </div>
+                </template>
+                
+                <div x-show="recentAlerts.length === 0" class="p-8 text-center text-gray-500">
+                    <i class="fas fa-check-circle text-4xl text-green-400 mb-2"></i>
+                    <p>No recent alerts. Great job!</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Priority Cases (Right Column) -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    <i class="fas fa-star mr-2 text-yellow-500"></i>
+                    Priority Cases
+                </h3>
+            </div>
+            
+            <div class="divide-y divide-gray-100">
+                <template x-for="caseItem in priorityCases" :key="caseItem.id">
+                    <a :href="'/admin/social-worker/cases/' + caseItem.id" 
+                       class="block p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-medium text-gray-800" x-text="caseItem.case_number"></h4>
+                                <p class="text-sm text-gray-500 line-clamp-1" x-text="caseItem.summary"></p>
+                            </div>
+                            <span class="px-2 py-1 text-xs rounded-full"
+                                  :class="getRiskClass(caseItem.risk_level)">
+                                <span x-text="caseItem.risk_level + '%'"></span>
+                            </span>
+                        </div>
+                    </a>
+                </template>
+                
+                <div x-show="priorityCases.length === 0" class="p-8 text-center text-gray-500">
+                    <i class="fas fa-clipboard-check text-4xl text-green-400 mb-2"></i>
+                    <p>No high-priority cases</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        
+        <!-- Alert Trends Chart -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                Alert Trends (7 Days)
+            </h3>
+            <canvas id="alertTrendsChart" height="200"></canvas>
+        </div>
+        
+        <!-- Case Distribution Chart -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-pie mr-2 text-purple-500"></i>
+                Cases by Status
+            </h3>
+            <canvas id="caseDistributionChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboardData() {
+    return {
+        metrics: {},
+        recentAlerts: [],
+        priorityCases: [],
+        alertTrendsChart: null,
+        caseDistributionChart: null,
+        
+        async init() {
+            await this.loadMetrics();
+            await this.loadRecentAlerts();
+            await this.loadPriorityCases();
+            this.initCharts();
+            this.setupWebSocket();
+        },
+        
+        async loadMetrics() {
+            try {
+                const response = await fetch('/api/v1/social-worker/analytics/dashboard');
+                const data = await response.json();
+                this.metrics = data.metrics || {};
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        },
+        
+        async loadRecentAlerts() {
+            try {
+                const response = await fetch('/api/v1/social-worker/alerts/recent?hours=24&limit=5');
+                const data = await response.json();
+                this.recentAlerts = data.alerts || [];
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+            }
+        },
+        
+        async loadPriorityCases() {
+            try {
+                const response = await fetch('/api/v1/social-worker/cases/high-risk?limit=5');
+                const data = await response.json();
+                this.priorityCases = data.cases || [];
+            } catch (error) {
+                console.error('Error loading cases:', error);
+            }
+        },
+        
+        initCharts() {
+            // Alert Trends Line Chart
+            const trendsCtx = document.getElementById('alertTrendsChart').getContext('2d');
+            this.alertTrendsChart = new Chart(trendsCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Alerts',
+                        data: [12, 8, 15, 10, 7, 5, 9],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            // Case Distribution Doughnut Chart
+            const distCtx = document.getElementById('caseDistributionChart').getContext('2d');
+            const statusCounts = this.metrics.cases_by_status || {};
+            this.caseDistributionChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Open', 'Monitoring', 'Review', 'Escalated', 'Closed'],
+                    datasets: [{
+                        data: [
+                            statusCounts.open || 0,
+                            statusCounts.monitoring || 0,
+                            statusCounts.review || 0,
+                            statusCounts.escalated || 0,
+                            statusCounts.closed || 0
+                        ],
+                        backgroundColor: [
+                            '#14B8A6', // teal
+                            '#3B82F6', // blue
+                            '#F59E0B', // amber
+                            '#EF4444', // red
+                            '#6B7280'  // gray
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        },
+        
+        setupWebSocket() {
+            window.addEventListener('new-alert', (event) => {
+                this.recentAlerts.unshift(event.detail);
+                if (this.recentAlerts.length > 5) {
+                    this.recentAlerts.pop();
+                }
+                this.metrics.unresolved_alerts = (this.metrics.unresolved_alerts || 0) + 1;
+                this.metrics.new_alerts_today = (this.metrics.new_alerts_today || 0) + 1;
+            });
+        },
+        
+        async resolveAlert(alertId) {
+            try {
+                const response = await fetch(`/api/v1/social-worker/alerts/${alertId}/resolve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resolution_action: 'acknowledged' })
+                });
+                
+                if (response.ok) {
+                    this.recentAlerts = this.recentAlerts.filter(a => a.id !== alertId);
+                    this.metrics.unresolved_alerts = Math.max(0, (this.metrics.unresolved_alerts || 0) - 1);
+                }
+            } catch (error) {
+                console.error('Error resolving alert:', error);
+            }
+        },
+        
+        getAlertClass(severity) {
+            const classes = {
+                1: 'bg-green-100 text-green-600',
+                2: 'bg-yellow-100 text-yellow-600',
+                3: 'bg-orange-100 text-orange-600',
+                4: 'bg-red-100 text-red-600',
+                5: 'bg-red-500 text-white'
+            };
+            return classes[severity] || 'bg-gray-100 text-gray-600';
+        },
+        
+        getRiskClass(riskLevel) {
+            if (riskLevel >= 80) return 'bg-red-500 text-white';
+            if (riskLevel >= 60) return 'bg-red-100 text-red-700';
+            if (riskLevel >= 40) return 'bg-yellow-100 text-yellow-700';
+            return 'bg-green-100 text-green-700';
+        },
+        
+        formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = (now - date) / 1000 / 60; // minutes
+            
+            if (diff < 60) return `${Math.round(diff)}m ago`;
+            if (diff < 1440) return `${Math.round(diff / 60)}h ago`;
+            return date.toLocaleDateString();
+        }
+    };
+}
+</script>
+{% endblock %}
+

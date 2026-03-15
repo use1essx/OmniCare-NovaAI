@@ -1,0 +1,119 @@
+{
+  "validation": {
+    "timeouts": {
+      "cleanup_seconds": 120,
+      "build_seconds": 900,
+      "startup_seconds": 180,
+      "health_check_seconds": 180,
+      "total_validation_seconds": 1800
+    },
+    "retries": {
+      "health_check_attempts": 3,
+      "health_check_delay_seconds": 10,
+      "docker_command_attempts": 2
+    },
+    "thresholds": {
+      "cpu_warning_percent": 90,
+      "memory_warning_percent": 80,
+      "disk_warning_gb": 5
+    }
+  },
+  "services": [
+    {
+      "name": "postgres",
+      "container_name": "healthcare_ai_postgres",
+      "health_check": {
+        "type": "command",
+        "command": "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"
+      },
+      "startup_timeout_seconds": 30,
+      "dependencies": []
+    },
+    {
+      "name": "redis",
+      "container_name": "healthcare_ai_redis",
+      "health_check": {
+        "type": "command",
+        "command": "redis-cli ping"
+      },
+      "startup_timeout_seconds": 15,
+      "dependencies": []
+    },
+    {
+      "name": "healthcare_ai",
+      "container_name": "healthcare_ai_backend",
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:8000/health",
+        "expected_status": 200
+      },
+      "startup_timeout_seconds": 60,
+      "dependencies": ["postgres", "redis"]
+    },
+    {
+      "name": "stt_server",
+      "container_name": "healthcare_ai_stt",
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:8790/health",
+        "expected_status": 200
+      },
+      "startup_timeout_seconds": 60,
+      "dependencies": ["postgres"]
+    },
+    {
+      "name": "motion_capture",
+      "container_name": "healthcare_ai_motion",
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:8001/health",
+        "expected_status": 200
+      },
+      "startup_timeout_seconds": 60,
+      "dependencies": ["postgres"]
+    },
+    {
+      "name": "assessment",
+      "container_name": "healthcare_ai_assessment",
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:8002/health",
+        "expected_status": 200
+      },
+      "startup_timeout_seconds": 30,
+      "dependencies": ["postgres"]
+    },
+    {
+      "name": "pgadmin",
+      "container_name": "healthcare_ai_pgadmin",
+      "health_check": {
+        "type": "http",
+        "url": "http://localhost:5050",
+        "expected_status": 200
+      },
+      "startup_timeout_seconds": 30,
+      "dependencies": ["postgres"]
+    }
+  ],
+  "volumes": [
+    "healthcare_ai_redis_data",
+    "healthcare_ai_pgadmin_data",
+    "healthcare_ai_uploads",
+    "healthcare_ai_logs",
+    "healthcare_ai_whisper_cache"
+  ],
+  "required_env_vars": [
+    "DATABASE_NAME",
+    "DATABASE_USER",
+    "DATABASE_PASSWORD",
+    "SECRET_KEY",
+    "PGADMIN_EMAIL",
+    "PGADMIN_PASSWORD"
+  ],
+  "placeholder_values": {
+    "DATABASE_PASSWORD": "CHANGE_IN_PRODUCTION_use_strong_password_here",
+    "SECRET_KEY": "CHANGE_IN_PRODUCTION_generate_secure_random_key_min_32_chars",
+    "PGADMIN_PASSWORD": "CHANGE_IN_PRODUCTION_use_strong_password",
+    "SUPER_ADMIN_PASSWORD": "CHANGE_IN_PRODUCTION_use_strong_password"
+  }
+}

@@ -1,0 +1,611 @@
+:root {
+    /* Layering */
+    --live2d-z-canvas: 0;
+    --live2d-z-hud: 10;
+    --live2d-z-rail: 20;
+    --live2d-z-composer: 25;
+
+    /* Layout tokens */
+    --live2d-safe-top: env(safe-area-inset-top, 0px);
+    --live2d-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --live2d-safe-left: env(safe-area-inset-left, 0px);
+    --live2d-safe-right: env(safe-area-inset-right, 0px);
+    --live2d-composer-gap: 18px;
+    --live2d-rail-gap: 12px;
+    --live2d-rail-radius: 20px;
+    --live2d-composer-radius: 999px;
+    --live2d-rail-max-height: 38vh;
+    --live2d-keyboard-offset: 0px;
+    --live2d-rail-width: min(880px, 96vw);
+    --live2d-composer-width: min(700px, 92vw);
+    --live2d-rail-transition: 180ms;
+    --live2d-rail-shift: -16px;
+
+    /* Palette */
+    --live2d-overlay-bg: rgba(34, 43, 64, 0.2);
+    --live2d-overlay-bg-strong: rgba(34, 43, 64, 0.38);
+    --live2d-overlay-border: rgba(240, 247, 255, 0.55);
+    --live2d-overlay-border-strong: rgba(240, 247, 255, 0.65);
+    --live2d-overlay-shadow: 0 18px 50px rgba(10, 18, 32, 0.32);
+    --live2d-text-color: #f4f8ff;
+    --live2d-muted-color: rgba(244, 248, 255, 0.7);
+    --live2d-pill-bg: rgba(32, 42, 64, 0.72);
+    --live2d-pill-border: rgba(115, 173, 255, 0.38);
+    --live2d-pill-shadow: 0 15px 36px rgba(9, 20, 36, 0.26);
+    --live2d-accent: #1d8fe3;
+    --live2d-accent-strong: #0b74ce;
+    --live2d-danger: #ef5f68;
+    --live2d-success: #22c55e;
+    --live2d-scrollbar: rgba(210, 224, 255, 0.4);
+
+    color-scheme: only light;
+}
+
+.live2d-chat-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+    pointer-events: none;
+    contain: layout style;
+    isolation: isolate;
+}
+
+.live2d-chat-stage__canvas {
+    position: absolute;
+    inset: 0;
+    z-index: var(--live2d-z-canvas);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-top: clamp(96px, 16vh, 160px);
+    padding-bottom: clamp(110px, 18vh, 180px);
+    pointer-events: none;
+}
+
+.live2d-chat-stage__canvas-frame {
+    width: min(560px, 88%);
+    aspect-ratio: 361 / 410;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(29, 143, 227, 0.28);
+    box-shadow: 0 32px 54px rgba(15, 61, 87, 0.24);
+    background: url('/live2d/Resources/back_class_normal.png?v=1759082606') center/cover no-repeat;
+    position: relative;
+    pointer-events: auto;
+}
+
+.live2d-chat-stage__canvas-frame > canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
+.live2d-chat-stage__stt {
+    position: absolute;
+    left: calc(24px + var(--live2d-safe-left));
+    bottom: calc(24px + var(--live2d-safe-bottom));
+    max-width: min(48ch, 64vw);
+    padding: 12px 16px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #fdfdff;
+    background: rgba(17, 25, 38, 0.78);
+    box-shadow: var(--live2d-overlay-shadow);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: var(--live2d-z-hud);
+    pointer-events: none;
+    display: none;
+    transition: opacity 120ms ease;
+}
+
+.live2d-chat-stage__rail {
+    position: absolute;
+    top: calc(var(--live2d-safe-top) + var(--live2d-rail-gap));
+    left: 50%;
+    transform: translateX(-50%) translateY(var(--live2d-rail-shift));
+    width: var(--live2d-rail-width);
+    max-height: var(--live2d-rail-max-height);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-radius: var(--live2d-rail-radius);
+    background: var(--live2d-overlay-bg);
+    border: 1px solid var(--live2d-overlay-border);
+    color: var(--live2d-text-color);
+    box-shadow: var(--live2d-overlay-shadow);
+    padding: 18px 20px 22px;
+    z-index: var(--live2d-z-rail);
+    pointer-events: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0;
+    transition:
+        opacity var(--live2d-rail-transition) ease,
+        transform var(--live2d-rail-transition) ease,
+        box-shadow var(--live2d-rail-transition) ease;
+    will-change: transform, opacity;
+}
+
+.live2d-chat-stage[data-rail-visibility="hidden"] .live2d-chat-stage__rail {
+    opacity: 0;
+    pointer-events: none;
+    --live2d-rail-shift: -18px;
+}
+
+.live2d-chat-stage[data-rail-visibility="peek"] .live2d-chat-stage__rail {
+    opacity: 0.35;
+    pointer-events: auto;
+    --live2d-rail-shift: -6px;
+}
+
+.live2d-chat-stage[data-rail-visibility="show"] .live2d-chat-stage__rail {
+    opacity: 1;
+    pointer-events: auto;
+    --live2d-rail-shift: 0px;
+}
+
+.live2d-chat-stage[data-blur="true"] .live2d-chat-stage__rail,
+.live2d-chat-stage[data-blur="true"] .live2d-chat-stage__composer {
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    background: var(--live2d-overlay-bg-strong);
+    border-color: var(--live2d-overlay-border-strong);
+}
+
+.live2d-chat-stage__rail-header,
+.live2d-chat-stage__rail-actions,
+.live2d-chat-stage__rail-title-group,
+.live2d-chat-stage__rail-title,
+.live2d-chat-stage__rail-subtitle {
+    display: none !important;
+}
+
+.live2d-chat-stage__rail-scroll {
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 8px 8px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overscroll-behavior: contain;
+    mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 0.76) 30px, rgb(0 0 0 / 1) calc(100% - 30px), rgb(0 0 0 / 0) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.76) 30px, rgba(0,0,0,1) calc(100% - 30px), rgba(0,0,0,0) 100%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--live2d-scrollbar) transparent;
+}
+
+.live2d-chat-stage__rail-scroll:hover {
+    scrollbar-color: rgba(210, 224, 255, 0.7) transparent;
+}
+
+.live2d-chat-stage__rail-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.live2d-chat-stage__rail-scroll::-webkit-scrollbar-thumb {
+    background: var(--live2d-scrollbar);
+    border-radius: 999px;
+}
+
+.live2d-chat-stage__load-bar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 6px;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(180deg, rgba(20, 28, 44, 0.32), transparent);
+}
+
+.live2d-chat-stage__load-older {
+    align-self: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(27, 42, 68, 0.72);
+    border: 1px solid rgba(196, 215, 255, 0.35);
+    color: var(--live2d-text-color);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: none;
+    cursor: pointer;
+    transition: background 120ms ease, transform 120ms ease;
+    pointer-events: auto;
+}
+
+.live2d-chat-stage__load-older:hover {
+    background: rgba(27, 42, 68, 0.92);
+    transform: translateY(-1px);
+}
+
+.live2d-chat-stage__admin-link {
+    display: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--live2d-muted-color);
+    text-decoration: none;
+    border: 1px solid rgba(196, 215, 255, 0.35);
+    background: rgba(27, 42, 68, 0.52);
+    transition: background 120ms ease, color 120ms ease;
+}
+
+.live2d-chat-stage__admin-link:hover {
+    color: var(--live2d-text-color);
+    background: rgba(27, 42, 68, 0.7);
+}
+
+.live2d-chat-stage__admin-link:focus-visible {
+    outline: 2px solid rgba(122, 179, 255, 0.9);
+    outline-offset: 2px;
+}
+
+.live2d-chat-stage__load-older:focus-visible {
+    outline: 2px solid rgba(122, 179, 255, 0.9);
+    outline-offset: 2px;
+}
+
+.live2d-chat-stage__empty {
+    border: 1px dashed rgba(200, 220, 255, 0.42);
+    border-radius: 18px;
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--live2d-muted-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(18, 25, 40, 0.32);
+}
+
+.live2d-chat-stage__empty-emoji {
+    font-size: 2.4rem;
+}
+
+.live2d-chat-stage__scroll-indicator {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(210, 224, 255, 0.5);
+    background: rgba(18, 24, 40, 0.82);
+    color: var(--live2d-text-color);
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 16px 38px rgba(4, 12, 28, 0.28);
+    transition: transform 140ms ease;
+}
+
+.live2d-chat-stage__scroll-indicator:hover {
+    transform: translateY(-2px);
+}
+
+.live2d-chat-stage__composer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--live2d-safe-bottom) + var(--live2d-composer-gap));
+    width: var(--live2d-composer-width);
+    display: grid;
+    grid-template-columns: auto auto auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: var(--live2d-composer-radius);
+    background: var(--live2d-pill-bg);
+    border: 1px solid var(--live2d-pill-border);
+    box-shadow: var(--live2d-pill-shadow);
+    z-index: var(--live2d-z-composer);
+    pointer-events: auto;
+    touch-action: manipulation;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+    will-change: transform;
+}
+
+.live2d-chat-stage[data-keyboard="raised"] .live2d-chat-stage__composer {
+    transform: translate(-50%, calc(-1 * var(--live2d-keyboard-offset)));
+}
+
+.live2d-chat-stage__hud {
+    position: absolute;
+    z-index: var(--live2d-z-hud);
+    top: calc(var(--live2d-safe-top) + 12px);
+    right: calc(var(--live2d-safe-right) + 16px);
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.live2d-chat-stage__btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(204, 220, 255, 0.45);
+    background: rgba(19, 26, 42, 0.88);
+    color: var(--live2d-text-color);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform 120ms ease, background 120ms ease;
+    font-size: 1.05rem;
+}
+
+.live2d-chat-stage__btn:hover {
+    transform: translateY(-1px);
+    background: rgba(19, 26, 42, 0.96);
+}
+
+.live2d-chat-stage__btn:focus-visible {
+    outline: 2px solid rgba(122, 179, 255, 0.9);
+    outline-offset: 2px;
+}
+
+#textInput.live2d-chat-stage__input {
+    border: none;
+    background: transparent;
+    resize: none;
+    color: var(--live2d-text-color);
+    font-size: 0.95rem;
+    line-height: 1.4;
+    max-height: 140px;
+    min-height: 42px;
+    padding: 0;
+    outline: none;
+}
+
+#textInput.live2d-chat-stage__input::placeholder {
+    color: rgba(244, 248, 255, 0.6);
+}
+
+.live2d-chat-stage__char-counter {
+    font-size: 0.72rem;
+    color: var(--live2d-muted-color);
+    margin-top: 4px;
+    text-align: right;
+}
+
+.live2d-chat-stage__send {
+    min-width: 56px;
+    padding: 0 18px;
+    height: 44px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(140deg, var(--live2d-accent), var(--live2d-accent-strong));
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+    box-shadow: 0 16px 38px rgba(7, 105, 190, 0.32);
+}
+
+.live2d-chat-stage__send:hover {
+    transform: translateY(-1px);
+}
+
+.live2d-chat-stage__send:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 2px;
+}
+
+.message {
+    position: relative;
+    border-radius: 16px;
+    padding: 16px 18px;
+    background: rgba(16, 22, 38, 0.68);
+    border: 1px solid rgba(170, 200, 255, 0.22);
+    color: var(--live2d-text-color);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.22);
+}
+
+.message.bot-message {
+    align-self: flex-start;
+    background: rgba(14, 25, 44, 0.68);
+}
+
+.message.user-message {
+    align-self: flex-end;
+    background: rgba(33, 54, 92, 0.68);
+}
+
+.message-time,
+.message-status {
+    font-size: 0.72rem;
+    color: rgba(214, 224, 244, 0.68);
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.health-warning {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(184, 108, 121, 0.18);
+    border: 1px solid rgba(239, 95, 104, 0.38);
+    margin-top: 12px;
+}
+
+.typing-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: rgba(225, 234, 255, 0.8);
+}
+
+.typing-dots {
+    display: inline-grid;
+    grid-auto-flow: column;
+    gap: 6px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(225, 234, 255, 0.8);
+    animation: modernTypingDot 1s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.12s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.24s;
+}
+
+.live2d-chat-stage__composer .voice-btn,
+.live2d-chat-stage__composer .send-btn,
+.live2d-chat-stage__composer .clear-session-btn {
+    all: unset;
+}
+
+.live2d-chat-stage__composer .voice-btn,
+.live2d-chat-stage__composer .clear-session-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(204, 220, 255, 0.45);
+    background: rgba(19, 26, 42, 0.88);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 1.05rem;
+    transition: transform 120ms ease, background 120ms ease;
+}
+
+.live2d-chat-stage__composer .voice-btn:hover,
+.live2d-chat-stage__composer .clear-session-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(19, 26, 42, 0.96);
+}
+
+.live2d-chat-stage__composer .voice-btn:focus-visible,
+.live2d-chat-stage__composer .clear-session-btn:focus-visible,
+.live2d-chat-stage__composer .send-btn:focus-visible {
+    outline: 2px solid rgba(122, 179, 255, 0.9);
+    outline-offset: 2px;
+}
+
+.live2d-chat-stage__composer .send-btn {
+    all: revert;
+    border: none;
+    background: linear-gradient(140deg, var(--live2d-accent), var(--live2d-accent-strong));
+    color: #fff;
+    font-weight: 600;
+    padding: 0 20px;
+    height: 44px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 16px 38px rgba(7, 105, 190, 0.32);
+    transition: transform 120ms ease;
+}
+
+.live2d-chat-stage__composer .send-btn:hover {
+    transform: translateY(-1px);
+}
+
+.live2d-chat-stage__composer .send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.live2d-chat-stage__char-counter {
+    position: absolute;
+    right: 24px;
+    bottom: calc(-20px - var(--live2d-safe-bottom));
+}
+
+@media (max-width: 960px) {
+    .live2d-chat-stage__rail {
+        width: min(92vw, 620px);
+    }
+
+    .live2d-chat-stage__composer {
+        width: min(92vw, 660px);
+        grid-template-columns: auto 1fr auto;
+        gap: 14px;
+    }
+
+    .live2d-chat-stage__composer .clear-session-btn {
+        display: none;
+    }
+}
+
+@media (max-width: 720px) {
+    :root {
+        --live2d-rail-radius: 18px;
+    }
+
+    .live2d-chat-stage__rail {
+        width: min(94vw, 560px);
+        padding: 16px 16px 18px;
+    }
+
+    .live2d-chat-stage[data-rail-visibility="hidden"] .live2d-chat-stage__rail {
+        --live2d-rail-shift: -14px;
+    }
+
+    .live2d-chat-stage[data-rail-visibility="peek"] .live2d-chat-stage__rail {
+        --live2d-rail-shift: -4px;
+    }
+
+    .live2d-chat-stage__composer {
+        width: min(94vw, 580px);
+        padding: 12px 16px;
+        grid-template-columns: auto 1fr auto;
+    }
+
+    .live2d-chat-stage__composer .voice-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+@media (max-width: 520px) {
+    .live2d-chat-stage__rail {
+        gap: 10px;
+    }
+
+    .live2d-chat-stage__composer {
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .live2d-chat-stage__rail,
+    .live2d-chat-stage__composer,
+    .live2d-chat-stage__scroll-indicator,
+    .live2d-chat-stage__load-older,
+    .live2d-chat-stage__btn,
+    .live2d-chat-stage__send {
+        transition: none !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

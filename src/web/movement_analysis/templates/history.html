@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movement Analysis History - Healthcare AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            color: var(--gray-700);
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        
+        header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--gray-900);
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        
+        .logo-text { font-weight: 700; font-size: 1.25rem; }
+        
+        .nav-links { display: flex; gap: 16px; align-items: center; }
+        
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray-500);
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover { color: var(--primary); background: var(--gray-100); }
+        .nav-link.active { color: var(--primary); background: #dbeafe; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .page-header { margin-bottom: 32px; }
+        
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+        
+        .page-header p { color: var(--gray-500); }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .card-title { font-size: 1.125rem; font-weight: 600; color: var(--gray-900); }
+        
+        .card-body { padding: 24px; }
+        
+        .filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .history-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--gray-500);
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .history-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .history-table tr:hover td {
+            background: var(--gray-50);
+        }
+        
+        .history-table tr {
+            cursor: pointer;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-badge.completed { background: #dcfce7; color: #166534; }
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+        .status-badge.processing { background: #dbeafe; color: #1e40af; }
+        .status-badge.failed { background: #fee2e2; color: #991b1b; }
+        
+        .user-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid var(--gray-200);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pagination button:hover:not(:disabled) {
+            background: var(--gray-100);
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: var(--gray-500);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .staff-badge {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--gray-100);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/live2d" class="logo">
+                <div class="logo-icon">🏥</div>
+                <span class="logo-text">Healthcare AI</span>
+            </a>
+            <nav class="nav-links">
+                <a href="/live2d" class="nav-link">Live2D Chat</a>
+                <a href="/movement-analysis" class="nav-link">Movement Analysis</a>
+                <a href="/movement-analysis/history" class="nav-link active">History</a>
+                {% if can_manage_rules %}
+                <a href="/admin/movement-analysis-rules" class="nav-link">Manage Rules</a>
+                {% endif %}
+                <span class="user-badge">
+                    <i class="fas fa-user"></i>
+                    {{ user.username if user else 'User' }}
+                    {% if is_staff %}<span class="staff-badge">Staff</span>{% endif %}
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>📋 Movement Analysis History</h1>
+            <p>
+                {% if is_staff %}
+                View movement analyses for yourself and assigned users
+                {% else %}
+                View your past movement analyses and results
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <i class="fas fa-history" style="color: var(--primary); margin-right: 8px;"></i>
+                    All Movement Analyses
+                </h2>
+                <div class="filters">
+                    <select id="statusFilter" class="filter-select" onchange="loadHistory()">
+                        <option value="">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    {% if is_staff %}
+                    <select id="userFilter" class="filter-select" onchange="loadHistory()">
+                        <option value="">All Users</option>
+                        <option value="me">My Analyses</option>
+                    </select>
+                    {% endif %}
+                    <a href="/movement-analysis" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Analysis
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="historyContainer">
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading analyses...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        const isStaff = {{ 'true' if is_staff else 'false' }};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+        });
+
+        async function loadHistory(page = 1) {
+            currentPage = page;
+            const container = document.getElementById('historyContainer');
+            
+            const statusFilter = document.getElementById('statusFilter')?.value || '';
+            const userFilter = document.getElementById('userFilter')?.value || '';
+            
+            let url = `/api/v1/movement-analysis/?page=${page}&limit=20`;
+            if (statusFilter) url += `&status=${statusFilter}`;
+            if (userFilter === 'me') {
+                // Filter to current user only
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load history');
+                
+                const data = await response.json();
+                totalPages = data.pages || 1;
+                
+                renderHistory(data.assessments || [], container);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to load analyses</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderHistory(assessments, container) {
+            if (!assessments.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <p>No movement analyses found</p>
+                        <p style="font-size: 13px;">Upload a video to get started</p>
+                        <a href="/movement-analysis" class="btn btn-primary" style="margin-top: 16px;">
+                            <i class="fas fa-plus"></i> New Analysis
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            ${isStaff ? '<th>User</th>' : ''}
+                            <th>Assessment Type</th>
+                            <th>Child Age</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            assessments.forEach(item => {
+                html += `
+                    <tr onclick="window.location.href='/movement-analysis/${item.id}'">
+                        ${isStaff ? `
+                            <td>
+                                <div class="user-info-cell">
+                                    <div class="user-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 500;">${item.username || 'User'}</div>
+                                        <div style="font-size: 12px; color: var(--gray-500);">${item.user_display_name || ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        ` : ''}
+                        <td>
+                            <div style="font-weight: 500;">${item.rule_category || 'General Assessment'}</div>
+                        </td>
+                        <td>${item.age_value ? `${item.age_value} ${item.age_unit || 'years'}` : '-'}</td>
+                        <td><span class="status-badge ${item.status}">${item.status}</span></td>
+                        <td style="color: var(--gray-500);">${formatDate(item.created_at)}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            
+            // Add pagination
+            if (totalPages > 1) {
+                html += '<div class="pagination">';
+                html += `<button onclick="loadHistory(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>`;
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === currentPage || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                        html += `<button onclick="loadHistory(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+                    } else if (i === currentPage - 2 || i === currentPage + 2) {
+                        html += '<span style="padding: 8px;">...</span>';
+                    }
+                }
+                
+                html += `<button onclick="loadHistory(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>`;
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    </script>
+</body>
+</html>
+

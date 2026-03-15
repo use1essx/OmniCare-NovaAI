@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}AI Questionnaire Generator · Healthcare AI Admin{% endblock %}
+{% block page_title %}AI Questionnaire Generator{% endblock %}
+
+{% block breadcrumb %}
+<nav class="admin-header-breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/" style="font-weight: 500; color: #64748b; transition: color 150ms; text-decoration: none;" onmouseover="this.style.color='#334155'" onmouseout="this.style.color='#64748b'">Admin</a>
+    <span style="color: #cbd5e1;">/</span>
+    <span style="color: #475569; font-weight: 500;">AI Generator</span>
+</nav>
+{% endblock %}
+
+{% block page_description %}
+<div class="max-w-4xl">
+    <p class="text-sm leading-relaxed text-slate-600 mb-3">
+        🚀 Upload documents and automatically generate <strong>bilingual</strong> questionnaires. AI auto-determines question count and translates to both English + Chinese.
+    </p>
+    <div class="flex flex-wrap gap-2">
+        <span class="px-3 py-1 bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 rounded-full text-xs font-semibold border border-violet-200">
+            <i class="fas fa-robot mr-1"></i>5 AI Models
+        </span>
+        <span class="px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 rounded-full text-xs font-semibold border border-blue-200">
+            <i class="fas fa-language mr-1"></i>Auto Bilingual (EN + 中文)
+        </span>
+        <span class="px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-full text-xs font-semibold border border-green-200">
+            <i class="fas fa-check-double mr-1"></i>~50 validated questions
+        </span>
+        <span class="px-3 py-1 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 rounded-full text-xs font-semibold border border-amber-200">
+            <i class="fas fa-magic mr-1"></i>Fully Automated
+        </span>
+    </div>
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<a href="/admin/questionnaires/manage" class="btn btn-secondary">
+    <i class="fas fa-list"></i>
+    View All Questionnaires
+</a>
+{% endblock %}
+
+{% block content %}
+<div x-data="aiGenerator()" x-init="init()">
+    
+    <!-- Step Indicator -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between max-w-3xl mx-auto">
+            <div class="flex items-center flex-1">
+                <div class="flex items-center" :class="step >= 1 ? 'text-violet-600' : 'text-slate-300'">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-2" :class="step >= 1 ? 'border-violet-600 bg-violet-50' : 'border-slate-300'">
+                        <i class="fas fa-upload"></i>
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Upload</span>
+                </div>
+                <div class="flex-1 h-0.5 mx-4" :class="step >= 2 ? 'bg-violet-600' : 'bg-slate-300'"></div>
+            </div>
+            
+            <div class="flex items-center flex-1">
+                <div class="flex items-center" :class="step >= 2 ? 'text-violet-600' : 'text-slate-300'">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-2" :class="step >= 2 ? 'border-violet-600 bg-violet-50' : 'border-slate-300'">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Generate</span>
+                </div>
+                <div class="flex-1 h-0.5 mx-4" :class="step >= 3 ? 'bg-violet-600' : 'bg-slate-300'"></div>
+            </div>
+            
+            <div class="flex items-center">
+                <div class="flex items-center" :class="step >= 3 ? 'text-violet-600' : 'text-slate-300'">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center border-2" :class="step >= 3 ? 'border-violet-600 bg-violet-50' : 'border-slate-300'">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <span class="ml-2 text-sm font-medium">Done</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div x-show="step === 1" class="max-w-3xl mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Upload Document</h2>
+            </div>
+            <div class="card-body">
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-violet-400 transition-colors">
+                    <input type="file" id="fileInput" @change="handleFile" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.gif,.bmp,.webp" class="hidden">
+                    <label for="fileInput" class="cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-6xl text-slate-400 mb-4"></i>
+                        <p class="text-lg font-medium text-slate-700 mb-2">
+                            <span class="text-violet-600">Click to upload</span> or drag and drop
+                        </p>
+                        <p class="text-sm text-slate-500">PDF, Word, Excel, Images up to 10MB</p>
+                    </label>
+                </div>
+
+                <div x-show="file" class="mt-6 p-4 bg-slate-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-file text-2xl text-violet-600"></i>
+                            <div>
+                                <p class="font-medium text-slate-900" x-text="file?.name"></p>
+                                <p class="text-sm text-slate-500" x-text="formatSize(file?.size)"></p>
+                            </div>
+                        </div>
+                        <button @click="clearFile" class="text-slate-400 hover:text-red-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button @click="step = 2" :disabled="!file" class="btn btn-primary" :class="{'opacity-50 cursor-not-allowed': !file}">
+                        Continue <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Configure -->
+    <div x-show="step === 2" class="max-w-3xl mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Configure Generation</h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-file text-2xl text-blue-700"></i>
+                        <div>
+                            <p class="font-medium text-slate-900" x-text="file?.name"></p>
+                            <p class="text-sm text-slate-600">AI will read and analyze directly</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        <i class="fas fa-cog text-violet-600 mr-2"></i>
+                        Generation Mode
+                    </label>
+                    <select x-model="generationMode" class="form-select w-full text-base">
+                        <option value="auto">🤖 Auto - AI decides based on document type (Recommended)</option>
+                        <option value="extract">📋 Extract - Copy existing questions from assessment documents</option>
+                        <option value="generate">✨ Generate - Create new questions based on guidelines/frameworks</option>
+                    </select>
+                    <p class="text-xs text-slate-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span x-show="generationMode === 'auto'">AI will automatically detect if the document has existing questions or is a guideline</span>
+                        <span x-show="generationMode === 'extract'">Best for: Assessment forms, screening tools, existing questionnaires</span>
+                        <span x-show="generationMode === 'generate'">Best for: Educational guidelines, frameworks, policy documents</span>
+                    </p>
+                </div>
+
+                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-lg border border-blue-200 mb-6">
+                    <h4 class="font-semibold text-sm text-blue-900 mb-2">✨ AI Auto-Configuration</h4>
+                    <ul class="text-xs text-blue-800 space-y-1">
+                        <li>• <strong>Question Count:</strong> AI determines optimal number (~50 candidates)</li>
+                        <li>• <strong>Bilingual:</strong> Auto-translated to English + Traditional Chinese</li>
+                        <li>• <strong>Smart Filtering:</strong> AI ranks and filters best questions</li>
+                    </ul>
+                </div>
+
+                <div class="flex justify-between">
+                    <button @click="step = 1" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-2"></i> Back
+                    </button>
+                    <button @click="startGeneration" :disabled="generating" class="btn btn-primary">
+                        <span x-show="!generating"><i class="fas fa-wand-magic-sparkles mr-2"></i>Start Generation</span>
+                        <span x-show="generating"><i class="fas fa-spinner fa-spin mr-2"></i>Starting...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2.5: Progress -->
+    <div x-show="step === 2.5" class="max-w-4xl mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">AI Generation in Progress</h2>
+                <p class="text-sm text-slate-500 mt-1">This takes 6-11 minutes</p>
+            </div>
+            <div class="card-body">
+                <div class="mb-8">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="font-medium text-slate-700" x-text="status.stage || 'Initializing...'"></span>
+                        <span class="font-semibold text-violet-600" x-text="(status.progress || 0) + '%'"></span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-4">
+                        <div class="bg-gradient-to-r from-violet-500 to-purple-600 h-4 rounded-full transition-all duration-500"
+                             :style="`width: ${status.progress || 0}%`"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-5 gap-2 mb-8">
+                    <div class="text-center p-3 rounded-lg" :class="status.progress >= 10 ? 'bg-violet-100 border-2 border-violet-400' : 'bg-slate-50 border border-slate-200'">
+                        <i class="fas fa-search text-xl mb-2" :class="status.progress >= 10 ? 'text-violet-600' : 'text-slate-400'"></i>
+                        <div class="text-xs font-semibold">Analyze</div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg" :class="status.progress >= 30 ? 'bg-violet-100 border-2 border-violet-400' : 'bg-slate-50 border border-slate-200'">
+                        <i class="fas fa-lightbulb text-xl mb-2" :class="status.progress >= 30 ? 'text-violet-600' : 'text-slate-400'"></i>
+                        <div class="text-xs font-semibold">Generate</div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg" :class="status.progress >= 60 ? 'bg-violet-100 border-2 border-violet-400' : 'bg-slate-50 border border-slate-200'">
+                        <i class="fas fa-check-double text-xl mb-2" :class="status.progress >= 60 ? 'text-violet-600' : 'text-slate-400'"></i>
+                        <div class="text-xs font-semibold">Validate</div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg" :class="status.progress >= 80 ? 'bg-violet-100 border-2 border-violet-400' : 'bg-slate-50 border border-slate-200'">
+                        <i class="fas fa-filter text-xl mb-2" :class="status.progress >= 80 ? 'text-violet-600' : 'text-slate-400'"></i>
+                        <div class="text-xs font-semibold">Filter</div>
+                    </div>
+                    <div class="text-center p-3 rounded-lg" :class="status.progress >= 85 ? 'bg-violet-100 border-2 border-violet-400' : 'bg-slate-50 border border-slate-200'">
+                        <i class="fas fa-clone text-xl mb-2" :class="status.progress >= 85 ? 'text-violet-600' : 'text-slate-400'"></i>
+                        <div class="text-xs font-semibold">Dedupe</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div class="text-xs text-blue-600 mb-1">Generated</div>
+                        <div class="text-2xl font-bold text-blue-900" x-text="status.questions_generated || 0"></div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div class="text-xs text-green-600 mb-1">Validated</div>
+                        <div class="text-2xl font-bold text-green-900" x-text="status.questions_validated || 0"></div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div class="text-xs text-purple-600 mb-1">Selected</div>
+                        <div class="text-2xl font-bold text-purple-900" x-text="status.questions_selected || 0"></div>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <div class="text-xs text-amber-600 mb-1">Time Left</div>
+                        <div class="text-base font-bold text-amber-900" x-text="status.estimated_time_remaining || '...'"></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4">
+                    <p class="text-sm text-slate-600" x-text="getStageDesc(status.progress)"></p>
+                </div>
+                
+                <!-- AI Actions Log -->
+                <div x-show="logs.length > 0" class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-sm font-semibold text-slate-700">
+                            <i class="fas fa-list-ul mr-1"></i> AI Actions Log
+                        </h4>
+                        <span class="text-xs text-slate-500" x-text="`${logs.length} events`"></span>
+                    </div>
+                    <div class="bg-slate-900 rounded-lg p-4 max-h-64 overflow-y-auto font-mono text-xs">
+                        <template x-for="(log, index) in logs.slice(-10)" :key="index">
+                            <div class="mb-1 flex gap-2">
+                                <span class="text-slate-500 shrink-0" x-text="log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : ''"></span>
+                                <span :class="{
+                                    'text-blue-400': log.level === 'info',
+                                    'text-yellow-400': log.level === 'warning',
+                                    'text-red-400': log.level === 'error',
+                                    'text-green-400': log.level === 'success'
+                                }" x-text="log.message"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                {% if user.role == 'super_admin' or user.is_super_admin %}
+                <div class="flex justify-end">
+                    <a :href="`/admin/questionnaires/ai-generator/console?job_id=${jobId}`" target="_blank" class="text-xs text-slate-400 hover:text-violet-600 flex items-center gap-1 transition-colors">
+                        <i class="fas fa-terminal"></i> Superadmin Console
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div x-show="step === 3" class="max-w-2xl mx-auto">
+        <div class="card">
+            <div class="card-body text-center py-12">
+                <div class="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                    <i class="fas fa-check-circle text-3xl text-green-600"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Generation Complete!</h3>
+                <p class="text-slate-600 mb-6">Your AI-generated questionnaire is ready for review</p>
+                <div x-show="analysisId" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm">
+                    <p class="text-blue-800"><strong>Analysis ID:</strong> <span x-text="analysisId"></span></p>
+                </div>
+                <div class="flex gap-3 justify-center">
+                    <button @click="reset()" class="btn btn-secondary">
+                        <i class="fas fa-plus mr-2"></i>Generate Another
+                    </button>
+                    <button @click="reviewQuestions()" class="btn btn-primary" :disabled="!analysisId">
+                        <i class="fas fa-eye mr-2"></i>Review Questions
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function aiGenerator() {
+    return {
+        step: 1,
+        file: null,
+        purpose: 'child-screening',
+        generationMode: 'auto',
+        generating: false,
+        jobId: null,
+        analysisId: null,
+        status: {},
+        logs: [],
+        pollInterval: null,
+
+        init() {
+            console.log('AI Generator initialized');
+        },
+
+        handleFile(e) {
+            this.file = e.target.files[0];
+        },
+
+        clearFile() {
+            this.file = null;
+            document.getElementById('fileInput').value = '';
+        },
+
+        formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        },
+
+        async startGeneration() {
+            this.generating = true;
+            try {
+                const formData = new FormData();
+                formData.append('file', this.file);
+                formData.append('purpose', this.purpose);
+                formData.append('generation_mode', this.generationMode);
+                formData.append('question_count', 50);
+                formData.append('language', 'en');
+                formData.append('use_ai_vision', 'true');
+
+                const res = await fetch('/api/v1/ai-questionnaire/generate-async', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (data.job_id) {
+                    this.jobId = data.job_id;
+                    this.analysisId = data.analysis_id;
+                    this.step = 2.5;
+                    this.startPolling();
+                } else {
+                    throw new Error('No job ID returned');
+                }
+            } catch (error) {
+                alert('Failed to start generation: ' + error.message);
+            } finally {
+                this.generating = false;
+            }
+        },
+
+        startPolling() {
+            this.pollInterval = setInterval(() => this.checkStatus(), 2000);
+        },
+
+        async checkStatus() {
+            try {
+                const res = await fetch(`/api/v1/ai-questionnaire/job-status/${this.jobId}`);
+                const data = await res.json();
+                
+                // Update status with correct field names
+                this.status = {
+                    status: data.status || 'pending',
+                    progress: data.progress_percentage || data.progress || 0,
+                    stage: data.current_stage || data.stage || 'Processing...',
+                    stageDescription: data.stage_description || '',
+                    questions_generated: data.questions_generated || 0,
+                    questions_validated: data.questions_validated || 0,
+                    questions_selected: data.questions_selected || 0,
+                    estimated_time_remaining: data.estimated_time_remaining || '...'
+                };
+
+                // Update logs if available
+                if (data.logs && Array.isArray(data.logs)) {
+                    this.logs = data.logs;
+                }
+
+                if (data.analysis_id && !this.analysisId) {
+                    this.analysisId = data.analysis_id;
+                }
+
+                if (data.status === 'completed') {
+                    clearInterval(this.pollInterval);
+                    this.step = 3;
+                } else if (data.status === 'failed') {
+                    clearInterval(this.pollInterval);
+                    alert('Generation failed: ' + (data.error_message || 'Unknown error'));
+                    this.step = 2;
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+                // Don't stop polling on error
+            }
+        },
+
+        getStageDesc(progress) {
+            if (progress < 10) return 'Initializing AI pipeline...';
+            if (progress < 30) return '🔍 Extracting document structure and analyzing content...';
+            if (progress < 60) return '💡 5 AI models generating ~50 question candidates in parallel...';
+            if (progress < 80) return '✅ Validating questions for quality, relevance, and document fidelity...';
+            if (progress < 85) return '🎯 Smart filtering and ranking by overall score...';
+            if (progress < 95) return '🔍 Detecting duplicates using 95% similarity threshold...';
+            if (progress < 100) return '📚 Final assembly and knowledge base creation...';
+            return 'Complete!';
+        },
+
+        reset() {
+            this.step = 1;
+            this.file = null;
+            this.purpose = 'child-screening';
+            this.jobId = null;
+            this.analysisId = null;
+            this.status = {};
+            document.getElementById('fileInput').value = '';
+        },
+
+        reviewQuestions() {
+            if (!this.analysisId) {
+                alert('No analysis ID available. Please try generating again.');
+                return;
+            }
+            // Redirect to management page and auto-open latest pending generation
+            window.location.href = `/admin/questionnaires/manage?auto_review=latest`;
+        }
+    };
+}
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,4 @@
+# PostgreSQL password file
+# Format: hostname:port:database:username:password
+# IMPORTANT: Replace with your actual credentials before use
+postgres:5432:*:admin:CHANGE_THIS_PASSWORD

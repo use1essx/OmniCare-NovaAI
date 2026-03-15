@@ -1,0 +1,109 @@
+<header class="admin-header">
+    <!-- Mobile Menu Button -->
+    <button class="mr-4 lg:hidden text-slate-500 hover:text-slate-700" @click="toggleSidebar()">
+        <i class="fas fa-bars text-xl"></i>
+    </button>
+
+    <!-- Page Title / Breadcrumb -->
+    <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-bold text-slate-900 truncate">
+            {% block page_title %}Dashboard{% endblock %}
+        </h1>
+        <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+            <a href="/admin/" class="hover:text-blue-600 transition-colors">Admin</a>
+            <i class="fas fa-chevron-right text-[10px] text-slate-300"></i>
+            <span class="text-slate-700 font-medium">{% block breadcrumb_current %}Overview{% endblock %}</span>
+        </div>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-3 sm:gap-4 ml-4">
+
+
+        <!-- Global Search (Hidden on mobile for now) -->
+        <div class="header-search hidden md:block">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search users, logs, or settings...">
+        </div>
+
+        <!-- Notifications -->
+        <div class="flex items-center gap-2">
+            <!-- Back to Chat Icon -->
+            <a href="/live2d/" 
+               class="relative p-2 text-slate-400 hover:text-blue-600 transition-colors"
+               title="Return to Chat Interface">
+                <i class="fas fa-comment-dots text-lg"></i>
+            </a>
+
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" @click.outside="open = false" class="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+                </button>
+                
+                <!-- Dropdown -->
+                <div x-show="open" 
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute right-0 mt-2 w-80 origin-top-right rounded-xl bg-white shadow-premium border border-slate-100 py-2 z-50">
+                <div class="px-4 py-2 border-b border-slate-50">
+                    <h3 class="text-sm font-semibold text-slate-900">Notifications</h3>
+                </div>
+                <div class="max-h-64 overflow-y-auto">
+                    <div class="px-4 py-8 text-center text-slate-500 text-sm">
+                        <i class="fas fa-check-circle text-emerald-500 mb-2 text-xl"></i>
+                        <p>All caught up!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Menu -->
+        <div class="relative pl-3 border-l border-slate-200" x-data="{ open: false }">
+            <button @click="open = !open" @click.outside="open = false" class="flex items-center gap-3 group pl-2">
+                <div class="relative">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md ring-2 ring-white group-hover:ring-indigo-100 group-hover:scale-105 transition-all duration-300">
+                        <span class="font-bold text-sm">AU</span>
+                    </div>
+                    <div class="absolute bottom-0 right-0 h-3 w-3 bg-emerald-500 border-2 border-white rounded-full"></div>
+                </div>
+            </button>
+
+            <!-- Dropdown -->
+            <div x-show="open" 
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white shadow-premium border border-slate-100 py-1 z-50">
+                <a href="/admin/profile" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+                    <i class="fas fa-user-circle w-5"></i> Profile
+                </a>
+                <a href="/admin/settings" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600">
+                    <i class="fas fa-cog w-5"></i> Settings
+                </a>
+                <div class="my-1 border-t border-slate-50"></div>
+                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <i class="fas fa-sign-out-alt w-5"></i> Sign out
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script>
+function logout() {
+    if(confirm('Are you sure you want to logout?')) {
+        // Clear tokens
+        localStorage.removeItem('access_token');
+        document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = '/auth.html';
+    }
+}
+</script>

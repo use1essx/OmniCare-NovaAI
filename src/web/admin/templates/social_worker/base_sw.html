@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ darkMode: false, sidebarOpen: true }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Social Worker Hub{% endblock %} - Hiyori Healthcare AI</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Severity colors */
+        .severity-1 { background-color: #E8F5E9; color: #2E7D32; }
+        .severity-2 { background-color: #FFF8E1; color: #F57F17; }
+        .severity-3 { background-color: #FFF3E0; color: #E65100; }
+        .severity-4 { background-color: #FFEBEE; color: #C62828; }
+        .severity-5 { background-color: #B71C1C; color: white; }
+        
+        /* Risk colors */
+        .risk-minimal { background-color: #E8F5E9; }
+        .risk-low { background-color: #C8E6C9; }
+        .risk-moderate { background-color: #FFF9C4; }
+        .risk-high { background-color: #FFCDD2; }
+        .risk-critical { background-color: #EF5350; color: white; }
+        
+        /* Priority badges */
+        .priority-low { @apply bg-gray-100 text-gray-600; }
+        .priority-medium { @apply bg-blue-100 text-blue-700; }
+        .priority-high { @apply bg-orange-100 text-orange-700; }
+        .priority-urgent { @apply bg-red-100 text-red-700; }
+        .priority-critical { @apply bg-red-500 text-white; }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen" :class="{ 'dark': darkMode }">
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="bg-slate-800 text-white flex-shrink-0 transition-all duration-300"
+               :class="sidebarOpen ? 'w-64' : 'w-20'">
+            <div class="p-4 flex items-center justify-between border-b border-slate-700">
+                <div class="flex items-center space-x-3" x-show="sidebarOpen">
+                    <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-blue-500 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-heart-pulse text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg">SW Hub</h1>
+                        <p class="text-xs text-slate-400">Social Worker Portal</p>
+                    </div>
+                </div>
+                <button @click="sidebarOpen = !sidebarOpen" class="text-slate-400 hover:text-white">
+                    <i class="fas" :class="sidebarOpen ? 'fa-chevron-left' : 'fa-chevron-right'"></i>
+                </button>
+            </div>
+            
+            <nav class="p-4 space-y-2">
+                <a href="/admin/social-worker/dashboard" 
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors
+                          {% if request.path == '/admin/social-worker/dashboard' %}bg-slate-700{% endif %}">
+                    <i class="fas fa-chart-pie w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Dashboard</span>
+                </a>
+                
+                <a href="/admin/social-worker/cases"
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors
+                          {% if '/cases' in request.path %}bg-slate-700{% endif %}">
+                    <i class="fas fa-folder-open w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Cases</span>
+                </a>
+                
+                <a href="/admin/social-worker/alerts"
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors
+                          {% if '/alerts' in request.path %}bg-slate-700{% endif %}">
+                    <i class="fas fa-bell w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Alerts</span>
+                    <!-- Alert badge -->
+                    <span x-show="sidebarOpen" class="ml-auto bg-red-500 text-xs px-2 py-1 rounded-full" 
+                          x-data="{ count: 0 }" x-text="count" x-show="count > 0"></span>
+                </a>
+                
+                <a href="/admin/social-worker/analytics"
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors
+                          {% if '/analytics' in request.path %}bg-slate-700{% endif %}">
+                    <i class="fas fa-chart-line w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Analytics</span>
+                </a>
+                
+                <a href="/admin/social-worker/reports"
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors
+                          {% if '/reports' in request.path %}bg-slate-700{% endif %}">
+                    <i class="fas fa-file-alt w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Reports</span>
+                </a>
+                
+                <div class="border-t border-slate-700 my-4"></div>
+                
+                <a href="/admin"
+                   class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors">
+                    <i class="fas fa-arrow-left w-5 text-center"></i>
+                    <span x-show="sidebarOpen">Back to Admin</span>
+                </a>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-10">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h2>
+                        <p class="text-sm text-gray-500">{% block page_subtitle %}{% endblock %}</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Search -->
+                        <div class="relative">
+                            <input type="text" placeholder="Search cases..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <button class="relative p-2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- User Menu -->
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">{{ current_user.username if current_user else 'Guest' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <div class="p-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- WebSocket Connection for Real-time Updates -->
+    <script>
+        // WebSocket connection for real-time alerts
+        class AlertWebSocket {
+            constructor() {
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnects = 5;
+            }
+            
+            connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/alerts`;
+                
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        console.log('Alert WebSocket connected');
+                        this.reconnectAttempts = 0;
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.handleMessage(data);
+                    };
+                    
+                    this.ws.onclose = () => {
+                        console.log('Alert WebSocket closed');
+                        this.attemptReconnect();
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('Alert WebSocket error:', error);
+                    };
+                } catch (e) {
+                    console.error('Failed to create WebSocket:', e);
+                }
+            }
+            
+            handleMessage(data) {
+                if (data.type === 'new_alert') {
+                    this.showNotification(data.alert);
+                    // Dispatch custom event for Alpine components
+                    window.dispatchEvent(new CustomEvent('new-alert', { detail: data.alert }));
+                }
+            }
+            
+            showNotification(alert) {
+                // Browser notification
+                if (Notification.permission === 'granted') {
+                    new Notification(`🚨 ${alert.title}`, {
+                        body: alert.message,
+                        icon: '/static/icons/alert.png'
+                    });
+                }
+            }
+            
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnects) {
+                    this.reconnectAttempts++;
+                    setTimeout(() => this.connect(), 3000 * this.reconnectAttempts);
+                }
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const alertWs = new AlertWebSocket();
+            alertWs.connect();
+            
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

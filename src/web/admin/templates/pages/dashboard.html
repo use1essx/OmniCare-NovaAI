@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · Healthcare AI Admin{% endblock %}
+{% block page_title %}Unified Operations Dashboard{% endblock %}
+
+{% block page_description %}
+<p class="max-w-2xl text-sm leading-relaxed text-slate-500">
+    Monitor real-time adoption, system health, and Live2D activity across the Healthcare AI platform.
+    Use the shortcuts on the right to jump directly into management workflows.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="/admin/user-management#invite"
+   class="btn btn-primary">
+    <i class="fas fa-user-plus"></i>
+    Invite User
+</a>
+<a href="/admin/live2d-admin"
+   class="btn btn-secondary">
+    <i class="fas fa-theater-masks"></i>
+    Live2D Settings
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8" x-data="dashboardPage()" x-init="init()">
+    <!-- Key Metrics -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="card shimmer">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Active Users</p>
+                        <p class="metric-value mt-3 text-3xl font-bold" x-text="stats.activeUsers ?? 0">0</p>
+                        <p class="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                            <span>Total</span>
+                            <span class="chip" data-tone="blue" x-text="stats.totalUsers ?? 0">0</span>
+                        </p>
+                    </div>
+                    <div class="gradient-icon flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+                        <i class="fas fa-users text-xl relative z-10"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card shimmer">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">System Health</p>
+                        <p class="metric-value mt-3 text-3xl font-bold" x-text="stats.systemStatus || 'Healthy'">Healthy</p>
+                    </div>
+                    <div class="gradient-icon flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md">
+                        <i class="fas fa-heart-pulse text-xl relative z-10"></i>
+                    </div>
+                </div>
+                <div class="mt-5 space-y-3 text-xs">
+                    <div>
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="font-medium">CPU Usage</span>
+                            <span class="font-bold text-slate-700" x-text="(stats.cpuUsage ?? 0) + '%'">0%</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-slate-200/70 overflow-hidden">
+                            <div class="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500"
+                                 :style="{ width: Math.min(Number(stats.cpuUsage || 0), 100) + '%' }"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between text-slate-500 mb-2">
+                            <span class="font-medium">Memory</span>
+                            <span class="font-bold text-slate-700" x-text="(stats.memoryUsage ?? 0) + '%'">0%</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-slate-200/70 overflow-hidden">
+                            <div class="h-2 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 transition-all duration-500"
+                                 :style="{ width: Math.min(Number(stats.memoryUsage || 0), 100) + '%' }"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card shimmer">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Organizations</p>
+                        <p class="metric-value mt-3 text-3xl font-bold" x-text="stats.organizations ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Across all hospital and clinic partners.</p>
+                    </div>
+                    <div class="gradient-icon flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-md">
+                        <i class="fas fa-hospital text-xl relative z-10"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/admin/user-management#organizations"
+                   class="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 transition hover:text-purple-700 hover:gap-3">
+                    Manage organizations
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </article>
+
+        <article class="card shimmer">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Live2D Models</p>
+                        <p class="metric-value mt-3 text-3xl font-bold" x-text="stats.models ?? 0">0</p>
+                        <p class="mt-2 text-xs text-slate-500">Avatar configurations deployed and active.</p>
+                    </div>
+                    <div class="gradient-icon flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-md">
+                        <i class="fas fa-masks-theater text-xl relative z-10"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/admin/live2d-admin"
+                   class="inline-flex items-center gap-2 text-sm font-semibold text-rose-600 transition hover:text-rose-700 hover:gap-3">
+                    Open Live2D console
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </article>
+    </section>
+
+    <!-- Actions & Telemetry -->
+    <section class="grid gap-6 lg:grid-cols-3">
+        <article class="card lg:col-span-2">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Operations Pulse</h2>
+                        <p class="text-sm text-slate-500">Shortcuts into the most common admin workflows.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <a href="/admin/user-management"
+                       class="group flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/50 p-5 shadow-sm transition hover:-translate-y-1 hover:border-blue-300/60 hover:shadow-premium hover:shadow-glow-blue">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">Manage Users</p>
+                            <p class="text-xs text-slate-500">Roles, invitations, and directory insights.</p>
+                        </div>
+                        <span class="gradient-icon flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+                            <i class="fas fa-users-gear relative z-10"></i>
+                        </span>
+                    </a>
+
+                    <a href="/admin/data-management"
+                       class="group flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/50 p-5 shadow-sm transition hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-premium hover:shadow-glow-green">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">Data Pipeline</p>
+                            <p class="text-xs text-slate-500">Upload, review, and quality controls.</p>
+                        </div>
+                        <span class="gradient-icon flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+                            <i class="fas fa-database relative z-10"></i>
+                        </span>
+                    </a>
+
+                    {% if perms.view_testing %}
+                    <a href="/admin/testing"
+                       class="group flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/50 p-5 shadow-sm transition hover:-translate-y-1 hover:border-amber-300/60 hover:shadow-premium">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900 group-hover:text-amber-600 transition-colors">Testing Lab</p>
+                            <p class="text-xs text-slate-500">Scenario validation and regression coverage.</p>
+                        </div>
+                        <span class="gradient-icon flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+                            <i class="fas fa-vial-circle-check relative z-10"></i>
+                        </span>
+                    </a>
+                    {% endif %}
+
+                    {% if perms.view_system %}
+                    <a href="/admin/super-admin"
+                       class="group flex items-center justify-between rounded-2xl border border-slate-200/70 bg-gradient-to-br from-white to-slate-50/50 p-5 shadow-sm transition hover:-translate-y-1 hover:border-rose-300/60 hover:shadow-premium">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900 group-hover:text-rose-600 transition-colors">Super Admin Space</p>
+                            <p class="text-xs text-slate-500">Platform-wide controls and compliance.</p>
+                        </div>
+                        <span class="gradient-icon flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md transition-all group-hover:scale-110 group-hover:shadow-lg">
+                            <i class="fas fa-crown relative z-10"></i>
+                        </span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-slate-900">Telemetry</h2>
+            </div>
+            <div class="card-body space-y-4 text-sm">
+                <div>
+                    <div class="flex items-center justify-between text-slate-500">
+                        <span>Realtime Stream</span>
+                        <span class="chip" data-tone="green" x-text="isConnected ? 'Live' : 'Offline'">Live</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Updated <span class="font-semibold text-slate-600" x-text="lastUpdate ? timeAgo(lastUpdate) : 'recently'"></span>
+                    </p>
+                </div>
+                <div class="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Workload Mix</p>
+                    <canvas id="dashboard-workload-chart" class="mt-4 h-36 w-full"></canvas>
+                </div>
+                <div class="rounded-2xl border border-slate-200/70 bg-white p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Alert Summary</p>
+                    <ul class="mt-3 space-y-2 text-xs text-slate-500">
+                        <li class="flex items-center justify-between">
+                            <span>Security Alerts</span>
+                            <span class="font-semibold text-rose-500" x-text="metrics.security?.alerts_today ?? 0">0</span>
+                        </li>
+                        <li class="flex items-center justify-between">
+                            <span>Pipeline Warnings</span>
+                            <span class="font-semibold text-amber-500" x-text="(metrics.pipeline?.error_rate || 0) > 0.05 ? 'Check' : 'Clear'">Clear</span>
+                        </li>
+                        <li class="flex items-center justify-between">
+                            <span>Agents Online</span>
+                            <span class="font-semibold text-emerald-500" x-text="metrics.ai?.active_agents ?? 0">0</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="card">
+        <div class="card-header flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+                <p class="text-sm text-slate-500">Last 24 hours across users, data pipelines, and system heartbeat.</p>
+            </div>
+            <button class="btn-ghost hidden items-center gap-2 rounded-full border border-slate-200/70 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:border-health-blue hover:text-health-blue md:flex"
+                    type="button"
+                    @click="loadStats()">
+                <i class="fas fa-rotate-right"></i>
+                Refresh
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="space-y-4">
+                <template x-if="loading">
+                    <div class="space-y-3">
+                        <div class="skeleton h-14"></div>
+                        <div class="skeleton h-14"></div>
+                        <div class="skeleton h-14"></div>
+                    </div>
+                </template>
+
+                <template x-if="!loading && recentActivity.length === 0">
+                    <div class="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-8 text-center text-sm text-slate-500">
+                        <i class="fas fa-check-circle text-lg text-emerald-500"></i>
+                        <p class="mt-2 font-semibold text-slate-700">Quiet period — no new events logged.</p>
+                        <p>Keep an eye here for changes across the platform.</p>
+                    </div>
+                </template>
+
+                <template x-for="activity in recentActivity" :key="activity.id">
+                    <div class="flex items-start gap-4 rounded-2xl border border-slate-200/70 p-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+                             :class="{
+                                 'bg-blue-500': activity.type === 'user',
+                                 'bg-emerald-500': activity.type === 'system',
+                                 'bg-purple-500': activity.type === 'data'
+                             }">
+                            <i class="fas" :class="activity.icon || 'fa-bolt'"></i>
+                        </div>
+                        <div class="flex-1 space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-slate-900" x-text="activity.title"></p>
+                                <span class="chip" data-tone="blue" x-text="activity.category || activity.type || 'event'"></span>
+                            </div>
+                            <p class="text-sm text-slate-600" x-text="activity.description"></p>
+                            <p class="text-xs font-medium uppercase tracking-[0.2em] text-slate-400"
+                               x-text="activity.timestamp"></p>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="/static/js/pages/dashboard.js"></script>
+{% endblock %}

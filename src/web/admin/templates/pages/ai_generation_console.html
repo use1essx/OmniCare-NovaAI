@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Superadmin AI Console · Healthcare AI Admin{% endblock %}
+{% block page_title %}Superadmin AI Console{% endblock %}
+
+{% block content %}
+<div x-data="consoleViewer()" x-init="init()" class="max-w-6xl mx-auto">
+    
+    <!-- Header / Job Info -->
+    <div class="bg-slate-900 text-white rounded-t-lg p-4 flex justify-between items-center">
+        <div>
+            <h2 class="text-lg font-mono font-bold flex items-center gap-2">
+                <i class="fas fa-terminal text-green-400"></i>
+                AI_GENERATION_CONSOLE
+                <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300" x-text="jobId || 'NO_JOB'"></span>
+            </h2>
+            <div class="text-xs text-slate-400 mt-1 font-mono">
+                Status: <span :class="getStatusColor(status.status)" x-text="status.status || 'UNKNOWN'"></span> | 
+                Stage: <span x-text="status.stage || '-'"></span> | 
+                Progress: <span x-text="(status.progress || 0) + '%'"></span>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button @click="toggleAutoScroll" class="text-xs px-3 py-1 rounded border border-slate-600 hover:bg-slate-800 transition-colors" :class="autoScroll ? 'text-green-400 border-green-800 bg-green-900/20' : 'text-slate-400'">
+                <i class="fas fa-scroll mr-1"></i> Auto-Scroll: <span x-text="autoScroll ? 'ON' : 'OFF'"></span>
+            </button>
+            <a href="/admin/ai-questionnaire-generator" class="text-xs px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 transition-colors">
+                Back to Generator
+            </a>
+        </div>
+    </div>
+
+    <!-- Log Viewer -->
+    <div class="bg-black border-x border-b border-slate-800 rounded-b-lg shadow-2xl overflow-hidden flex flex-col h-[600px]">
+        
+        <!-- Toolbar -->
+        <div class="bg-slate-900/50 border-b border-slate-800 p-2 flex gap-2 text-xs">
+            <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-200'" class="px-2 py-1 rounded">All</button>
+            <button @click="filter = 'info'" :class="filter === 'info' ? 'bg-blue-900/50 text-blue-300' : 'text-slate-400 hover:text-blue-300'" class="px-2 py-1 rounded">Info</button>
+            <button @click="filter = 'success'" :class="filter === 'success' ? 'bg-green-900/50 text-green-300' : 'text-slate-400 hover:text-green-300'" class="px-2 py-1 rounded">Success</button>
+            <button @click="filter = 'error'" :class="filter === 'error' ? 'bg-red-900/50 text-red-300' : 'text-slate-400 hover:text-red-300'" class="px-2 py-1 rounded">Error</button>
+            <div class="flex-1"></div>
+            <span class="text-slate-500 font-mono" x-text="logs.length + ' events'"></span>
+        </div>
+
+        <!-- Logs Area -->
+        <div id="console-logs" class="flex-1 overflow-y-auto p-4 font-mono text-sm space-y-1">
+            <template x-for="(log, index) in filteredLogs" :key="index">
+                <div class="flex gap-3 hover:bg-white/5 p-0.5 rounded">
+                    <span class="text-slate-500 shrink-0 w-24" x-text="formatTime(log.timestamp)"></span>
+                    <span class="shrink-0 w-16 font-bold text-center text-xs py-0.5 rounded uppercase tracking-wider"
+                          :class="getLevelClass(log.level)"
+                          x-text="log.level"></span>
+                    <span class="text-slate-300 break-all" :class="getLevelTextClass(log.level)" x-text="log.message"></span>
+                </div>
+            </template>
+            
+            <div x-show="logs.length === 0" class="text-slate-600 text-center py-10 italic">
+                Waiting for logs...
+            </div>
+            
+            <!-- Typing cursor effect at bottom -->
+            <div class="flex items-center gap-2 text-green-500 mt-2 border-t border-slate-800/50 pt-2 animate-pulse">
+                <i class="fas fa-chevron-right text-xs"></i>
+                <span class="w-2 h-4 bg-green-500 block"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Advanced Stats Panel -->
+    <div class="grid grid-cols-3 gap-4 mt-6">
+        <div class="bg-slate-900 rounded-lg shadow-md border border-slate-700 text-slate-300">
+            <div class="p-4">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Resource Usage</h3>
+                <div class="flex justify-between mb-1">
+                    <span>Tokens:</span>
+                    <span class="font-mono text-white" x-text="status.total_tokens_used || 0"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Cost:</span>
+                    <span class="font-mono text-green-400" x-text="'$' + (status.estimated_cost_usd || 0).toFixed(4)"></span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-slate-900 rounded-lg shadow-md border border-slate-700 text-slate-300">
+            <div class="p-4">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Pipeline Stats</h3>
+                <div class="flex justify-between mb-1">
+                    <span>Generated:</span>
+                    <span class="font-mono text-white" x-text="status.questions_generated || 0"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Validated:</span>
+                    <span class="font-mono text-white" x-text="status.questions_validated || 0"></span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-slate-900 rounded-lg shadow-md border border-slate-700 text-slate-300">
+            <div class="p-4">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Timing</h3>
+                <div class="flex justify-between mb-1">
+                    <span>Started:</span>
+                    <span class="font-mono text-white text-xs" x-text="formatTime(status.started_at) || '-'"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Est. Remaining:</span>
+                    <span class="font-mono text-amber-400" x-text="status.estimated_time_remaining || '-'"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function consoleViewer() {
+    return {
+        jobId: new URLSearchParams(window.location.search).get('job_id'),
+        status: {},
+        logs: [],
+        filter: 'all',
+        autoScroll: true,
+        pollInterval: null,
+
+        init() {
+            if (!this.jobId) {
+                alert('No Job ID provided');
+                return;
+            }
+            this.startPolling();
+        },
+
+        startPolling() {
+            this.fetchLogs();
+            this.pollInterval = setInterval(() => this.fetchLogs(), 2000);
+        },
+
+        async fetchLogs() {
+            try {
+                const res = await fetch(`/api/v1/ai-questionnaire/job-status/${this.jobId}`);
+                if (!res.ok) throw new Error('Failed to fetch');
+                const data = await res.json();
+                
+                this.status = data;
+                
+                // Only update logs if new ones arrived to avoid flickering
+                if (data.logs && data.logs.length > this.logs.length) {
+                    this.logs = data.logs;
+                    if (this.autoScroll) {
+                        this.$nextTick(() => {
+                            const container = document.getElementById('console-logs');
+                            container.scrollTop = container.scrollHeight;
+                        });
+                    }
+                }
+                
+                if (data.status === 'completed' || data.status === 'failed') {
+                    // Keep polling for a bit even after complete to ensure all logs captured, or stop
+                    // Maybe slow down polling?
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        get filteredLogs() {
+            if (this.filter === 'all') return this.logs;
+            return this.logs.filter(l => l.level === this.filter);
+        },
+
+        formatTime(isoString) {
+            if (!isoString) return '-';
+            const d = new Date(isoString);
+            return d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + 
+                   '.' + String(d.getMilliseconds()).padStart(3, '0');
+        },
+
+        getLevelClass(level) {
+            switch(level) {
+                case 'info': return 'text-blue-400';
+                case 'success': return 'text-green-400';
+                case 'error': return 'text-red-400 bg-red-900/20';
+                default: return 'text-slate-400';
+            }
+        },
+        
+        getLevelTextClass(level) {
+             switch(level) {
+                case 'error': return 'text-red-300 font-bold';
+                case 'success': return 'text-green-100';
+                default: return 'text-slate-300';
+            }
+        },
+
+        getStatusColor(status) {
+            switch(status) {
+                case 'completed': return 'text-green-400';
+                case 'failed': return 'text-red-400';
+                case 'queued': return 'text-slate-400';
+                default: return 'text-blue-400 animate-pulse';
+            }
+        },
+
+        toggleAutoScroll() {
+            this.autoScroll = !this.autoScroll;
+        }
+    }
+}
+</script>
+{% endblock %}

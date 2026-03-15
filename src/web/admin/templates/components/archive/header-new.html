@@ -1,0 +1,146 @@
+<header class="admin-header"
+        x-data="{
+            notificationOpen: false,
+            get store() { return Alpine.store && Alpine.store('admin'); },
+            get isConnected() { return this.store?.isConnected || false; },
+            get lastUpdate() { return this.store?.lastUpdate || null; },
+            get loading() { return this.store?.loading || false; },
+            get metrics() { return this.store?.metrics || {}; },
+            refreshMetrics() {
+                const adminStore = this.store;
+                if (adminStore?.refreshAllMetrics) {
+                    adminStore.refreshAllMetrics();
+                }
+            },
+            timeAgo(timestamp) {
+                if (!timestamp) return 'Never';
+                const now = new Date();
+                const then = new Date(timestamp);
+                const diff = Math.max(0, now - then);
+                const seconds = Math.floor(diff / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+                if (days > 0) return `${days}d ago`;
+                if (hours > 0) return `${hours}h ago`;
+                if (minutes > 0) return `${minutes}m ago`;
+                if (seconds > 0) return `${seconds}s ago`;
+                return 'Just now';
+            }
+        }">
+    <div class="admin-header-container">
+        <!-- Left Section -->
+        <div class="admin-header-left">
+            <div class="admin-header-title-group">
+                <button class="icon-button hide-desktop"
+                        type="button"
+                        @click="$root.toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <div>
+                    <p class="admin-header-subtitle">Admin Console</p>
+                    <h1 class="admin-header-title">
+                        {% block page_title %}Dashboard{% endblock %}
+                        {% block page_badge %}{% endblock %}
+                    </h1>
+                </div>
+            </div>
+            
+            {% block breadcrumb %}
+            <nav class="admin-header-breadcrumb" aria-label="Breadcrumb">
+                <a href="/admin/" style="font-weight: 500; color: #64748b; transition: color 150ms; text-decoration: none;" onmouseover="this.style.color='#334155'" onmouseout="this.style.color='#64748b'">Admin</a>
+                <span style="color: #cbd5e1;">/</span>
+                <span style="color: #475569; font-weight: 500;">Dashboard</span>
+            </nav>
+            {% endblock %}
+            
+            {% block page_description %}{% endblock %}
+        </div>
+
+        <!-- Right Section -->
+        <div class="admin-header-right">
+            {% block header_actions %}{% endblock %}
+            
+            <!-- Status Badge -->
+            <div class="hide-mobile" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.375rem 0.875rem; border: 1px solid #e2e8f0; border-radius: 9999px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 0.8125rem;">
+                <span class="relative flex h-2 w-2">
+                    <span class="pulse-dot absolute inset-0" :data-tone="isConnected ? 'green' : 'red'"></span>
+                    <span class="relative z-10 h-1.5 w-1.5 rounded-full"
+                          :style="'background: ' + (isConnected ? '#34d399' : '#f87171')"></span>
+                </span>
+                <span style="font-weight: 600; color: #334155;" x-text="isConnected ? 'Live' : 'Offline'"></span>
+                <span style="color: #cbd5e1;">•</span>
+                <span style="color: #64748b;" x-text="lastUpdate ? 'Updated ' + timeAgo(lastUpdate) : 'No data yet'"></span>
+            </div>
+
+            <!-- Refresh Button -->
+            <button class="icon-button hide-mobile"
+                    type="button"
+                    :disabled="loading"
+                    @click="refreshMetrics()"
+                    title="Refresh data">
+                <span x-show="!loading">
+                    <i class="fas fa-rotate-right"></i>
+                </span>
+                <span x-show="loading" class="spinner"></span>
+            </button>
+
+            <!-- Notifications -->
+            <div style="position: relative;" x-data="{ open: false }">
+                <button class="icon-button"
+                        type="button"
+                        @click="open = !open"
+                        @keydown.escape.window="open = false"
+                        title="Notifications"
+                        style="position: relative;">
+                    <i class="fas fa-bell"></i>
+                    <span x-show="(metrics.security?.alerts_today || 0) > 0"
+                          x-text="metrics.security?.alerts_today || 0"
+                          style="position: absolute; top: -4px; right: -4px; min-width: 1.25rem; height: 1.25rem; display: flex; align-items: center; justify-content: center; background: #ef4444; color: white; border-radius: 9999px; font-size: 0.625rem; font-weight: 700; padding: 0 0.25rem;"></span>
+                </button>
+
+                <div x-cloak
+                     x-show="open"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 -translate-y-2"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     @click.outside="open = false"
+                     style="position: absolute; right: 0; top: 3rem; z-index: 50; width: 20rem; background: rgba(255,255,255,0.98); backdrop-filter: blur(12px); border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1rem; box-shadow: 0 20px 40px -20px rgba(15,23,42,0.3);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <h3 style="font-size: 0.875rem; font-weight: 700; color: #0f172a;">System Alerts</h3>
+                        <button style="font-size: 0.75rem; font-weight: 600; color: #2563eb; background: none; border: none; cursor: pointer; transition: color 150ms;" onmouseover="this.style.color='#1d4ed8'" onmouseout="this.style.color='#2563eb'">
+                            Mark all read
+                        </button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Alert templates similar to original -->
+                        <template x-if="isConnected && (metrics.security?.alerts_today || 0) === 0 && (metrics.pipeline?.error_rate || 0) <= 0.05">
+                            <div style="padding: 1rem; background: linear-gradient(135deg, rgba(52,211,153,0.1), rgba(16,185,129,0.1)); border: 1px solid #a7f3d0; border-radius: 0.75rem; text-align: center;">
+                                <i class="fas fa-circle-check" style="color: #059669;"></i>
+                                <p style="margin-top: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #065f46;">All systems are stable</p>
+                                <p style="font-size: 0.8125rem; color: #047857; opacity: 0.8;">No outstanding alerts at this time.</p>
+                            </div>
+                        </template>
+                    </div>
+                    <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+                        <a href="/admin/security" style="font-size: 0.875rem; font-weight: 600; color: #2563eb; text-decoration: none; transition: color 150ms;" onmouseover="this.style.color='#1d4ed8'" onmouseout="this.style.color='#2563eb'">
+                            Open security center →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Button -->
+            <button class="icon-button hide-mobile"
+                    type="button"
+                    title="Settings">
+                <i class="fas fa-gear"></i>
+            </button>
+        </div>
+    </div>
+</header>
+

@@ -1,0 +1,356 @@
+{% extends "social_worker/base_sw.html" %}
+
+{% block title %}Cases - Social Worker Hub{% endblock %}
+{% block page_title %}Case Management{% endblock %}
+{% block page_subtitle %}View and manage all your assigned cases{% endblock %}
+
+{% block content %}
+<div x-data="casesData()" x-init="init()">
+    
+    <!-- Filters Bar -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <!-- Status Filter -->
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-600">Status:</label>
+                <select x-model="filters.status" @change="loadCases()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">All</option>
+                    <option value="open">Open</option>
+                    <option value="monitoring">Monitoring</option>
+                    <option value="review">Review</option>
+                    <option value="escalated">Escalated</option>
+                    <option value="closed">Closed</option>
+                </select>
+            </div>
+            
+            <!-- Priority Filter -->
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-600">Priority:</label>
+                <select x-model="filters.priority" @change="loadCases()"
+                        class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">All</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+            
+            <!-- Risk Level Filter -->
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-600">Min Risk:</label>
+                <input type="range" x-model="filters.minRisk" min="0" max="100" step="10"
+                       @change="loadCases()"
+                       class="w-32">
+                <span class="text-sm text-gray-600" x-text="filters.minRisk + '%'"></span>
+            </div>
+            
+            <div class="flex-1"></div>
+            
+            <!-- New Case Button -->
+            <button @click="showNewCaseModal = true"
+                    class="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors">
+                <i class="fas fa-plus mr-2"></i>New Case
+            </button>
+        </div>
+    </div>
+    
+    <!-- Cases Table -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Case Number
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Priority
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Risk Level
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Summary
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Opened
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <template x-for="caseItem in cases" :key="caseItem.id">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a :href="'/admin/social-worker/cases/' + caseItem.id"
+                               class="text-teal-600 hover:text-teal-800 font-medium"
+                               x-text="caseItem.case_number"></a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full"
+                                  :class="getStatusClass(caseItem.status)"
+                                  x-text="caseItem.status"></span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full"
+                                  :class="getPriorityClass(caseItem.priority)"
+                                  x-text="caseItem.priority"></span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="h-2 rounded-full"
+                                         :class="getRiskBarClass(caseItem.risk_level)"
+                                         :style="'width: ' + (caseItem.risk_level || 0) + '%'"></div>
+                                </div>
+                                <span class="text-sm" x-text="(caseItem.risk_level || 0) + '%'"></span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm text-gray-600 line-clamp-2 max-w-xs" 
+                               x-text="caseItem.summary"></p>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            x-text="formatDate(caseItem.opened_at)"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a :href="'/admin/social-worker/cases/' + caseItem.id"
+                               class="text-teal-600 hover:text-teal-800 mr-3">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <button @click="editCase(caseItem)" class="text-blue-600 hover:text-blue-800 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+        
+        <!-- Empty State -->
+        <div x-show="cases.length === 0 && !loading" class="p-12 text-center">
+            <i class="fas fa-folder-open text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-600">No cases found</h3>
+            <p class="text-gray-400">Try adjusting your filters or create a new case</p>
+        </div>
+        
+        <!-- Loading State -->
+        <div x-show="loading" class="p-12 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-teal-500"></i>
+            <p class="text-gray-500 mt-4">Loading cases...</p>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="flex items-center justify-between mt-4" x-show="cases.length > 0">
+        <p class="text-sm text-gray-500">
+            Showing <span x-text="pagination.offset + 1"></span> to 
+            <span x-text="Math.min(pagination.offset + pagination.limit, pagination.total)"></span>
+            of <span x-text="pagination.total"></span> cases
+        </p>
+        <div class="flex space-x-2">
+            <button @click="prevPage()" :disabled="pagination.offset === 0"
+                    class="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <button @click="nextPage()" :disabled="pagination.offset + pagination.limit >= pagination.total"
+                    class="px-3 py-1 border rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- New Case Modal -->
+    <div x-show="showNewCaseModal" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4" @click.away="showNewCaseModal = false">
+            <div class="p-6 border-b border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800">Create New Case</h3>
+            </div>
+            <form @submit.prevent="createCase()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Child ID</label>
+                    <input type="number" x-model="newCase.child_id" required
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+                    <textarea x-model="newCase.summary" required rows="3"
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Presenting Concerns</label>
+                    <textarea x-model="newCase.presenting_concerns" required rows="3"
+                              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select x-model="newCase.priority"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Initial Risk</label>
+                        <input type="number" x-model="newCase.initial_risk_level" min="0" max="100"
+                               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" @click="showNewCaseModal = false"
+                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600">
+                        Create Case
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function casesData() {
+    return {
+        cases: [],
+        loading: true,
+        showNewCaseModal: false,
+        filters: {
+            status: '',
+            priority: '',
+            minRisk: 0
+        },
+        pagination: {
+            offset: 0,
+            limit: 20,
+            total: 0
+        },
+        newCase: {
+            child_id: '',
+            summary: '',
+            presenting_concerns: '',
+            priority: 'medium',
+            initial_risk_level: null
+        },
+        
+        async init() {
+            await this.loadCases();
+        },
+        
+        async loadCases() {
+            this.loading = true;
+            try {
+                let url = `/api/v1/social-worker/cases?limit=${this.pagination.limit}&offset=${this.pagination.offset}`;
+                if (this.filters.status) url += `&status=${this.filters.status}`;
+                if (this.filters.priority) url += `&priority=${this.filters.priority}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                this.cases = data.cases || [];
+                this.pagination.total = data.count || 0;
+            } catch (error) {
+                console.error('Error loading cases:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        async createCase() {
+            try {
+                const response = await fetch('/api/v1/social-worker/cases', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.newCase)
+                });
+                
+                if (response.ok) {
+                    this.showNewCaseModal = false;
+                    this.resetNewCase();
+                    await this.loadCases();
+                } else {
+                    alert('Error creating case');
+                }
+            } catch (error) {
+                console.error('Error creating case:', error);
+            }
+        },
+        
+        resetNewCase() {
+            this.newCase = {
+                child_id: '',
+                summary: '',
+                presenting_concerns: '',
+                priority: 'medium',
+                initial_risk_level: null
+            };
+        },
+        
+        nextPage() {
+            if (this.pagination.offset + this.pagination.limit < this.pagination.total) {
+                this.pagination.offset += this.pagination.limit;
+                this.loadCases();
+            }
+        },
+        
+        prevPage() {
+            if (this.pagination.offset > 0) {
+                this.pagination.offset = Math.max(0, this.pagination.offset - this.pagination.limit);
+                this.loadCases();
+            }
+        },
+        
+        getStatusClass(status) {
+            const classes = {
+                'open': 'bg-green-100 text-green-700',
+                'monitoring': 'bg-blue-100 text-blue-700',
+                'review': 'bg-yellow-100 text-yellow-700',
+                'escalated': 'bg-red-100 text-red-700',
+                'closed': 'bg-gray-100 text-gray-700'
+            };
+            return classes[status] || 'bg-gray-100 text-gray-700';
+        },
+        
+        getPriorityClass(priority) {
+            const classes = {
+                'low': 'bg-gray-100 text-gray-600',
+                'medium': 'bg-blue-100 text-blue-700',
+                'high': 'bg-orange-100 text-orange-700',
+                'urgent': 'bg-red-100 text-red-700',
+                'critical': 'bg-red-500 text-white'
+            };
+            return classes[priority] || 'bg-gray-100 text-gray-600';
+        },
+        
+        getRiskBarClass(riskLevel) {
+            if (riskLevel >= 80) return 'bg-red-500';
+            if (riskLevel >= 60) return 'bg-orange-500';
+            if (riskLevel >= 40) return 'bg-yellow-500';
+            return 'bg-green-500';
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleDateString();
+        },
+        
+        editCase(caseItem) {
+            window.location.href = `/admin/social-worker/cases/${caseItem.id}`;
+        }
+    };
+}
+</script>
+{% endblock %}
+

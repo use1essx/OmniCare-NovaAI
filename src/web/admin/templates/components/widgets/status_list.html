@@ -1,0 +1,86 @@
+{% set title = title or "Status" %}
+{% set items = items or [] %}
+{% set show_actions = show_actions or False %}
+
+<article class="card">
+    <div class="card-header">
+        <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
+    </div>
+    <div class="card-body divide-y divide-slate-200/70 p-0">
+        {% for item in items %}
+            {% set item_status = (item.status or 'unknown')|lower %}
+            {% if item_status in ['healthy', 'ok', 'online'] %}
+                {% set status_dot = 'bg-emerald-400' %}
+                {% set status_tone = 'green' %}
+            {% elif item_status in ['warning', 'degraded'] %}
+                {% set status_dot = 'bg-amber-400' %}
+                {% set status_tone = 'amber' %}
+            {% elif item_status in ['error', 'critical', 'down'] %}
+                {% set status_dot = 'bg-rose-500' %}
+                {% set status_tone = 'red' %}
+            {% else %}
+                {% set status_dot = 'bg-slate-400' %}
+                {% set status_tone = 'gray' %}
+            {% endif %}
+
+            <div class="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="relative mt-1 flex h-2.5 w-2.5 items-center justify-center">
+                        <span class="pulse-dot absolute inset-0"
+                              data-tone="{% if status_tone == 'red' %}red{% elif status_tone == 'amber' %}amber{% else %}green{% endif %}"></span>
+                        <span class="relative z-10 h-1.5 w-1.5 rounded-full {{ status_dot }}"></span>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-900">{{ item.name or item.title }}</p>
+                        {% if item.description %}
+                        <p class="text-xs text-slate-500">{{ item.description }}</p>
+                        {% endif %}
+                        {% if item.last_updated %}
+                        <p class="text-xs text-slate-400">Last updated {{ item.last_updated }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if item.value %}
+                    <span class="text-sm font-semibold text-slate-600">{{ item.value }}</span>
+                    {% endif %}
+                    {% if item.badge %}
+                    <span class="chip"
+                          data-tone="{% if item.badge_type == 'success' %}green{% elif item.badge_type == 'warning' %}amber{% elif item.badge_type == 'error' %}rose{% else %}gray{% endif %}">
+                        {{ item.badge }}
+                    </span>
+                    {% endif %}
+                    {% if show_actions and item.actions %}
+                    <div class="relative" x-data="{ open: false }">
+                        <button type="button"
+                                class="btn-ghost h-9 w-9 rounded-full border border-slate-200 text-slate-500 hover:text-slate-700"
+                                @click="open = !open">
+                            <i class="fas fa-ellipsis-vertical"></i>
+                        </button>
+                        <div x-show="open"
+                             x-cloak
+                             @click.outside="open = false"
+                             x-transition
+                             class="absolute right-0 z-30 mt-2 w-48 rounded-2xl border border-slate-200 bg-white/95 p-2 text-sm shadow-soft backdrop-blur">
+                            {% for action in item.actions %}
+                            <a href="{{ action.url }}"
+                               class="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-600 transition hover:bg-slate-100">
+                                {% if action.icon %}<i class="{{ action.icon }} text-slate-400"></i>{% endif %}
+                                <span>{{ action.label }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if not items %}
+        <div class="px-6 py-10 text-center text-sm text-slate-500">
+            <i class="fas fa-inbox text-lg text-slate-300"></i>
+            <p class="mt-2 font-semibold text-slate-700">No status items to display</p>
+        </div>
+        {% endif %}
+    </div>
+</article>

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Data Platform · Healthcare AI Admin{% endblock %}
+{% block page_title %}Data Platform{% endblock %}
+
+{% block page_description %}
+<p class="max-w-2xl text-sm leading-relaxed text-slate-500">
+    Curate the knowledge corpus that powers Live2D assistance. Track ingestion status, manage supporting files,
+    and ensure every document meets quality and governance benchmarks before deployment.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="#upload"
+   class="btn btn-primary">
+    <i class="fas fa-cloud-arrow-up"></i>
+    Upload Files
+</a>
+<a href="/admin/data/quality-review"
+   class="btn btn-secondary">
+    <i class="fas fa-shield-check"></i>
+    Quality Review
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Overview -->
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Documents</p>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900">{{ stats.total_documents }}</p>
+                        <p class="mt-2 text-xs text-slate-500">Ready and searchable within the knowledge graph.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-soft">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Pending Review</p>
+                        <p class="mt-3 text-3xl font-semibold text-amber-500">{{ stats.pending_review }}</p>
+                        <p class="mt-2 text-xs text-slate-500">Awaiting policy validation or metadata updates.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-soft">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Approved</p>
+                        <p class="mt-3 text-3xl font-semibold text-emerald-500">{{ stats.approved }}</p>
+                        <p class="mt-2 text-xs text-slate-500">Published to production knowledge packs.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-soft">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-body">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">In Processing</p>
+                        <p class="mt-3 text-3xl font-semibold text-purple-500">{{ stats.processing }}</p>
+                        <p class="mt-2 text-xs text-slate-500">Currently indexing or awaiting vector generation.</p>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white shadow-soft">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Upload -->
+    <section id="upload" class="grid gap-6 lg:grid-cols-3">
+        <article class="card lg:col-span-2">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-slate-900">Upload New Documents</h2>
+                <p class="text-sm text-slate-500">Drag &amp; drop PDF, Word, plain text, or rich media up to 50MB.</p>
+            </div>
+            <div class="card-body space-y-6">
+                <div class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/80 p-12 text-center transition hover:border-health-blue hover:bg-health-blue/5">
+                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-400 shadow-soft">
+                        <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                    </div>
+                    <p class="mt-4 text-lg font-semibold text-slate-900">Drop files to upload</p>
+                    <p class="text-sm text-slate-500">or</p>
+                    <button type="button" class="btn btn-secondary mt-3 px-6">
+                        <i class="fas fa-folder-open"></i>
+                        Browse Files
+                    </button>
+                    <p class="mt-4 text-xs text-slate-400">Accepted formats: PDF, DOCX, TXT, JPG, PNG</p>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Category
+                        <select class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <option>Medical Guidelines</option>
+                            <option>Treatment Protocols</option>
+                            <option>Medication Information</option>
+                            <option>HK Health Policies</option>
+                        </select>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Language
+                        <select class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <option>English</option>
+                            <option>Traditional Chinese</option>
+                            <option>Simplified Chinese</option>
+                        </select>
+                    </label>
+                    <label class="md:col-span-2 flex flex-col gap-1 text-sm font-medium text-slate-600">
+                        Notes for Reviewers
+                        <textarea rows="3" class="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30" placeholder="Context, related pathways, or guidance for the curation team."></textarea>
+                    </label>
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-slate-900">Pipeline Health</h2>
+            </div>
+            <div class="card-body space-y-4 text-sm text-slate-600">
+                <div>
+                    <p class="font-semibold text-slate-800">Vector Index</p>
+                    <p class="text-xs text-slate-400">Last rebuild 4 hours ago</p>
+                    <div class="mt-2 h-2 rounded-full bg-slate-200">
+                        <div class="h-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" style="width: 92%;"></div>
+                    </div>
+                </div>
+                <div>
+                    <p class="font-semibold text-slate-800">Knowledge Coverage</p>
+                    <ul class="mt-2 space-y-2">
+                        <li class="flex items-center justify-between">
+                            <span>Cardiology</span>
+                            <span class="chip" data-tone="green">Complete</span>
+                        </li>
+                        <li class="flex items-center justify-between">
+                            <span>Emergency Care</span>
+                            <span class="chip" data-tone="amber">Review</span>
+                        </li>
+                        <li class="flex items-center justify-between">
+                            <span>HK Policy</span>
+                            <span class="chip" data-tone="blue">In progress</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-700">
+                    <p class="font-semibold uppercase tracking-[0.2em] text-emerald-600">Tip</p>
+                    <p class="mt-1">Tag uploads with consistent taxonomy to improve retrieval accuracy in Live2D chat.</p>
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Recent Documents -->
+    <section class="card">
+        <div class="card-header flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-900">Recent Documents</h2>
+                <p class="text-sm text-slate-500">Latest uploads awaiting review or recently approved.</p>
+            </div>
+            <button type="button"
+                    class="btn-ghost hidden items-center gap-2 rounded-full border border-slate-200/70 px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:border-health-blue hover:text-health-blue md:flex">
+                <i class="fas fa-rotate-right"></i>
+                Refresh
+            </button>
+        </div>
+        <div class="card-body overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200/70 text-left text-sm text-slate-600">
+                <thead class="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    <tr>
+                        <th class="px-4 py-3">Document</th>
+                        <th class="px-4 py-3">Category</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Updated</th>
+                        <th class="px-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200/60 text-sm">
+                    <tr class="transition hover:bg-slate-50/70">
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                                    <i class="fas fa-file-pdf"></i>
+                                </span>
+                                <div>
+                                    <p class="font-semibold text-slate-900">HK Medical Guidelines 2024</p>
+                                    <p class="text-xs text-slate-400">Medical Guidelines · v3.2</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">Medical Guidelines</td>
+                        <td class="px-4 py-4">
+                            <span class="chip" data-tone="green">Approved</span>
+                        </td>
+                        <td class="px-4 py-4 text-slate-500">Mar 15, 2025</td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn-ghost border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-health-blue hover:text-health-blue">
+                                    <i class="fas fa-eye"></i>
+                                    Preview
+                                </button>
+                                <button type="button" class="btn-ghost border border-rose-200 px-3 py-1 text-xs text-rose-600 hover:bg-rose-500 hover:text-white">
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="transition hover:bg-slate-50/70">
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                                    <i class="fas fa-file-word"></i>
+                                </span>
+                                <div>
+                                    <p class="font-semibold text-slate-900">Stroke Response Protocol</p>
+                                    <p class="text-xs text-slate-400">Emergency Care · Draft v1.4</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">Treatment Protocols</td>
+                        <td class="px-4 py-4">
+                            <span class="chip" data-tone="amber">Needs Review</span>
+                        </td>
+                        <td class="px-4 py-4 text-slate-500">Mar 14, 2025</td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn-ghost border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-health-blue hover:text-health-blue">
+                                    <i class="fas fa-edit"></i>
+                                    Annotate
+                                </button>
+                                <button type="button" class="btn-ghost border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-emerald-500 hover:text-emerald-600">
+                                    <i class="fas fa-circle-check"></i>
+                                    Approve
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr class="transition hover:bg-slate-50/70">
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3">
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+                                    <i class="fas fa-image"></i>
+                                </span>
+                                <div>
+                                    <p class="font-semibold text-slate-900">Radiology Reference Pack</p>
+                                    <p class="text-xs text-slate-400">Imaging · Batch 12</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4">Medical Imaging</td>
+                        <td class="px-4 py-4">
+                            <span class="chip" data-tone="blue">Processing</span>
+                        </td>
+                        <td class="px-4 py-4 text-slate-500">Mar 13, 2025</td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn-ghost border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-health-blue hover:text-health-blue">
+                                    <i class="fas fa-circle-info"></i>
+                                    Details
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

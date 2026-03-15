@@ -1,0 +1,125 @@
+# CRITICAL: Document-Faithful Question Extraction
+
+You are analyzing a healthcare/assessment document to extract EXISTING questions.
+
+## STRICT RULES - READ CAREFULLY
+
+1. **EXTRACT, DO NOT GENERATE**: Your job is to FIND and EXTRACT questions that already exist in the document
+2. **NO CREATIVITY**: Do NOT create new questions from your knowledge
+3. **NO ADDITIONS**: Do NOT add questions that aren't in the source document
+4. **PRESERVE EXACTLY**: Keep the original wording, structure, and format
+
+## Your Task
+
+Extract ALL assessment items, questions, or evaluation criteria that appear in the document.
+
+**IMPORTANT**: An "item" can be:
+- A direct question (e.g., "Can the child walk on tiptoes?")
+- A developmental milestone (e.g., "Walks independently")
+- An observation checklist item (e.g., "Child shows interest in peers")
+- A skill assessment (e.g., "Copies a circle")
+- A behavioral indicator (e.g., "Follows 2-step instructions")
+- A performance task (e.g., "Stacks 6 blocks")
+
+## What to Extract
+
+1. **Direct Questions**: Any question explicitly stated in the document
+2. **Assessment Items**: Evaluation criteria, observation points, test items, developmental milestones
+3. **Checklist Items**: Skills, behaviors, or abilities to observe or test
+4. **Scoring Criteria**: How each item is scored or evaluated (pass/fail, points, ratings)
+5. **Response Options**: All possible answers (yes/no, Likert scales, multiple choice, pass/partial/fail)
+6. **Categories/Domains**: How questions are grouped (e.g., "Gross Motor", "Social Development", "Fine Motor", "Language")
+7. **Instructions**: How to administer each question (parent interview vs direct testing vs observation)
+8. **Age Ranges**: Target age groups for each item or domain
+
+## Output Format (JSON only)
+
+**IMPORTANT**: Keep the response CONCISE. Only provide summary information, not full item details.
+
+{
+  "document_type": "assessment_tool|questionnaire|screening_scale|evaluation_form|developmental_checklist",
+  "total_items_found": 30,
+  "document_language": "bilingual_en_zh|english|chinese|other",
+  "age_range": "0-3|3-6|5-7|8-12|mixed",
+  "domains": [
+    {
+      "domain_name": "Gross Motor Skills",
+      "domain_name_zh": "大肌肉",
+      "item_count": 10,
+      "scoring_method": "binary|likert|points|pass_fail",
+      "sample_items": ["Can walk on tiptoes", "Balances on one foot", "Jumps forward"]
+    },
+    {
+      "domain_name": "Fine Motor Skills",
+      "domain_name_zh": "小肌肉",
+      "item_count": 10,
+      "scoring_method": "binary",
+      "sample_items": ["Copies a circle", "Uses scissors", "Buttons clothing"]
+    }
+  ],
+  "assessment_methods": ["parent_interview", "direct_observation", "hands_on_task"],
+  "special_features": {
+    "has_picture_cards": true,
+    "requires_materials": true,
+    "bilingual": true,
+    "has_scoring_table": true
+  },
+  "notes": "Brief description of the assessment tool and any important extraction notes"
+}
+
+## Handling Different Document Formats
+
+### Tables and Charts
+If the document contains assessment items in table format:
+- Extract each row as a separate item
+- Preserve column headers as metadata (domain, age, scoring, etc.)
+- Keep any numbering or coding systems (e.g., "1.G", "F16*", "M問")
+
+### Developmental Checklists
+If the document is a developmental checklist:
+- Each milestone/skill/behavior is an "item"
+- Extract the exact description of what to observe or test
+- Note any age ranges or developmental stages
+- Preserve any icons, symbols, or codes (e.g., "實" for hands-on, "問" for interview)
+
+### Multi-language Documents
+If the document is bilingual or multilingual:
+- Extract both/all language versions
+- Preserve the pairing of translations
+- Note which is the primary language
+
+## Critical Validation Checks
+
+Before outputting, verify:
+- ✅ Every item came from the source document (not your knowledge)
+- ✅ Original wording is preserved (not paraphrased unless translating)
+- ✅ All scoring criteria match the document
+- ✅ Domain structure matches the original
+- ✅ Question count matches what's in the document (count ALL items, even if in table format)
+- ✅ No questions added that aren't in the source
+- ✅ Table rows, checklist items, and milestones are ALL counted as "items"
+
+## What NOT to Do
+
+❌ Do NOT generate questions from your general knowledge about the topic
+❌ Do NOT add "helpful" questions that aren't in the document
+❌ Do NOT reorganize or reinterpret the structure
+❌ Do NOT create new categories or domains
+❌ Do NOT modify the scoring system
+❌ Do NOT paraphrase unless translating to target language
+❌ Do NOT add questions to "improve" the assessment
+
+## Example of WRONG Approach
+
+Document has: "Can the child balance on one foot?"
+❌ WRONG: Generate 10 variations about balance from your knowledge
+✅ CORRECT: Extract this one question exactly as stated
+
+## Example of CORRECT Approach
+
+Document contains 21 specific assessment items across 4 domains
+✅ Extract all 21 items with their exact wording
+✅ Preserve the 4-domain structure
+✅ Keep the original scoring system
+✅ Note which items need picture cards or materials
+✅ Output exactly 21 items, no more, no less

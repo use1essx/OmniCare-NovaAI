@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied · Healthcare AI Admin{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="flex min-h-[600px] items-center justify-center p-8">
+    <div class="text-center max-w-2xl">
+        <!-- Error Icon -->
+        <div class="mb-8 flex justify-center">
+            <div class="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-2xl">
+                <i class="fas fa-shield-halved text-6xl"></i>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <h1 class="text-4xl font-bold text-slate-900 mb-4">
+            Access Denied
+        </h1>
+        
+        <p class="text-lg text-slate-600 mb-2">
+            You don't have permission to access this page.
+        </p>
+        
+        <p class="text-sm text-slate-500 mb-8">
+            This feature is restricted to administrators with specific permissions.
+        </p>
+
+        <!-- Info Box -->
+        <div class="rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 mb-8 text-left">
+            <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                    <i class="fas fa-info text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Need Access?</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        This feature requires special permissions. If you need access to this area,
+                        please contact your system administrator or super admin.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-center gap-4">
+            <button onclick="window.history.back()" 
+                    class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Go Back
+            </button>
+            
+            <a href="/admin/" 
+               class="btn btn-primary">
+                <i class="fas fa-home"></i>
+                Go to Dashboard
+            </a>
+        </div>
+
+        <!-- Additional Help -->
+        <div class="mt-8 text-xs text-slate-400">
+            {% if user %}
+            Logged in as: <strong>{{ user.username }}</strong>
+            {% if user.organization %}
+            | Organization: <strong>{{ user.organization.name }}</strong>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
+}
+</style>
+
+<script>
+// Add shake animation on load
+document.addEventListener('DOMContentLoaded', () => {
+    const icon = document.querySelector('.fa-shield-halved');
+    if (icon) {
+        icon.closest('.flex').classList.add('animate-shake');
+    }
+});
+</script>
+{% endblock %}
+

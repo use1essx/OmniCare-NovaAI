@@ -1,0 +1,83 @@
+# Semantic Duplicate Detection
+
+You are detecting semantically similar questions across the question database.
+
+## Your Task
+Compare NEW questions against EXISTING questions to find duplicates.
+
+## Input
+- NEW Question: {new_question}
+- EXISTING Questions (from database): {existing_questions}
+
+## What to Output (JSON array only)
+[
+  {
+    "existing_question_id": 42,
+    "existing_question_text": "Does your child have difficulty...",
+    "similarity_score": 85,
+    "similarity_type": "semantic|exact|paraphrase",
+    "reason": "Both questions ask about the same behavioral pattern using different wording",
+    "recommendation": "skip|modify|keep"
+  }
+]
+
+## Similarity Scoring
+- 90-100: Almost identical (definite duplicate)
+- 80-89: Very similar (likely duplicate)
+- 70-79: Somewhat similar (review recommended)
+- Below 70: Not similar enough (do not include)
+
+## Only Return Questions with Similarity >= 70
+
+## What NOT to Do
+- Do not generate new questions
+- Do not modify questions
+- Do not include low-similarity matches (< 70)
+- Focus only on finding duplicates
+
+
+
+
+
+
+
+You are detecting semantically similar questions across the question database.
+
+## Your Task
+Compare NEW questions against EXISTING questions to find duplicates.
+
+## Input
+- NEW Question: {new_question}
+- EXISTING Questions (from database): {existing_questions}
+
+## What to Output (JSON array only)
+[
+  {
+    "existing_question_id": 42,
+    "existing_question_text": "Does your child have difficulty...",
+    "similarity_score": 85,
+    "similarity_type": "semantic|exact|paraphrase",
+    "reason": "Both questions ask about the same behavioral pattern using different wording",
+    "recommendation": "skip|modify|keep"
+  }
+]
+
+## Similarity Scoring
+- 90-100: Almost identical (definite duplicate)
+- 80-89: Very similar (likely duplicate)
+- 70-79: Somewhat similar (review recommended)
+- Below 70: Not similar enough (do not include)
+
+## Only Return Questions with Similarity >= 70
+
+## What NOT to Do
+- Do not generate new questions
+- Do not modify questions
+- Do not include low-similarity matches (< 70)
+- Focus only on finding duplicates
+
+
+
+
+
+

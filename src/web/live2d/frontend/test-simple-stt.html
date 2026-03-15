@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple STT Test - Smart Auto-Stop</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .start-btn {
+            background: #28a745;
+            color: white;
+        }
+        .start-btn:hover {
+            background: #218838;
+        }
+        .start-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .stop-btn {
+            background: #dc3545;
+            color: white;
+        }
+        .stop-btn:hover {
+            background: #c82333;
+        }
+        .stop-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status.idle {
+            background: #e7f3ff;
+            border: 1px solid #2196F3;
+            color: #1976D2;
+        }
+        .status.listening {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+        .status.speaking {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+        .status.silence {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+        .pulse {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .transcript-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            margin: 20px 0;
+        }
+        .transcript-box h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .final-text {
+            color: #212529;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .interim-text {
+            color: #6c757d;
+            font-style: italic;
+            font-size: 16px;
+        }
+        .language-selector {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-box {
+            background: #d1ecf1;
+            border: 1px solid #17a2b8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-box h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Simple STT Test - Smart Auto-Stop</h1>
+        <p class="subtitle">Knows when you start speaking and when you finish!</p>
+
+        <div class="info-box">
+            <strong>⚠️ Important:</strong> You must grant microphone permission when the browser asks!
+        </div>
+
+        <div class="feature-box">
+            <h3>✨ Smart Features:</h3>
+            <ul style="margin: 10px 0;">
+                <li><strong>Speech Detection:</strong> Knows when you start speaking</li>
+                <li><strong>Auto-Stop:</strong> Automatically stops after 2 seconds of silence</li>
+                <li><strong>Visual Feedback:</strong> See when you're speaking vs silent</li>
+                <li><strong>Mixed Language:</strong> Can understand English + Cantonese together!</li>
+            </ul>
+            
+            <div class="toggle-container">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoStopToggle" checked>
+                    <span class="slider"></span>
+                </label>
+                <label for="autoStopToggle" style="cursor: pointer;">
+                    <strong>Auto-Stop After Silence</strong> (2 seconds)
+                </label>
+            </div>
+        </div>
+
+        <div class="info-box" style="background: #d1ecf1; border-color: #17a2b8;">
+            <strong>💡 Language Tips:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li><strong>Cantonese (粵語):</strong> Best for pure Cantonese speech</li>
+                <li><strong>English:</strong> Best for pure English speech</li>
+                <li><strong>Mixed:</strong> Can switch between English and Cantonese freely!</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="start-btn">🎤 Start Listening</button>
+            <button id="stopBtn" class="stop-btn" disabled>⏹️ Stop</button>
+            <select id="languageSelect" class="language-selector">
+                <option value="yue-Hant-HK">🇭🇰 Cantonese (粵語)</option>
+                <option value="en-US">🇺🇸 English</option>
+                <option value="mixed">🌐 Mixed (English + Cantonese)</option>
+            </select>
+        </div>
+
+        <div id="status" class="status idle">
+            ⏸️ Ready to start
+        </div>
+
+        <div class="transcript-box">
+            <h3>Transcript:</h3>
+            <div id="finalText" class="final-text">
+                (Final text will appear here)
+            </div>
+            <div id="interimText" class="interim-text">
+                (Interim text will appear here as you speak)
+            </div>
+        </div>
+
+        <div id="details" style="display: none; margin-top: 20px;">
+            <h3>Debug Info:</h3>
+            <pre id="detailsText" style="background: #f4f4f4; padding: 15px; border-radius: 6px; overflow-x: auto;"></pre>
+        </div>
+    </div>
+
+    <script src="/live2d/simple-stt.js"></script>
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const languageSelect = document.getElementById('languageSelect');
+        const autoStopToggle = document.getElementById('autoStopToggle');
+        const statusDiv = document.getElementById('status');
+        const finalTextDiv = document.getElementById('finalText');
+        const interimTextDiv = document.getElementById('interimText');
+        const detailsDiv = document.getElementById('details');
+        const detailsText = document.getElementById('detailsText');
+
+        let stt = null;
+
+        // Create SimpleSTT instance
+        function createSTT() {
+            return new SimpleSTT({
+                language: languageSelect.value,
+                continuous: true,
+                interimResults: true,
+                autoStop: autoStopToggle.checked,
+                silenceTimeout: 2000,
+
+                onStart: () => {
+                    console.log('✅ STT started');
+                    statusDiv.className = 'status listening';
+                    statusDiv.innerHTML = '<span class="pulse"></span> 🎤 Listening... Waiting for speech...';
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    finalTextDiv.textContent = '';
+                    interimTextDiv.textContent = '(Waiting for you to speak...)';
+                },
+
+                onSpeechStart: () => {
+                    console.log('🗣️ Speech detected - user started speaking');
+                    statusDiv.className = 'status speaking';
+                    statusDiv.innerHTML = '<span class="pulse"></span> 🗣️ Speaking detected! Keep talking...';
+                },
+
+                onSpeechEnd: () => {
+                    console.log('🤫 Speech ended - user stopped speaking');
+                    if (autoStopToggle.checked) {
+                        statusDiv.className = 'status silence';
+                        statusDiv.innerHTML = '⏱️ Silence detected... Auto-stopping in 2 seconds...';
+                    }
+                },
+
+                onResult: (result) => {
+                    console.log('📝 STT result:', result);
+                    
+                    if (result.final) {
+                        finalTextDiv.textContent = result.final || '(No final text yet)';
+                    }
+                    
+                    if (result.interim) {
+                        interimTextDiv.textContent = result.interim;
+                    } else if (result.final) {
+                        interimTextDiv.textContent = '(Waiting for more speech...)';
+                    }
+
+                    // Show debug info
+                    detailsDiv.style.display = 'block';
+                    detailsText.textContent = JSON.stringify(result, null, 2);
+                },
+
+                onAutoStop: (transcript) => {
+                    console.log('🛑 Auto-stopped after silence');
+                    console.log('Final transcript:', transcript);
+                    statusDiv.className = 'status idle';
+                    statusDiv.innerHTML = '✅ Auto-stopped after silence';
+                    interimTextDiv.textContent = '(Auto-stopped - click Start to continue)';
+                    
+                    // Show notification
+                    setTimeout(() => {
+                        statusDiv.className = 'status idle';
+                        statusDiv.innerHTML = '⏸️ Ready to start';
+                    }, 3000);
+                },
+
+                onEnd: () => {
+                    console.log('⏹️ STT ended');
+                    statusDiv.className = 'status idle';
+                    statusDiv.textContent = '⏸️ Stopped';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    if (!interimTextDiv.textContent.includes('Auto-stopped')) {
+                        interimTextDiv.textContent = '(Stopped)';
+                    }
+                },
+
+                onError: (error) => {
+                    console.error('❌ STT error:', error);
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `❌ Error: ${error.message}`;
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+
+                    // Show error details
+                    detailsDiv.style.display = 'block';
+                    detailsText.textContent = JSON.stringify(error, null, 2);
+
+                    // Show help for permission error
+                    if (error.code === 'not-allowed') {
+                        alert('Microphone permission denied!\n\n' +
+                              '1. Click the lock icon 🔒 in the address bar\n' +
+                              '2. Find "Microphone" setting\n' +
+                              '3. Change to "Allow"\n' +
+                              '4. Refresh the page and try again');
+                    }
+                }
+            });
+        }
+
+        // Initialize STT
+        stt = createSTT();
+
+        // Start button
+        startBtn.addEventListener('click', () => {
+            stt.start();
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', () => {
+            stt.stop();
+        });
+
+        // Language selector
+        languageSelect.addEventListener('change', (e) => {
+            stt.setLanguage(e.target.value);
+            console.log('🌐 Language changed to:', e.target.value);
+        });
+
+        // Auto-stop toggle
+        autoStopToggle.addEventListener('change', (e) => {
+            console.log('🔄 Auto-stop:', e.target.checked ? 'enabled' : 'disabled');
+            // Recreate STT with new settings
+            if (stt.isListening) {
+                stt.stop();
+            }
+            stt = createSTT();
+        });
+
+        // Check if Web Speech API is available
+        if (!stt.isAvailable) {
+            statusDiv.className = 'status error';
+            statusDiv.textContent = '❌ Web Speech API not supported in this browser';
+            startBtn.disabled = true;
+            alert('Web Speech API is not supported in this browser.\n\n' +
+                  'Please use Chrome, Edge, or Safari.');
+        }
+    </script>
+</body>
+</html>

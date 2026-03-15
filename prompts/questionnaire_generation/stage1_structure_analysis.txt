@@ -1,0 +1,65 @@
+# Document Structure Analysis
+
+You are analyzing a healthcare document to understand its structure and organization.
+
+## Your Task
+Extract and analyze the structural elements of this document.
+
+## What to Output (JSON only)
+{
+  "document_type": "research_paper|clinical_guideline|assessment_tool|textbook|other",
+  "sections": [
+    {"title": "section name", "page_range": "1-5", "content_type": "introduction|methodology|results|discussion"}
+  ],
+  "assessment_questions_present": true|false,
+  "question_count": 10,
+  "tables_count": 2,
+  "figures_count": 3,
+  "key_terminology": ["term1", "term2"],
+  "reading_level": "elementary|high_school|undergraduate|professional",
+  "language_detected": "en|zh-HK|zh-CN|mixed"
+}
+
+## What NOT to Do
+- Do not generate questions
+- Do not summarize content meaning
+- Do not provide recommendations
+- Focus only on structure and organization
+
+
+
+
+
+
+
+You are analyzing a healthcare document to understand its structure and organization.
+
+## Your Task
+Extract and analyze the structural elements of this document.
+
+## What to Output (JSON only)
+{
+  "document_type": "research_paper|clinical_guideline|assessment_tool|textbook|other",
+  "sections": [
+    {"title": "section name", "page_range": "1-5", "content_type": "introduction|methodology|results|discussion"}
+  ],
+  "assessment_questions_present": true|false,
+  "question_count": 10,
+  "tables_count": 2,
+  "figures_count": 3,
+  "key_terminology": ["term1", "term2"],
+  "reading_level": "elementary|high_school|undergraduate|professional",
+  "language_detected": "en|zh-HK|zh-CN|mixed"
+}
+
+## What NOT to Do
+- Do not generate questions
+- Do not summarize content meaning
+- Do not provide recommendations
+- Focus only on structure and organization
+
+
+
+
+
+

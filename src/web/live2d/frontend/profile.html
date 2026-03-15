@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的檔案 - OmniCare
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --primary-light: #a78bfa;
+            --accent: #f472b6;
+            --accent-light: #f9a8d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --surface: rgba(255, 255, 255, 0.95);
+            --border: rgba(148, 163, 184, 0.3);
+            --text: #1e293b;
+            --muted: #64748b;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f472b6 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--text);
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 24px;
+            padding: 28px;
+            color: #e2e8f0;
+            position: sticky;
+            top: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .brand-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+        }
+
+        .brand-info h2 { font-size: 1.1rem; font-weight: 600; }
+        .brand-info p { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
+
+        .sidebar-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tip-list {
+            list-style: none;
+            font-size: 0.85rem;
+        }
+
+        .tip-list li {
+            padding: 8px 0;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            opacity: 0.85;
+            line-height: 1.4;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .sidebar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sidebar-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+        }
+
+        .sidebar-btn.secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .sidebar-btn:hover { transform: translateY(-2px); }
+
+        /* Main Content */
+        .main-content {
+            background: var(--surface);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header .eyebrow {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin: 8px 0;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-header p {
+            color: var(--muted);
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        /* Form Sections */
+        .form-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .section {
+            background: #fafafa;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .section-icon.purple { background: rgba(139, 92, 246, 0.15); }
+        .section-icon.pink { background: rgba(244, 114, 182, 0.15); }
+        .section-icon.green { background: rgba(16, 185, 129, 0.15); }
+        .section-icon.blue { background: rgba(59, 130, 246, 0.15); }
+        .section-icon.orange { background: rgba(245, 158, 11, 0.15); }
+        .section-icon.red { background: rgba(239, 68, 68, 0.15); }
+
+        .section-title h2 { font-size: 1.15rem; font-weight: 600; }
+        .section-title p { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        input, select, textarea {
+            padding: 12px 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        textarea { min-height: 100px; resize: vertical; }
+
+        /* Mood Selector */
+        .mood-selector {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mood-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .mood-option:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+        .mood-option.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.1); }
+        .mood-option .emoji { font-size: 1.8rem; }
+        .mood-option .label { font-size: 0.8rem; color: var(--muted); }
+
+        /* Stress Level Slider */
+        .stress-slider {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-track {
+            display: flex;
+            gap: 8px;
+        }
+
+        .slider-option {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .slider-option:hover { border-color: var(--primary-light); }
+        .slider-option.selected { border-color: var(--primary); background: rgba(139, 92, 246, 0.1); font-weight: 600; }
+
+        /* Tag Input */
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: white;
+            min-height: 50px;
+        }
+
+        .tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            opacity: 0.8;
+            font-size: 1rem;
+        }
+
+        .tag-input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+            padding: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Checkbox Grid */
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .checkbox-item:hover { border-color: var(--primary-light); }
+        .checkbox-item.checked { border-color: var(--primary); background: rgba(139, 92, 246, 0.08); }
+        .checkbox-item input { display: none; }
+        .checkbox-item .check-icon { font-size: 1.2rem; }
+
+        /* Action Buttons */
+        .action-bar {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(139, 92, 246, 0.4); }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: var(--text);
+        }
+
+        .btn-secondary:hover { background: #e2e8f0; }
+
+        /* Toast Messages */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success { background: var(--success); }
+        .toast.error { background: #ef4444; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-card {
+            background: white;
+            padding: 32px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-container { grid-template-columns: 1fr; }
+            .sidebar { position: static; order: 2; }
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 16px; }
+            .main-content { padding: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .action-bar { flex-direction: column; }
+            .btn { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-avatar">�<</div>
+                <div class="brand-info">
+                    <h2>OmniCare</h2>
+                    <p>你的健康助手</p>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>📊 檔案完成度</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progress-percent">0%</span>
+                    <span>~3分鐘</span>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>💡 小提示</h3>
+                <ul class="tip-list">
+                    <li><span>🎯</span>填寫越多，AI越了解你</li>
+                    <li><span>🔒</span>你的資料絕對保密</li>
+                    <li><span>💬</span>隨時可以更新心情</li>
+                </ul>
+            </div>
+
+            <div class="sidebar-actions">
+                <a href="/live2d/" class="sidebar-btn primary">💬 返回聊天</a>
+                <button class="sidebar-btn secondary" onclick="logout()">🚪 登出</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <span class="eyebrow">個人檔案</span>
+                <h1>認識你自己 ✨</h1>
+                <p>告訴我們更多關於你的事，讓AI可以更好地陪伴和支持你！</p>
+            </header>
+
+            <form id="profile-form" class="form-sections">
+
+                <!-- Section 1: Basic Info -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon purple">👤</div>
+                        <div class="section-title">
+                            <h2>基本資料</h2>
+                            <p>讓我們認識你</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nickname">暱稱 / 你想被叫什麼？</label>
+                            <input type="text" id="nickname" placeholder="例如：小明、阿花">
+                        </div>
+                        <div class="form-group">
+                            <label for="age">年齡</label>
+                            <input type="number" id="age" min="6" max="25" placeholder="你幾歲？">
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">性別</label>
+                            <select id="gender">
+                                <option value="">選擇...</option>
+                                <option value="male">男</option>
+                                <option value="female">女</option>
+                                <option value="other">其他</option>
+                                <option value="prefer_not_to_say">不想說</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="birthday">生日</label>
+                            <input type="date" id="birthday">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: School Life -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon blue">🏫</div>
+                        <div class="section-title">
+                            <h2>學校生活</h2>
+                            <p>你的學習情況</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="school_name">學校名稱</label>
+                            <input type="text" id="school_name" placeholder="你讀哪間學校？">
+                        </div>
+                        <div class="form-group">
+                            <label for="school_level">年級</label>
+                            <select id="school_level">
+                                <option value="">選擇...</option>
+                                <optgroup label="小學">
+                                    <option value="P1">小一</option>
+                                    <option value="P2">小二</option>
+                                    <option value="P3">小三</option>
+                                    <option value="P4">小四</option>
+                                    <option value="P5">小五</option>
+                                    <option value="P6">小六</option>
+                                </optgroup>
+                                <optgroup label="中學">
+                                    <option value="S1">中一</option>
+                                    <option value="S2">中二</option>
+                                    <option value="S3">中三</option>
+                                    <option value="S4">中四</option>
+                                    <option value="S5">中五</option>
+                                    <option value="S6">中六</option>
+                                </optgroup>
+                                <option value="university">大學</option>
+                                <option value="not_in_school">沒有上學</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>你最喜歡的科目</label>
+                            <div class="tag-container" id="favorite-subjects">
+                                <input type="text" class="tag-input" placeholder="輸入後按 Enter（例如：中文、數學）">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>你覺得最難的科目</label>
+                            <div class="tag-container" id="challenging-subjects">
+                                <input type="text" class="tag-input" placeholder="輸入後按 Enter">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>學業壓力程度</label>
+                            <div class="slider-track" id="academic-pressure">
+                                <div class="slider-option" data-value="1">😌 很輕鬆</div>
+                                <div class="slider-option" data-value="2">🙂 還好</div>
+                                <div class="slider-option" data-value="3">😐 普通</div>
+                                <div class="slider-option" data-value="4">😰 有點大</div>
+                                <div class="slider-option" data-value="5">😫 很大</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Mood & Mental Health -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon pink">💭</div>
+                        <div class="section-title">
+                            <h2>心情與感受</h2>
+                            <p>你最近感覺怎樣？</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>現在的心情</label>
+                            <div class="mood-selector" id="current-mood">
+                                <div class="mood-option" data-mood="happy"><span class="emoji">😊</span><span class="label">開心</span></div>
+                                <div class="mood-option" data-mood="okay"><span class="emoji">🙂</span><span class="label">還好</span></div>
+                                <div class="mood-option" data-mood="tired"><span class="emoji">😴</span><span class="label">疲倦</span></div>
+                                <div class="mood-option" data-mood="anxious"><span class="emoji">😰</span><span class="label">緊張</span></div>
+                                <div class="mood-option" data-mood="sad"><span class="emoji">😢</span><span class="label">難過</span></div>
+                                <div class="mood-option" data-mood="angry"><span class="emoji">😤</span><span class="label">生氣</span></div>
+                                <div class="mood-option" data-mood="stressed"><span class="emoji">😫</span><span class="label">壓力大</span></div>
+                                <div class="mood-option" data-mood="excited"><span class="emoji">🤩</span><span class="label">興奮</span></div>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>壓力程度</label>
+                            <div class="slider-track" id="stress-level">
+                                <div class="slider-option" data-value="1">1 很低</div>
+                                <div class="slider-option" data-value="2">2</div>
+                                <div class="slider-option" data-value="3">3 普通</div>
+                                <div class="slider-option" data-value="4">4</div>
+                                <div class="slider-option" data-value="5">5 很高</div>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>壓力來源（可多選）</label>
+                            <div class="checkbox-grid" id="stress-sources">
+                                <label class="checkbox-item"><input type="checkbox" value="exams"><span class="check-icon">📝</span>考試測驗</label>
+                                <label class="checkbox-item"><input type="checkbox" value="homework"><span class="check-icon">📚</span>功課太多</label>
+                                <label class="checkbox-item"><input type="checkbox" value="parents"><span class="check-icon">👨‍👩‍👧</span>父母期望</label>
+                                <label class="checkbox-item"><input type="checkbox" value="friends"><span class="check-icon">👫</span>朋友關係</label>
+                                <label class="checkbox-item"><input type="checkbox" value="future"><span class="check-icon">🔮</span>未來擔憂</label>
+                                <label class="checkbox-item"><input type="checkbox" value="appearance"><span class="check-icon">🪞</span>外表</label>
+                                <label class="checkbox-item"><input type="checkbox" value="family"><span class="check-icon">🏠</span>家庭問題</label>
+                                <label class="checkbox-item"><input type="checkbox" value="sleep"><span class="check-icon">😴</span>睡眠不足</label>
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>什麼事情能讓你感覺好一點？</label>
+                            <div class="tag-container" id="coping-strategies">
+                                <input type="text" class="tag-input" placeholder="例如：聽音樂、運動、和朋友聊天">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+""
+
+                <!-- Section 4: Interests & Hobbies -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon green">🎮</div>
+                        <div class="section-title">
+                            <h2>興趣愛好</h2>
+                            <p>你喜歡做什麼？</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>你的興趣愛好</label>
+                            <div class="tag-container" id="hobbies">
+                                <input type="text" class="tag-input" placeholder="例如：打機、畫畫、踢波">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>喜歡的活動（可多選）</label>
+                            <div class="checkbox-grid" id="activities">
+                                <label class="checkbox-item"><input type="checkbox" value="gaming"><span class="check-icon">🎮</span>打機</label>
+                                <label class="checkbox-item"><input type="checkbox" value="sports"><span class="check-icon">⚽</span>運動</label>
+                                <label class="checkbox-item"><input type="checkbox" value="music"><span class="check-icon">🎵</span>音樂</label>
+                                <label class="checkbox-item"><input type="checkbox" value="drawing"><span class="check-icon">🎨</span>畫畫</label>
+                                <label class="checkbox-item"><input type="checkbox" value="reading"><span class="check-icon">📖</span>閱讀</label>
+                                <label class="checkbox-item"><input type="checkbox" value="movies"><span class="check-icon">🎬</span>睇戲</label>
+                                <label class="checkbox-item"><input type="checkbox" value="cooking"><span class="check-icon">🍳</span>煮嘢食</label>
+                                <label class="checkbox-item"><input type="checkbox" value="social"><span class="check-icon">💬</span>同朋友傾計</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="screen_time">每日螢幕時間（小時）</label>
+                            <input type="number" id="screen_time" min="0" max="24" step="0.5" placeholder="例如：3">
+                        </div>
+                        <div class="form-group">
+                            <label for="dream_career">你的夢想職業</label>
+                            <input type="text" id="dream_career" placeholder="你長大想做什麼？">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Social & Relationships -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon orange">👫</div>
+                        <div class="section-title">
+                            <h2>社交與關係</h2>
+                            <p>你和其他人的關係</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>社交舒適度</label>
+                            <div class="slider-track" id="social-comfort">
+                                <div class="slider-option" data-value="1">😶 很內向</div>
+                                <div class="slider-option" data-value="2">🙂 偏內向</div>
+                                <div class="slider-option" data-value="3">😊 普通</div>
+                                <div class="slider-option" data-value="4">😄 偏外向</div>
+                                <div class="slider-option" data-value="5">🤗 很外向</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="friend_circle">朋友圈大小</label>
+                            <select id="friend_circle">
+                                <option value="">選擇...</option>
+                                <option value="none">沒有朋友</option>
+                                <option value="few">幾個好朋友</option>
+                                <option value="some">有一班朋友</option>
+                                <option value="many">很多朋友</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="parent_relationship">和父母的關係</label>
+                            <select id="parent_relationship">
+                                <option value="">選擇...</option>
+                                <option value="excellent">很好</option>
+                                <option value="good">不錯</option>
+                                <option value="okay">普通</option>
+                                <option value="difficult">有點困難</option>
+                                <option value="complicated">很複雜</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bullying">有沒有被欺凌的經歷？</label>
+                            <select id="bullying">
+                                <option value="">選擇...</option>
+                                <option value="never">從來沒有</option>
+                                <option value="past">以前有過</option>
+                                <option value="current">現在有</option>
+                                <option value="prefer_not_to_say">不想說</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 6: Physical Health -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon green">💪</div>
+                        <div class="section-title">
+                            <h2>身體健康</h2>
+                            <p>你的身體狀況</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="height">身高（厘米）</label>
+                            <input type="number" id="height" min="50" max="250" placeholder="例如：160">
+                        </div>
+                        <div class="form-group">
+                            <label for="weight">體重（公斤）</label>
+                            <input type="number" id="weight" min="10" max="150" step="0.1" placeholder="例如：50">
+                        </div>
+                        <div class="form-group">
+                            <label for="sleep_weekday">平日睡眠時間（小時）</label>
+                            <input type="number" id="sleep_weekday" min="0" max="24" step="0.5" placeholder="例如：7">
+                        </div>
+                        <div class="form-group">
+                            <label for="sleep_weekend">週末睡眠時間（小時）</label>
+                            <input type="number" id="sleep_weekend" min="0" max="24" step="0.5" placeholder="例如：9">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>敏感/過敏</label>
+                            <div class="tag-container" id="allergies">
+                                <input type="text" class="tag-input" placeholder="例如：花生、塵蟎">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 7: Goals -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon purple">🎯</div>
+                        <div class="section-title">
+                            <h2>目標與夢想</h2>
+                            <p>你想達成什麼？</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label>個人目標</label>
+                            <div class="tag-container" id="personal-goals">
+                                <input type="text" class="tag-input" placeholder="例如：學識游水、改善脾氣">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>學業目標</label>
+                            <div class="tag-container" id="academic-goals">
+                                <input type="text" class="tag-input" placeholder="例如：數學進步、考入心儀學校">
+                            </div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="additional_notes">還有什麼想告訴AI的？</label>
+                            <textarea id="additional_notes" placeholder="任何你想分享的事情..."></textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 8: Family & Emergency -->
+                <section class="section">
+                    <div class="section-header">
+                        <div class="section-icon red">🏠</div>
+                        <div class="section-title">
+                            <h2>家庭與緊急聯絡</h2>
+                            <p>重要聯絡資料</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="guardian_name">家長/監護人姓名</label>
+                            <input type="text" id="guardian_name" placeholder="例如：陳大文">
+                        </div>
+                        <div class="form-group">
+                            <label for="guardian_phone">家長電話</label>
+                            <input type="tel" id="guardian_phone" placeholder="例如：9123 4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="emergency_name">緊急聯絡人</label>
+                            <input type="text" id="emergency_name" placeholder="緊急時可以聯絡誰？">
+                        </div>
+                        <div class="form-group">
+                            <label for="emergency_phone">緊急聯絡電話</label>
+                            <input type="tel" id="emergency_phone" placeholder="電話號碼">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <a href="/live2d/" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">💾 儲存檔案</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <p>儲存中...</p>
+        </div>
+    </div>
+""
+
+    <script>
+        const API_BASE = window.location.origin;
+        let profileData = {};
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initTagInputs();
+            initMoodSelector();
+            initSliders();
+            initCheckboxes();
+            loadProfile();
+        });
+
+        // Tag Input functionality
+        function initTagInputs() {
+            const tagContainers = document.querySelectorAll('.tag-container');
+            tagContainers.forEach(container => {
+                const input = container.querySelector('.tag-input');
+                const fieldId = container.id;
+                
+                if (!profileData[fieldId]) profileData[fieldId] = [];
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = input.value.trim();
+                        if (value && !profileData[fieldId].includes(value)) {
+                            profileData[fieldId].push(value);
+                            renderTags(container, fieldId);
+                        }
+                        input.value = '';
+                    }
+                });
+            });
+        }
+
+        function renderTags(container, fieldId) {
+            const input = container.querySelector('.tag-input');
+            container.querySelectorAll('.tag').forEach(t => t.remove());
+            
+            profileData[fieldId].forEach((tag, index) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'tag';
+                tagEl.innerHTML = `${tag}<span class="tag-remove" onclick="removeTag('${fieldId}', ${index})">×</span>`;
+                container.insertBefore(tagEl, input);
+            });
+            updateProgress();
+        }
+
+        function removeTag(fieldId, index) {
+            profileData[fieldId].splice(index, 1);
+            const container = document.getElementById(fieldId);
+            renderTags(container, fieldId);
+        }
+
+        // Mood Selector
+        function initMoodSelector() {
+            const moodOptions = document.querySelectorAll('.mood-option');
+            moodOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    moodOptions.forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    profileData.current_mood = option.dataset.mood;
+                    updateProgress();
+                });
+            });
+        }
+
+        // Slider functionality
+        function initSliders() {
+            const sliders = ['academic-pressure', 'stress-level', 'social-comfort'];
+            sliders.forEach(sliderId => {
+                const container = document.getElementById(sliderId);
+                if (!container) return;
+                
+                const options = container.querySelectorAll('.slider-option');
+                options.forEach(option => {
+                    option.addEventListener('click', () => {
+                        options.forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        profileData[sliderId.replace(/-/g, '_')] = parseInt(option.dataset.value);
+                        updateProgress();
+                    });
+                });
+            });
+        }
+
+        // Checkbox functionality
+        function initCheckboxes() {
+            const checkboxGrids = document.querySelectorAll('.checkbox-grid');
+            checkboxGrids.forEach(grid => {
+                const items = grid.querySelectorAll('.checkbox-item');
+                items.forEach(item => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    item.addEventListener('click', (e) => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                        }
+                        item.classList.toggle('checked', checkbox.checked);
+                        updateProgress();
+                    });
+                });
+            });
+        }
+
+        // Load existing profile
+        async function loadProfile() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                window.location.href = '/auth.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    populateForm(userData);
+                } else if (response.status === 401) {
+                    localStorage.removeItem('auth_token');
+                    window.location.href = '/auth.html';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // Populate form with existing data
+        function populateForm(userData) {
+            const hp = userData.health_profile || {};
+            
+            // Basic info
+            if (hp.nickname) document.getElementById('nickname').value = hp.nickname;
+            if (hp.age) document.getElementById('age').value = hp.age;
+            if (hp.gender) document.getElementById('gender').value = hp.gender;
+            if (hp.date_of_birth) document.getElementById('birthday').value = hp.date_of_birth;
+            
+            // School
+            if (hp.school_name) document.getElementById('school_name').value = hp.school_name;
+            if (hp.school_level) document.getElementById('school_level').value = hp.school_level;
+            
+            // Load tag arrays
+            const tagFields = ['favorite-subjects', 'challenging-subjects', 'coping-strategies', 
+                              'hobbies', 'allergies', 'personal-goals', 'academic-goals'];
+            tagFields.forEach(field => {
+                const dbField = field.replace(/-/g, '_');
+                if (hp[dbField] && Array.isArray(hp[dbField])) {
+                    profileData[field] = hp[dbField];
+                    const container = document.getElementById(field);
+                    if (container) renderTags(container, field);
+                }
+            });
+            
+            // Mood
+            if (hp.current_mood) {
+                const moodOption = document.querySelector(`.mood-option[data-mood="${hp.current_mood}"]`);
+                if (moodOption) {
+                    moodOption.classList.add('selected');
+                    profileData.current_mood = hp.current_mood;
+                }
+            }
+            
+            // Sliders
+            const sliderFields = {
+                'academic-pressure': hp.academic_pressure_level,
+                'stress-level': hp.stress_level,
+                'social-comfort': hp.social_comfort_level
+            };
+            Object.entries(sliderFields).forEach(([sliderId, value]) => {
+                if (value) {
+                    const option = document.querySelector(`#${sliderId} .slider-option[data-value="${value}"]`);
+                    if (option) {
+                        option.classList.add('selected');
+                        profileData[sliderId.replace(/-/g, '_')] = value;
+                    }
+                }
+            });
+            
+            // Checkboxes
+            if (hp.stress_sources && Array.isArray(hp.stress_sources)) {
+                hp.stress_sources.forEach(source => {
+                    const checkbox = document.querySelector(`#stress-sources input[value="${source}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.closest('.checkbox-item').classList.add('checked');
+                    }
+                });
+            }
+            
+            if (hp.favorite_activities && Array.isArray(hp.favorite_activities)) {
+                hp.favorite_activities.forEach(activity => {
+                    const checkbox = document.querySelector(`#activities input[value="${activity}"]`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.closest('.checkbox-item').classList.add('checked');
+                    }
+                });
+            }
+            
+            // Other fields
+            if (hp.screen_time_daily) document.getElementById('screen_time').value = hp.screen_time_daily;
+            if (hp.dream_career) document.getElementById('dream_career').value = hp.dream_career;
+            if (hp.friend_circle_size) document.getElementById('friend_circle').value = hp.friend_circle_size;
+            if (hp.relationship_with_parents) document.getElementById('parent_relationship').value = hp.relationship_with_parents;
+            if (hp.bullying_experience) document.getElementById('bullying').value = hp.bullying_experience;
+            if (hp.height_cm) document.getElementById('height').value = hp.height_cm;
+            if (hp.weight_kg) document.getElementById('weight').value = hp.weight_kg;
+            if (hp.sleep_hours_weekday) document.getElementById('sleep_weekday').value = hp.sleep_hours_weekday;
+            if (hp.sleep_hours_weekend) document.getElementById('sleep_weekend').value = hp.sleep_hours_weekend;
+            if (hp.parent_guardian_name) document.getElementById('guardian_name').value = hp.parent_guardian_name;
+            if (hp.parent_guardian_phone) document.getElementById('guardian_phone').value = hp.parent_guardian_phone;
+            if (hp.emergency_contact_name) document.getElementById('emergency_name').value = hp.emergency_contact_name;
+            if (hp.emergency_contact_phone) document.getElementById('emergency_phone').value = hp.emergency_contact_phone;
+            if (hp.additional_notes) document.getElementById('additional_notes').value = hp.additional_notes;
+            
+            updateProgress();
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const fields = [
+                document.getElementById('nickname').value,
+                document.getElementById('age').value,
+                document.getElementById('gender').value,
+                document.getElementById('school_level').value,
+                profileData.current_mood,
+                profileData.stress_level,
+                profileData['hobbies']?.length > 0,
+                document.getElementById('guardian_phone').value
+            ];
+            
+            const filled = fields.filter(f => f).length;
+            const percent = Math.round((filled / fields.length) * 100);
+            
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+            document.getElementById('progress-percent').textContent = `${percent}%`;
+        }
+
+        // Form submission
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            
+            // Collect all form data
+            const healthProfile = {
+                nickname: document.getElementById('nickname').value || null,
+                age: parseInt(document.getElementById('age').value) || null,
+                gender: document.getElementById('gender').value || null,
+                date_of_birth: document.getElementById('birthday').value || null,
+                school_name: document.getElementById('school_name').value || null,
+                school_level: document.getElementById('school_level').value || null,
+                favorite_subjects: profileData['favorite-subjects'] || [],
+                challenging_subjects: profileData['challenging-subjects'] || [],
+                academic_pressure_level: profileData.academic_pressure || null,
+                current_mood: profileData.current_mood || null,
+                stress_level: profileData.stress_level || null,
+                stress_sources: getCheckedValues('stress-sources'),
+                coping_strategies: profileData['coping-strategies'] || [],
+                hobbies: profileData['hobbies'] || [],
+                favorite_activities: getCheckedValues('activities'),
+                screen_time_daily: parseFloat(document.getElementById('screen_time').value) || null,
+                dream_career: document.getElementById('dream_career').value || null,
+                social_comfort_level: profileData.social_comfort || null,
+                friend_circle_size: document.getElementById('friend_circle').value || null,
+                relationship_with_parents: document.getElementById('parent_relationship').value || null,
+                bullying_experience: document.getElementById('bullying').value || null,
+                height_cm: parseFloat(document.getElementById('height').value) || null,
+                weight_kg: parseFloat(document.getElementById('weight').value) || null,
+                sleep_hours_weekday: parseFloat(document.getElementById('sleep_weekday').value) || null,
+                sleep_hours_weekend: parseFloat(document.getElementById('sleep_weekend').value) || null,
+                allergies: profileData['allergies'] || [],
+                personal_goals: profileData['personal-goals'] || [],
+                academic_goals: profileData['academic-goals'] || [],
+                additional_notes: document.getElementById('additional_notes').value || null,
+                parent_guardian_name: document.getElementById('guardian_name').value || null,
+                parent_guardian_phone: document.getElementById('guardian_phone').value || null,
+                emergency_contact_name: document.getElementById('emergency_name').value || null,
+                emergency_contact_phone: document.getElementById('emergency_phone').value || null
+            };
+            
+            try {
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE}/api/v1/users/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ health_profile: healthProfile })
+                });
+                
+                if (response.ok) {
+                    showToast('檔案已儲存！🎉', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast(error.detail || '儲存失敗', 'error');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showToast('網絡錯誤，請稍後再試', 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        function getCheckedValues(gridId) {
+            const checkboxes = document.querySelectorAll(`#${gridId} input[type="checkbox"]:checked`);
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_info');
+            window.location.href = '/auth.html';
+        }
+    </script>
+</body>
+</html>

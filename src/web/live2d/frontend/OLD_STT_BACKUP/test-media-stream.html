@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaStreamManager Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            margin-top: 20px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 MediaStreamManager Test Suite</h1>
+    
+    <div class="warning">
+        ⚠️ <strong>Important:</strong> This test requires microphone permission. 
+        Click "Allow" when your browser asks for microphone access.
+    </div>
+
+    <div class="test-section">
+        <h2>Stream Status</h2>
+        <div class="status inactive" id="streamStatus">No stream acquired</div>
+        <div id="trackInfo"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual Controls</h2>
+        <button onclick="acquireStream()">Acquire Stream</button>
+        <button onclick="releaseStream()">Release Stream</button>
+        <button onclick="checkStatus()">Check Status</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Sequential Session Test (KEY TEST)</h2>
+        <p>This test verifies the fix for the "works first time only" bug by running multiple acquire/release cycles.</p>
+        <button onclick="runSequentialTest(3)">Run 3 Sessions</button>
+        <button onclick="runSequentialTest(5)">Run 5 Sessions</button>
+        <button onclick="runSequentialTest(10)">Run 10 Sessions</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Automated Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="testResults"></div>
+    </div>
+
+    <script src="voice-input-v2.js"></script>
+    <script>
+        // Create MediaStreamManager instance
+        const msm = new MediaStreamManager();
+        
+        // Update status display
+        function updateStatus() {
+            const statusDiv = document.getElementById('streamStatus');
+            const trackInfo = document.getElementById('trackInfo');
+            
+            if (msm.isActive()) {
+                statusDiv.className = 'status active';
+                statusDiv.textContent = '✅ Stream Active';
+                
+                const stream = msm.getStream();
+                const tracks = stream.getTracks();
+                trackInfo.innerHTML = `
+                    <div class="test-result info">
+                        <strong>Tracks:</strong> ${tracks.length}<br>
+                        ${tracks.map(t => `${t.kind}: ${t.label} (${t.readyState})`).join('<br>')}
+                    </div>
+                `;
+            } else {
+                statusDiv.className = 'status inactive';
+                statusDiv.textContent = '❌ No Active Stream';
+                trackInfo.innerHTML = '';
+            }
+        }
+        
+        // Acquire stream
+        async function acquireStream() {
+            try {
+                addResult('Acquiring stream...', 'info');
+                await msm.acquire();
+                addResult('✅ Stream acquired successfully', 'pass');
+                updateStatus();
+            } catch (error) {
+                addResult(`❌ Failed to acquire stream: ${error.message}`, 'fail');
+            }
+        }
+        
+        // Release stream
+        async function releaseStream() {
+            try {
+                addResult('Releasing stream...', 'info');
+                await msm.release();
+                addResult('✅ Stream released successfully', 'pass');
+                updateStatus();
+            } catch (error) {
+                addResult(`❌ Failed to release stream: ${error.message}`, 'fail');
+            }
+        }
+        
+        // Check status
+        function checkStatus() {
+            const isActive = msm.isActive();
+            addResult(`Stream status: ${isActive ? 'ACTIVE' : 'INACTIVE'}`, isActive ? 'pass' : 'info');
+            updateStatus();
+        }
+        
+        // Add test result
+        function addResult(message, type) {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            document.getElementById('testResults').appendChild(div);
+            
+            // Auto-scroll to bottom
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        
+        // Clear results
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+        
+        // Run sequential session test (KEY TEST for "works first time only" bug)
+        async function runSequentialTest(numSessions) {
+            clearResults();
+            addResult(`=== Sequential Session Test (${numSessions} sessions) ===`, 'info');
+            addResult('This test verifies the fix for the "works first time only" bug', 'info');
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (let i = 1; i <= numSessions; i++) {
+                try {
+                    addResult(`\nSession ${i}/${numSessions}:`, 'info');
+                    
+                    // Acquire
+                    await msm.acquire();
+                    addResult(`  ✅ Acquire succeeded`, 'pass');
+                    
+                    // Verify active
+                    if (!msm.isActive()) {
+                        throw new Error('Stream not active after acquire');
+                    }
+                    addResult(`  ✅ Stream is active`, 'pass');
+                    
+                    // Wait a bit to simulate recording
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Release
+                    await msm.release();
+                    addResult(`  ✅ Release succeeded`, 'pass');
+                    
+                    // Verify inactive
+                    if (msm.isActive()) {
+                        throw new Error('Stream still active after release');
+                    }
+                    addResult(`  ✅ Stream is inactive`, 'pass');
+                    
+                    successCount++;
+                    
+                } catch (error) {
+                    addResult(`  ❌ Session ${i} failed: ${error.message}`, 'fail');
+                    failCount++;
+                    break; // Stop on first failure
+                }
+            }
+            
+            // Summary
+            addResult(`\n=== Test Complete ===`, 'info');
+            if (failCount === 0) {
+                addResult(`✅ ALL ${numSessions} SESSIONS PASSED!`, 'pass');
+                addResult(`🎉 "Works first time only" bug is FIXED!`, 'pass');
+            } else {
+                addResult(`❌ ${failCount} session(s) failed out of ${numSessions}`, 'fail');
+                addResult(`⚠️ Bug may still exist - check console for details`, 'fail');
+            }
+            
+            updateStatus();
+        }
+        
+        // Run all automated tests
+        async function runAllTests() {
+            clearResults();
+            addResult('=== Starting Automated Tests ===', 'info');
+            
+            // Test 1: Basic acquire
+            try {
+                await msm.release(); // Ensure clean state
+                await msm.acquire();
+                if (msm.isActive()) {
+                    addResult('Test 1: Basic acquire PASSED', 'pass');
+                } else {
+                    addResult('Test 1: Basic acquire FAILED - stream not active', 'fail');
+                }
+                await msm.release();
+            } catch (error) {
+                addResult(`Test 1: Basic acquire FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 2: Release without acquire
+            try {
+                await msm.release(); // Should not throw error
+                addResult('Test 2: Release without acquire PASSED', 'pass');
+            } catch (error) {
+                addResult(`Test 2: Release without acquire FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 3: Double acquire (should release first)
+            try {
+                await msm.acquire();
+                const firstStream = msm.getStream();
+                await msm.acquire(); // Should release first stream
+                const secondStream = msm.getStream();
+                
+                if (firstStream !== secondStream) {
+                    addResult('Test 3: Double acquire (auto-release) PASSED', 'pass');
+                } else {
+                    addResult('Test 3: Double acquire FAILED - same stream returned', 'fail');
+                }
+                await msm.release();
+            } catch (error) {
+                addResult(`Test 3: Double acquire FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 4: isActive() accuracy
+            try {
+                await msm.release();
+                if (!msm.isActive()) {
+                    await msm.acquire();
+                    if (msm.isActive()) {
+                        await msm.release();
+                        if (!msm.isActive()) {
+                            addResult('Test 4: isActive() accuracy PASSED', 'pass');
+                        } else {
+                            addResult('Test 4: isActive() FAILED - still active after release', 'fail');
+                        }
+                    } else {
+                        addResult('Test 4: isActive() FAILED - not active after acquire', 'fail');
+                    }
+                } else {
+                    addResult('Test 4: isActive() FAILED - active before acquire', 'fail');
+                }
+            } catch (error) {
+                addResult(`Test 4: isActive() FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 5: Sequential sessions (3 sessions)
+            addResult('\nTest 5: Sequential sessions (3 sessions)...', 'info');
+            await runSequentialTest(3);
+            
+            updateStatus();
+        }
+        
+        // Initialize
+        updateStatus();
+        console.log('MediaStreamManager test page loaded.');
+        console.log('Click "Run All Tests" to verify functionality.');
+    </script>
+</body>
+</html>

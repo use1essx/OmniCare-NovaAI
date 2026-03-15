@@ -1,0 +1,599 @@
+{% extends "base.html" %}
+
+{% block title %}Questionnaire Creator · Healthcare AI Admin{% endblock %}
+{% block page_title %}Questionnaire Creator{% endblock %}
+
+{% block page_description %}
+<p class="max-w-3xl text-sm leading-relaxed text-slate-500">
+    Manually create questionnaires with bilingual support or import from JSON. For AI-powered generation, use the <a href="/admin/questionnaires/ai-generator" class="text-violet-600 hover:text-violet-700 font-medium">AI Generator</a>.
+</p>
+{% endblock %}
+
+{% block header_actions %}
+<a href="/admin/questionnaires/ai-generator" class="btn btn-primary bg-gradient-to-r from-violet-600 to-purple-600 text-white border-none">
+    <i class="fas fa-wand-magic-sparkles"></i>
+    Use AI Generator
+</a>
+<a href="/admin/questionnaires/manage" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i>
+    Back to Manager
+</a>
+{% endblock %}
+
+{% block content %}
+<div x-data="questionnaireCreator()" x-init="init()">
+    
+    <!-- Method Selection -->
+    <div class="card mb-6">
+        <div class="card-body">
+            <div class="flex gap-4">
+                <button @click="selectedMethod = 'manual'" 
+                        :class="selectedMethod === 'manual' ? 'bg-health-blue text-white ring-2 ring-health-blue/30' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'"
+                        class="flex-1 flex flex-col items-center gap-3 rounded-xl p-6 text-sm font-medium transition border border-transparent">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                         :class="selectedMethod === 'manual' ? 'bg-white/20' : 'bg-blue-100 text-blue-600'">
+                        <i class="fas fa-pen-to-square text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="block text-lg font-semibold">Manual Builder</span>
+                        <span class="text-xs opacity-80 font-normal">Create bilingual questionnaires from scratch</span>
+                    </div>
+                </button>
+                
+                <button @click="selectedMethod = 'json'" 
+                        :class="selectedMethod === 'json' ? 'bg-health-blue text-white ring-2 ring-health-blue/30' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'"
+                        class="flex-1 flex flex-col items-center gap-3 rounded-xl p-6 text-sm font-medium transition border border-transparent">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                         :class="selectedMethod === 'json' ? 'bg-white/20' : 'bg-purple-100 text-purple-600'">
+                        <i class="fas fa-code text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="block text-lg font-semibold">JSON Import</span>
+                        <span class="text-xs opacity-80 font-normal">Import structure from existing JSON</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Builder -->
+    <div x-show="selectedMethod === 'manual'" class="space-y-6">
+        <!-- Basic Info -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-slate-900">📋 Basic Information</h2>
+            </div>
+            <div class="card-body space-y-4">
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Title (Internal / English) *
+                        <input type="text" x-model="manual.title" 
+                               placeholder="e.g., Generalized Anxiety Screening (GAD-7)"
+                               class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    
+                    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Category
+                        <select x-model="manual.category" class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <option value="mental_health">Mental Health</option>
+                            <option value="wellness">Wellness</option>
+                            <option value="screening">Screening</option>
+                            <option value="satisfaction">Satisfaction</option>
+                            <option value="physical_health">Physical Health</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                    Description
+                    <textarea x-model="manual.description" 
+                              rows="3"
+                              placeholder="Brief description of this questionnaire..."
+                              class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30"></textarea>
+                </label>
+
+                <div class="grid gap-6 sm:grid-cols-3">
+                    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Min Age
+                        <input type="number" x-model.number="manual.target_age_min" 
+                               placeholder="8"
+                               min="1" max="100"
+                               class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    
+                    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Max Age
+                        <input type="number" x-model.number="manual.target_age_max" 
+                               placeholder="18"
+                               min="1" max="100"
+                               class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                    
+                    <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Primary Language
+                        <select x-model="manual.language" class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            <option value="en">English</option>
+                            <option value="zh-HK">Traditional Chinese (HK)</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <div class="grid gap-6 sm:grid-cols-2">
+                     <label class="flex flex-col gap-1.5 text-sm font-medium text-slate-700">
+                        Est. Duration (min)
+                        <input type="number" x-model.number="manual.estimated_duration_minutes" 
+                               class="rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Editor -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-slate-900">Questions</h2>
+                <button @click="addQuestion()" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Add Question
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <template x-for="(question, index) in manual.questions" :key="index">
+                    <div class="card border-l-4 border-l-health-blue">
+                        <div class="card-body space-y-4">
+                            <!-- Question Header -->
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 text-blue-600 font-bold text-sm" x-text="index + 1"></span>
+                                    <select x-model="question.question_type" class="text-sm font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer hover:text-health-blue">
+                                        <option value="scale">Likert Scale</option>
+                                        <option value="yes_no">Yes/No</option>
+                                        <option value="multiple_choice">Multiple Choice</option>
+                                        <option value="short_answer">Short Answer</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button @click="moveQuestion(index, -1)" :disabled="index === 0" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button @click="moveQuestion(index, 1)" :disabled="index === manual.questions.length - 1" class="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <button @click="removeQuestion(index)" class="p-1 text-red-400 hover:text-red-600 ml-2">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Bilingual Question Text -->
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                                    Question (English) *
+                                    <input type="text" x-model="question.question_text" 
+                                           placeholder="e.g., I feel nervous"
+                                           class="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                                </label>
+                                <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                                    Question (Chinese)
+                                    <input type="text" x-model="question.question_text_zh" 
+                                           placeholder="e.g., 我感到緊張"
+                                           class="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                                </label>
+                            </div>
+                            
+                            <!-- Help Text -->
+                            <label class="flex flex-col gap-1 text-sm font-medium text-slate-600">
+                                Help Text (Optional)
+                                <input type="text" x-model="question.help_text" 
+                                       placeholder="Additional context or instructions for this question"
+                                       class="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30">
+                            </label>
+
+                            <!-- Options (for scale/multiple_choice) -->
+                            <div x-show="['scale', 'multiple_choice'].includes(question.question_type)" class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Options</h4>
+                                    <button @click="addOption(index)" class="text-xs font-medium text-health-blue hover:text-blue-700">
+                                        <i class="fas fa-plus mr-1"></i> Add Option
+                                    </button>
+                                </div>
+                                <div class="space-y-2">
+                                    <template x-for="(option, optIndex) in question.options" :key="optIndex">
+                                        <div class="flex items-center gap-2">
+                                            <div class="flex-shrink-0 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-500" x-text="option.option_value"></div>
+                                            <input type="text" x-model="option.option_text" 
+                                                   placeholder="Label (EN)"
+                                                   class="flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:border-health-blue focus:outline-none">
+                                            <input type="text" x-model="option.option_text_zh" 
+                                                   placeholder="Label (ZH)"
+                                                   class="flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:border-health-blue focus:outline-none">
+                                            <input type="number" x-model.number="option.option_value" 
+                                                   class="w-16 rounded-md border border-slate-200 px-2 py-1.5 text-sm focus:border-health-blue focus:outline-none" title="Score Value">
+                                            <button @click="removeOption(index, optIndex)" class="text-slate-400 hover:text-red-500 px-1">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <div x-show="!question.options || question.options.length === 0" class="text-center py-2 text-sm text-slate-400 italic">
+                                        No options added yet
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Settings -->
+                            <div class="flex items-center gap-4">
+                                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                                    <input type="checkbox" x-model="question.is_required" class="rounded border-slate-300 text-health-blue focus:ring-health-blue">
+                                    Required
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-slate-600">Category:</span>
+                                    <input type="text" x-model="question.category" placeholder="e.g. mood" class="border-b border-slate-200 focus:border-health-blue focus:outline-none bg-transparent px-1 py-0.5 text-sm w-32">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="manual.questions.length === 0" class="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                    <div class="text-slate-400 mb-3">
+                        <i class="fas fa-clipboard-list text-4xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-slate-900">No questions yet</h3>
+                    <p class="text-slate-500 mb-4">Add questions to build your questionnaire</p>
+                    <button @click="addQuestion()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add First Question
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="sticky bottom-6 mt-8 p-4 bg-white rounded-xl shadow-xl border border-slate-100 flex items-center justify-between z-10">
+                <div class="text-sm text-slate-600">
+                    Total Questions: <strong class="text-slate-900" x-text="manual.questions.length"></strong>
+                </div>
+                <div class="flex gap-3">
+                    <button @click="saveManualQuestionnaire()" class="btn btn-primary shadow-lg shadow-violet-200">
+                        <i class="fas fa-save"></i>
+                        Save Questionnaire
+                    </button>
+                    <button @click="previewManualQuestionnaire()" class="btn btn-secondary">
+                        <i class="fas fa-eye"></i>
+                        Preview JSON
+                    </button>
+                    <button @click="resetManualForm()" class="btn btn-secondary">
+                        <i class="fas fa-rotate-right"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Import -->
+        <div x-show="selectedMethod === 'json'" class="card">
+            <div class="card-header">
+                <h2 class="text-lg font-semibold text-slate-900">📝 JSON Import</h2>
+                <p class="text-sm text-slate-500">Paste your questionnaire JSON structure</p>
+            </div>
+            <div class="card-body space-y-4">
+                <textarea x-model="jsonInput" 
+                          rows="20"
+                          class="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs font-mono text-slate-700 focus:border-health-blue focus:outline-none focus:ring-2 focus:ring-health-blue/30"
+                          placeholder='{
+  "title": "My Questionnaire",
+  "questions": [
+    {
+      "question_text": "English Question",
+      "question_text_zh": "中文問題",
+      "question_type": "scale",
+      "options": [
+        {"option_text": "Yes", "option_text_zh": "是", "option_value": 1}
+      ]
+    }
+  ]
+}'></textarea>
+
+                <div class="flex gap-3">
+                    <button @click="importJson()" class="btn btn-primary">
+                        <i class="fas fa-upload"></i>
+                        Import
+                    </button>
+                    <button @click="loadSampleJson()" class="btn btn-secondary">
+                        <i class="fas fa-file-code"></i>
+                        Load Bilingual Sample
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div x-show="showPreviewModal" 
+             @click.self="showPreviewModal = false" 
+             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+             x-transition
+             style="display: none;">
+            <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-slate-900">Questionnaire Preview</h2>
+                    <button @click="showPreviewModal = false" class="text-slate-400 hover:text-slate-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="px-6 py-4">
+                    <pre class="text-xs text-slate-700 overflow-x-auto bg-slate-50 rounded-xl p-4 border border-slate-200" x-text="previewJson"></pre>
+                </div>
+
+                <div class="border-t border-slate-200 px-6 py-4 flex gap-3">
+                    <button @click="copyToClipboard(previewJson)" class="btn btn-secondary">
+                        <i class="fas fa-copy"></i>
+                        Copy JSON
+                    </button>
+                    <button @click="showPreviewModal = false" class="btn btn-secondary flex-1">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function questionnaireCreator() {
+        return {
+            selectedMethod: 'manual',
+            jsonInput: '',
+            showPreviewModal: false,
+            previewJson: '',
+            manual: {
+                title: '',
+                description: '',
+                category: 'mental_health',
+                target_age_min: null,
+                target_age_max: null,
+                language: 'en',
+                estimated_duration_minutes: 10,
+                source: 'manual',
+                questions: [],
+                scoring_rules: []
+            },
+
+            init() {
+                console.log('Questionnaire Creator initialized');
+                // Initialize with one question if empty
+                if (this.manual.questions.length === 0) {
+                    this.addQuestion();
+                }
+            },
+
+            addQuestion() {
+                this.manual.questions.push({
+                    question_text: '',
+                    question_text_zh: '',
+                    question_type: 'scale',
+                    category: '',
+                    sequence_order: this.manual.questions.length + 1,
+                    is_required: true,
+                    help_text: '',
+                    options: []
+                });
+                
+                // Auto-add default options for scale/multiple choice
+                const newQIdx = this.manual.questions.length - 1;
+                this.addDefaultOptions(newQIdx);
+            },
+
+            addDefaultOptions(index) {
+                // Default 5-point scale options
+                const options = [
+                    { text: "Never", text_zh: "從不", val: 1 },
+                    { text: "Rarely", text_zh: "很少", val: 2 },
+                    { text: "Sometimes", text_zh: "有時", val: 3 },
+                    { text: "Often", text_zh: "經常", val: 4 },
+                    { text: "Always", text_zh: "總是", val: 5 }
+                ];
+                
+                this.manual.questions[index].options = options.map((opt, i) => ({
+                    option_text: opt.text,
+                    option_text_zh: opt.text_zh,
+                    option_value: opt.val,
+                    sequence_order: i + 1
+                }));
+            },
+
+            removeQuestion(index) {
+                this.manual.questions.splice(index, 1);
+                // Re-number sequence
+                this.manual.questions.forEach((q, i) => q.sequence_order = i + 1);
+            },
+            
+            moveQuestion(index, direction) {
+                const newIndex = index + direction;
+                if (newIndex >= 0 && newIndex < this.manual.questions.length) {
+                    const temp = this.manual.questions[index];
+                    this.manual.questions[index] = this.manual.questions[newIndex];
+                    this.manual.questions[newIndex] = temp;
+                    
+                    // Re-number sequence
+                    this.manual.questions.forEach((q, i) => q.sequence_order = i + 1);
+                }
+            },
+
+            addOption(questionIndex) {
+                if (!this.manual.questions[questionIndex].options) {
+                    this.manual.questions[questionIndex].options = [];
+                }
+                const nextVal = this.manual.questions[questionIndex].options.length + 1;
+                this.manual.questions[questionIndex].options.push({
+                    option_text: '',
+                    option_text_zh: '',
+                    option_value: nextVal,
+                    sequence_order: nextVal
+                });
+            },
+
+            removeOption(questionIndex, optionIndex) {
+                this.manual.questions[questionIndex].options.splice(optionIndex, 1);
+            },
+
+            addScoringRule() {
+                this.manual.scoring_rules.push({
+                    category: '',
+                    category_name_en: '',
+                    category_name_zh: '',
+                    weight: 1.0,
+                    threshold_excellent: null,
+                    threshold_concerning: null,
+                    alert_if_below: null
+                });
+            },
+
+            removeScoringRule(index) {
+                this.manual.scoring_rules.splice(index, 1);
+            },
+
+            async saveManualQuestionnaire() {
+                if (!this.manual.title) {
+                    alert('Please enter a title');
+                    return;
+                }
+
+                if (this.manual.questions.length === 0) {
+                    alert('Please add at least one question');
+                    return;
+                }
+
+                const questionnaire = {
+                    ...this.manual,
+                    total_questions: this.manual.questions.length
+                };
+
+                try {
+                    const response = await fetch('/api/v1/questionnaires/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(questionnaire)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        alert('Questionnaire created successfully!');
+                        window.location.href = '/admin/questionnaires/manage';
+                    } else {
+                        alert('Failed to create questionnaire: ' + (data.detail || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error creating questionnaire:', error);
+                    alert('Failed to create questionnaire: ' + error.message);
+                }
+            },
+
+            previewManualQuestionnaire() {
+                this.previewJson = JSON.stringify({
+                    ...this.manual,
+                    total_questions: this.manual.questions.length
+                }, null, 2);
+                this.showPreviewModal = true;
+            },
+
+            resetManualForm() {
+                if (!confirm('Reset form? All changes will be lost.')) return;
+                this.manual = {
+                    title: '',
+                    description: '',
+                    category: 'mental_health',
+                    target_age_min: null,
+                    target_age_max: null,
+                    language: 'en',
+                    estimated_duration_minutes: 10,
+                    source: 'manual',
+                    questions: [],
+                    scoring_rules: []
+                };
+                this.addQuestion();
+            },
+
+            async importJson() {
+                if (!this.jsonInput.trim()) {
+                    alert('Please paste JSON');
+                    return;
+                }
+
+                try {
+                    const jsonData = JSON.parse(this.jsonInput);
+
+                    const response = await fetch('/api/v1/questionnaires/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(jsonData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        alert('Questionnaire imported successfully!');
+                        window.location.href = '/admin/questionnaires/manage';
+                    } else {
+                        alert('Import failed: ' + (data.detail || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error importing:', error);
+                    alert('Failed to import: ' + error.message);
+                }
+            },
+
+            loadSampleJson() {
+                this.jsonInput = `{
+  "title": "Bilingual Screening Questionnaire",
+  "description": "Sample bilingual questionnaire with scoring rules",
+  "category": "mental_health",
+  "target_age_min": 12,
+  "target_age_max": 18,
+  "language": "en",
+  "estimated_duration_minutes": 5,
+  "source": "manual",
+  "questions": [
+    {
+      "question_code": "Q1",
+      "question_text": "I feel happy most of the time",
+      "question_text_zh": "我大部分時間都感到快樂",
+      "question_type": "scale",
+      "category": "mood",
+      "sequence_order": 1,
+      "is_required": true,
+      "options": [
+        {"option_text": "Never", "option_text_zh": "從不", "option_value": 1, "sequence_order": 1},
+        {"option_text": "Sometimes", "option_text_zh": "有時", "option_value": 3, "sequence_order": 2},
+        {"option_text": "Always", "option_text_zh": "總是", "option_value": 5, "sequence_order": 3}
+      ]
+    }
+  ],
+  "scoring_rules": [
+    {
+      "category": "mood",
+      "category_name_en": "Mood",
+      "category_name_zh": "情緒",
+      "weight": 1.0,
+      "threshold_excellent": 4.5,
+      "threshold_good": 3.5,
+      "threshold_concerning": 2.0
+    }
+  ]
+}`;
+            },
+
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
+            }
+        };
+    }
+    </script>
+{% endblock %}

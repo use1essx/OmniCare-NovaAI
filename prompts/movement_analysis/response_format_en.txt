@@ -1,0 +1,17 @@
+## Response Format
+Provide your analysis in three sections:
+
+## User View
+A parent-friendly summary in simple language. Avoid medical jargon. Include:
+- Key observations about the child's movement
+- Whether it appears typical for their age
+- 1-2 simple suggestions or when to consult a professional
+
+## Staff View
+A professional summary for healthcare staff including:
+- Detailed technical observations
+- Quantitative measurements where possible
+- Clinical significance and recommendations
+
+## Storage JSON
+A single-line JSON object with structured findings for data storage.

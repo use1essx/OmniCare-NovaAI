@@ -1,0 +1,117 @@
+# Healthcare Document Summary Generation
+
+You are generating a comprehensive summary for the AI agent's question base.
+
+## Your Task
+Create an executive summary and structured insights for the main AI agent to use.
+
+## Input
+- Full Document Text: {document_text}
+- Analysis Results: {analysis_data}
+
+## What to Output (JSON only)
+{
+  "suggested_title": "Child Development Screening (Ages 5-7)",
+  "executive_summary": "2-3 paragraph comprehensive overview",
+  "key_topics": ["topic1", "topic2", "topic3"],
+  "target_population": "children 8-12 with suspected ADHD",
+  "clinical_domains": ["neurodevelopmental", "behavioral_assessment"],
+  "assessment_focus": "ADHD screening and severity assessment",
+  "recommended_age_range": {"min": 8, "max": 18},
+  "cultural_context": "adapted for Hong Kong bilingual context",
+  "key_insights": [
+    {
+      "insight": "Document emphasizes observational behavioral markers",
+      "clinical_significance": "Allows caregivers to provide valuable input",
+      "agent_guidance": "AI should ask about observable behaviors in daily life"
+    }
+  ],
+  "question_base_instructions": {
+    "when_to_use": "When user mentions attention difficulties, hyperactivity, or school performance issues",
+    "how_to_ask": "Integrate questions naturally into conversation: 'I understand... [acknowledge]. By the way, [question]?'",
+    "age_adaptation": "Simplify for younger children, use peer examples for teenagers",
+    "scoring_approach": "Higher scores indicate greater symptom severity",
+    "report_format": "Provide summary with specific behavioral examples, recommend professional assessment if scores high"
+  },
+  "conversation_starters": [
+    "I notice you mentioned [concern]. Can I ask you a few questions that might help us understand better?",
+    "That sounds challenging. There are some specific things I'd like to understand more about..."
+  ]
+}
+
+## For AI Agent Integration
+The summary should help the AI agent:
+1. Know when these questions are relevant
+2. How to ask them naturally in conversation
+3. How to interpret responses
+4. When to escalate to professionals
+
+## What NOT to Do
+- Do not generate questions (they're already generated)
+- Do not provide medical diagnoses
+- Do not make treatment recommendations
+- Focus on creating useful knowledge base content
+
+
+
+
+
+
+
+You are generating a comprehensive summary for the AI agent's question base.
+
+## Your Task
+Create an executive summary and structured insights for the main AI agent to use.
+
+## Input
+- Full Document Text: {document_text}
+- Analysis Results: {analysis_data}
+
+## What to Output (JSON only)
+{
+  "suggested_title": "Child Development Screening (Ages 5-7)",
+  "executive_summary": "2-3 paragraph comprehensive overview",
+  "key_topics": ["topic1", "topic2", "topic3"],
+  "target_population": "children 8-12 with suspected ADHD",
+  "clinical_domains": ["neurodevelopmental", "behavioral_assessment"],
+  "assessment_focus": "ADHD screening and severity assessment",
+  "recommended_age_range": {"min": 8, "max": 18},
+  "cultural_context": "adapted for Hong Kong bilingual context",
+  "key_insights": [
+    {
+      "insight": "Document emphasizes observational behavioral markers",
+      "clinical_significance": "Allows caregivers to provide valuable input",
+      "agent_guidance": "AI should ask about observable behaviors in daily life"
+    }
+  ],
+  "question_base_instructions": {
+    "when_to_use": "When user mentions attention difficulties, hyperactivity, or school performance issues",
+    "how_to_ask": "Integrate questions naturally into conversation: 'I understand... [acknowledge]. By the way, [question]?'",
+    "age_adaptation": "Simplify for younger children, use peer examples for teenagers",
+    "scoring_approach": "Higher scores indicate greater symptom severity",
+    "report_format": "Provide summary with specific behavioral examples, recommend professional assessment if scores high"
+  },
+  "conversation_starters": [
+    "I notice you mentioned [concern]. Can I ask you a few questions that might help us understand better?",
+    "That sounds challenging. There are some specific things I'd like to understand more about..."
+  ]
+}
+
+## For AI Agent Integration
+The summary should help the AI agent:
+1. Know when these questions are relevant
+2. How to ask them naturally in conversation
+3. How to interpret responses
+4. When to escalate to professionals
+
+## What NOT to Do
+- Do not generate questions (they're already generated)
+- Do not provide medical diagnoses
+- Do not make treatment recommendations
+- Focus on creating useful knowledge base content
+
+
+
+
+
+

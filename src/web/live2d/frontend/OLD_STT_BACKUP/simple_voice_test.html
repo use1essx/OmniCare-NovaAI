@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Voice Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+        }
+        .error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        button.active {
+            background: #f44336;
+        }
+        #transcript {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .interim {
+            color: #999;
+            font-style: italic;
+        }
+        select {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Simple Voice Test</h1>
+        
+        <div id="browserCheck" class="status">
+            Checking browser support...
+        </div>
+
+        <div>
+            <label>Language:</label>
+            <select id="language">
+                <option value="zh-HK">🇭🇰 Cantonese (zh-HK)</option>
+                <option value="yue-Hant-HK">🇭🇰 Cantonese (yue-Hant-HK)</option>
+                <option value="en-US">🇺🇸 English (US)</option>
+                <option value="en-GB">🇬🇧 English (UK)</option>
+            </select>
+        </div>
+
+        <div>
+            <button id="startBtn">🎤 Start Listening</button>
+            <button id="stopBtn" style="display:none;">⏹️ Stop</button>
+        </div>
+
+        <div id="status" class="status" style="display:none;">
+            Ready
+        </div>
+
+        <div id="transcript">
+            <div class="interim" id="interim">Interim transcript will appear here...</div>
+            <div id="final">Final transcript will appear here...</div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 5px;">
+            <strong>💡 Test Phrases:</strong><br>
+            <strong>Cantonese:</strong> "你好，我想問下你嘅健康狀況"<br>
+            <strong>English:</strong> "Hello, how are you feeling today?"
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let isListening = false;
+
+        // Check browser support
+        function checkBrowserSupport() {
+            const browserCheck = document.getElementById('browserCheck');
+            
+            console.log('Checking browser support...');
+            console.log('User Agent:', navigator.userAgent);
+            console.log('webkitSpeechRecognition:', 'webkitSpeechRecognition' in window);
+            console.log('SpeechRecognition:', 'SpeechRecognition' in window);
+            
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                browserCheck.className = 'status success';
+                browserCheck.innerHTML = '✅ Web Speech API is supported in your browser!<br>Browser: ' + navigator.userAgent.split(' ').pop();
+                return true;
+            } else {
+                browserCheck.className = 'status error';
+                browserCheck.innerHTML = '❌ Web Speech API is NOT supported in your browser.<br>Please use Chrome or Edge.<br>Browser: ' + navigator.userAgent;
+                document.getElementById('startBtn').disabled = true;
+                return false;
+            }
+        }
+
+        // Initialize recognition
+        function initRecognition() {
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                const lang = document.getElementById('language').value;
+                recognition.lang = lang;
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+
+                console.log('Recognition initialized with language:', lang);
+
+                recognition.onstart = function() {
+                    console.log('Recognition started');
+                    isListening = true;
+                    document.getElementById('status').style.display = 'block';
+                    document.getElementById('status').className = 'status success';
+                    document.getElementById('status').textContent = '🎤 Listening... Speak now!';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                };
+
+                recognition.onresult = function(event) {
+                    console.log('Recognition result:', event);
+                    
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        const confidence = event.results[i][0].confidence;
+                        
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + '\n';
+                            console.log('Final:', transcript, 'Confidence:', confidence);
+                        } else {
+                            interimTranscript += transcript;
+                            console.log('Interim:', transcript);
+                        }
+                    }
+                    
+                    if (interimTranscript) {
+                        document.getElementById('interim').textContent = interimTranscript;
+                    }
+                    
+                    if (finalTranscript) {
+                        const finalDiv = document.getElementById('final');
+                        finalDiv.textContent += finalTranscript;
+                        document.getElementById('interim').textContent = '';
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Recognition error:', event.error, event);
+                    const status = document.getElementById('status');
+                    status.className = 'status error';
+                    
+                    let errorMsg = '❌ Error: ';
+                    switch(event.error) {
+                        case 'no-speech':
+                            errorMsg += 'No speech detected. Please try again.';
+                            break;
+                        case 'audio-capture':
+                            errorMsg += 'No microphone found or permission denied.';
+                            break;
+                        case 'not-allowed':
+                            errorMsg += 'Microphone permission denied. Please allow microphone access.';
+                            break;
+                        case 'network':
+                            errorMsg += 'Network error. Please check your connection.';
+                            break;
+                        default:
+                            errorMsg += event.error;
+                    }
+                    
+                    status.textContent = errorMsg;
+                };
+
+                recognition.onend = function() {
+                    console.log('Recognition ended');
+                    isListening = false;
+                    document.getElementById('status').className = 'status';
+                    document.getElementById('status').textContent = 'Stopped';
+                    document.getElementById('startBtn').style.display = 'inline-block';
+                    document.getElementById('stopBtn').style.display = 'none';
+                };
+
+                return true;
+            } catch (error) {
+                console.error('Failed to initialize recognition:', error);
+                alert('Failed to initialize speech recognition: ' + error.message);
+                return false;
+            }
+        }
+
+        // Start listening
+        document.getElementById('startBtn').addEventListener('click', function() {
+            console.log('Start button clicked');
+            
+            if (!recognition) {
+                if (!initRecognition()) {
+                    return;
+                }
+            }
+            
+            try {
+                // Update language if changed
+                const lang = document.getElementById('language').value;
+                recognition.lang = lang;
+                console.log('Starting recognition with language:', lang);
+                
+                recognition.start();
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                alert('Failed to start: ' + error.message);
+            }
+        });
+
+        // Stop listening
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            console.log('Stop button clicked');
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+        });
+
+        // Language change
+        document.getElementById('language').addEventListener('change', function() {
+            if (recognition && isListening) {
+                recognition.stop();
+                setTimeout(() => {
+                    document.getElementById('startBtn').click();
+                }, 100);
+            }
+        });
+
+        // Check support on load
+        window.addEventListener('load', function() {
+            checkBrowserSupport();
+        });
+    </script>
+</body>
+</html>

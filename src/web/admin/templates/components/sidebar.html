@@ -1,0 +1,218 @@
+{% set perms = permissions or {} %}
+<aside class="admin-sidebar custom-scrollbar"
+       :class="{ 'is-open': sidebarOpen }">
+    
+    <!-- Brand Header -->
+    <div class="sidebar-header">
+        <div class="flex items-center gap-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-md">
+                <i class="fas fa-heart-pulse text-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-slate-900 leading-tight">OmniCare</h1>
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Admin Console</p>
+            </div>
+        </div>
+        <button class="ml-auto lg:hidden text-slate-400 hover:text-slate-600" @click="closeSidebar()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+        <!-- Dashboard -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Overview</h3>
+            {% set dashboard_active = request.url.path == '/admin/' %}
+            <a href="/admin/" class="sidebar-nav-item {{ 'is-active' if dashboard_active else '' }}">
+                <i class="fas fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            {% if perms.view_testing %}
+            {% set testing_active = request.url.path.startswith('/admin/testing') %}
+            <a href="/admin/testing" class="sidebar-nav-item {{ 'is-active' if testing_active else '' }}">
+                <i class="fas fa-vial"></i>
+                <span>Testing Lab</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Operations -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Operations</h3>
+            
+            {% if perms.manage_users or perms.manage_org_users %}
+            {% set users_active = request.url.path.startswith('/admin/user-management') %}
+            <a href="/admin/user-management" class="sidebar-nav-item {{ 'is-active' if users_active else '' }}">
+                <i class="fas fa-users"></i>
+                <span>User Directory</span>
+            </a>
+            {% endif %}
+
+            {% if perms.manage_users %}
+            <a href="/admin/organizations" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/organizations' else '' }}">
+                <i class="fas fa-building"></i>
+                <span>Organizations</span>
+            </a>
+            {% endif %}
+
+            {% if perms.view_assessment_rules %}
+            <a href="/admin/movement-analysis/rules" class="sidebar-nav-item {{ 'is-active' if request.url.path.startswith('/admin/movement-analysis') else '' }}">
+                <i class="fas fa-running"></i>
+                <span>Movement Analysis</span>
+            </a>
+            {% endif %}
+
+            {% if perms.view_data_management %}
+            {% set data_files_active = request.url.path == '/admin/data-management' %}
+            <a href="/admin/data-management" class="sidebar-nav-item {{ 'is-active' if data_files_active else '' }}">
+                <i class="fas fa-database"></i>
+                <span>Data Management</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Intelligence -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Intelligence</h3>
+            
+            <!-- Questionnaires (available to all admins) -->
+            <div x-data="{ open: {{ 'true' if request.url.path.startswith('/admin/questionnaires') or request.url.path.startswith('/admin/ai-questionnaire') else 'false' }} }">
+                <button @click="open = !open" class="sidebar-nav-item w-full justify-between group">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Questionnaires</span>
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="sidebar-dropdown-content">
+                    <a href="/admin/questionnaires" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/questionnaires' else '' }}">
+                        Manage
+                    </a>
+                    <a href="/admin/questionnaires/scores" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/questionnaires/scores' else '' }}">
+                        Scores
+                    </a>
+                    <a href="/admin/ai-questionnaire-generator" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/ai-questionnaire-generator' else '' }}">
+                        AI Generator
+                    </a>
+                </div>
+            </div>
+
+            {% if perms.view_ai_agents %}
+
+            <a href="/admin/social-worker" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/social-worker' else '' }}">
+                <i class="fas fa-hands-helping"></i>
+                <span>Social Worker Hub</span>
+            </a>
+            
+            {% if perms.view_live2d %}
+            <!-- Custom Live AI -->
+            <div x-data="{ open: {{ 'true' if request.url.path.startswith('/admin/custom-live-ai') else 'false' }} }">
+                <button @click="open = !open" class="sidebar-nav-item w-full justify-between group">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-video"></i>
+                        <span>Custom Live AI</span>
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="sidebar-dropdown-content">
+                    <a href="/admin/custom-live-ai" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/custom-live-ai' else '' }}">Dashboard</a>
+                    <a href="/admin/custom-live-ai/emotion-tracker" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/custom-live-ai/emotion-tracker' else '' }}">Emotion Tracker</a>
+                    <a href="/admin/custom-live-ai/session-playback" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/custom-live-ai/session-playback' else '' }}">Session Playback</a>
+                    <a href="/admin/custom-live-ai/reports" class="sidebar-dropdown-item {{ 'is-active' if request.url.path == '/admin/custom-live-ai/reports' else '' }}">Reports</a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <a href="/admin/voice-test-suite" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/voice-test-suite' else '' }}">
+                <i class="fas fa-microphone-lines"></i>
+                <span>Voice Suite</span>
+            </a>
+            
+            <a href="/admin/tts/console" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/tts/console' else '' }}">
+                <i class="fas fa-volume-high"></i>
+                <span>TTS Console</span>
+            </a>
+            
+            <a href="/admin/ai-settings" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/ai-settings' else '' }}">
+                <i class="fas fa-sliders"></i>
+                <span>AI Settings</span>
+            </a>
+
+            <a href="/admin/kb-sandbox" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/kb-sandbox' else '' }}">
+                <i class="fas fa-flask"></i>
+                <span>KB/RAG Sandbox</span>
+            </a>
+
+            <!-- AI Agents -->
+            <div x-data="{ open: {{ 'true' if request.url.path.startswith('/admin/agents') else 'false' }} }">
+                <button @click="open = !open" class="sidebar-nav-item w-full justify-between group">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Agents</span>
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="sidebar-dropdown-content">
+                    <a href="/admin/agents/performance" class="sidebar-dropdown-item">Performance</a>
+                    <a href="/admin/agents/logs" class="sidebar-dropdown-item">Logs</a>
+                    <a href="/admin/agents/evals" class="sidebar-dropdown-item">Evaluations</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- System -->
+        {% if perms.view_system %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">System</h3>
+            
+            <div x-data="{ open: {{ 'true' if request.url.path.startswith('/admin/system') else 'false' }} }">
+                <button @click="open = !open" class="sidebar-nav-item w-full justify-between group">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-cogs"></i>
+                        <span>Controls</span>
+                    </div>
+                    <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-collapse class="sidebar-dropdown-content">
+                    <a href="/health" class="sidebar-dropdown-item">Health Check</a>
+                    <a href="/admin/system/logs" class="sidebar-dropdown-item">System Logs</a>
+                    <a href="/admin/system/config" class="sidebar-dropdown-item">Configuration</a>
+                </div>
+            </div>
+
+            <a href="/admin/security" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/security' else '' }}">
+                <i class="fas fa-shield-alt"></i>
+                <span>Security</span>
+            </a>
+
+            <a href="/admin/super-admin" class="sidebar-nav-item {{ 'is-active' if request.url.path.startswith('/admin/super-admin') else '' }}">
+                <i class="fas fa-shield-halved"></i>
+                <span>Super Admin</span>
+            </a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <!-- Footer Status -->
+    <div class="sidebar-footer" x-data>
+        <div class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">System Status</span>
+                <span class="pulse-dot text-emerald-500" data-tone="green"></span>
+            </div>
+            <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500">Connection</span>
+                    <span class="font-medium text-emerald-600" x-text="$store.admin.isConnected ? 'Live' : 'Offline'">Live</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-500">Version</span>
+                    <span class="font-medium text-slate-700">v2.4.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>

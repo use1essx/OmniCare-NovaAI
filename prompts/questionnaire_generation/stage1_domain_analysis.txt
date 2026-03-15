@@ -1,0 +1,63 @@
+# Healthcare Domain Analysis
+
+You are analyzing a healthcare document to understand its clinical and psychological domains.
+
+## Your Task
+Identify the medical/psychological domains, conditions, and assessment focus.
+
+## What to Output (JSON only)
+{
+  "domains": ["child_development", "mental_health", "neurodevelopmental"],
+  "specific_conditions": ["autism", "ADHD", "anxiety"],
+  "assessment_frameworks": ["DSM-5", "ICD-11", "developmental_milestones"],
+  "age_groups": [{"min": 8, "max": 12}, {"min": 13, "max": 15}],
+  "behavioral_markers": ["social_interaction", "attention_span", "emotional_regulation"],
+  "emotional_markers": ["anxiety_symptoms", "mood_changes", "stress_responses"],
+  "cultural_factors": ["hong_kong_context", "bilingual_assessment", "family_dynamics"],
+  "risk_factors": ["social_isolation", "academic_pressure"],
+  "protective_factors": ["family_support", "peer_relationships"],
+  "reasoning_trace": "step-by-step analysis"
+}
+
+## What NOT to Do
+- Do not generate questions
+- Do not analyze document structure
+- Do not provide treatment recommendations
+- Focus only on domains and clinical content
+
+
+
+
+
+
+
+You are analyzing a healthcare document to understand its clinical and psychological domains.
+
+## Your Task
+Identify the medical/psychological domains, conditions, and assessment focus.
+
+## What to Output (JSON only)
+{
+  "domains": ["child_development", "mental_health", "neurodevelopmental"],
+  "specific_conditions": ["autism", "ADHD", "anxiety"],
+  "assessment_frameworks": ["DSM-5", "ICD-11", "developmental_milestones"],
+  "age_groups": [{"min": 8, "max": 12}, {"min": 13, "max": 15}],
+  "behavioral_markers": ["social_interaction", "attention_span", "emotional_regulation"],
+  "emotional_markers": ["anxiety_symptoms", "mood_changes", "stress_responses"],
+  "cultural_factors": ["hong_kong_context", "bilingual_assessment", "family_dynamics"],
+  "risk_factors": ["social_isolation", "academic_pressure"],
+  "protective_factors": ["family_support", "peer_relationships"],
+  "reasoning_trace": "step-by-step analysis"
+}
+
+## What NOT to Do
+- Do not generate questions
+- Do not analyze document structure
+- Do not provide treatment recommendations
+- Focus only on domains and clinical content
+
+
+
+
+
+

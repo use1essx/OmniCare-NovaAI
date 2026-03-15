@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Voice Input System Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .recording-area {
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .mic-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: #667eea;
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            margin-bottom: 20px;
+        }
+        
+        .mic-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .mic-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .mic-button.recording {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .mic-button.processing {
+            background: #ffc107;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .status-text {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .status-text.recording {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .status-text.processing {
+            color: #ffc107;
+            font-weight: 600;
+        }
+        
+        .mode-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .mode-indicator.hold {
+            background: #e7f3ff;
+            color: #007bff;
+        }
+        
+        .mode-indicator.auto {
+            background: #d4edda;
+            color: #28a745;
+        }
+        
+        .transcript-area {
+            margin-bottom: 30px;
+        }
+        
+        .transcript-box {
+            width: 100%;
+            min-height: 120px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        .transcript-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .send-button {
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            background: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .send-button:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            padding: 15px 20px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            color: #721c24;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .test-btn.primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .test-btn.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .test-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .test-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .log-area {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+        
+        .log-entry.success {
+            color: #4ec9b0;
+        }
+        
+        .log-entry.error {
+            color: #f48771;
+        }
+        
+        .log-entry.info {
+            color: #9cdcfe;
+        }
+        
+        .log-entry.warning {
+            color: #dcdcaa;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Complete Voice Input System Test</h1>
+        <p class="subtitle">Test the full voice input system with Hold and Auto modes</p>
+        
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <button id="mode-hold" class="mode-btn active">
+                <div style="font-size: 24px; margin-bottom: 5px;">✋</div>
+                Hold Mode
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">Manual control</div>
+            </button>
+            <button id="mode-auto" class="mode-btn">
+                <div style="font-size: 24px; margin-bottom: 5px;">🤖</div>
+                Auto Mode
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">VAD auto-stop</div>
+            </button>
+        </div>
+        
+        <!-- Recording Area -->
+        <div class="recording-area">
+            <button id="mic-button" class="mic-button">🎤</button>
+            <div id="status-text" class="status-text">Ready to record</div>
+            <div id="mode-indicator" class="mode-indicator hold">Hold Mode</div>
+        </div>
+        
+        <!-- Error Message -->
+        <div id="error-message" class="error-message"></div>
+        
+        <!-- Transcript Area -->
+        <div class="transcript-area">
+            <h2 style="margin-bottom: 15px; color: #333;">Transcript</h2>
+            <textarea id="transcript-box" class="transcript-box" placeholder="Your transcribed text will appear here..."></textarea>
+            <button id="send-button" class="send-button" disabled>Send Message</button>
+        </div>
+        
+        <!-- Automated Tests -->
+        <div class="test-section">
+            <h2>🧪 Automated Tests</h2>
+            <div class="test-controls">
+                <button id="test-sequential" class="test-btn primary">Test Sequential Sessions (3x)</button>
+                <button id="test-mode-toggle" class="test-btn primary">Test Mode Toggle</button>
+                <button id="test-cancel" class="test-btn primary">Test Cancel Recording</button>
+                <button id="clear-log" class="test-btn success">Clear Log</button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Sessions</div>
+                    <div id="stat-sessions" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Successful</div>
+                    <div id="stat-success" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed</div>
+                    <div id="stat-failed" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Current Mode</div>
+                    <div id="stat-mode" class="stat-value">Hold</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Console Log -->
+        <div class="test-section">
+            <h2>📋 Console Log</h2>
+            <div id="console-log" class="log-area"></div>
+        </div>
+    </div>
+    
+    <script src="voice-input-v2.js"></script>
+    <script>
+        // Statistics
+        let stats = {
+            sessions: 0,
+            success: 0,
+            failed: 0
+        };
+        
+        function updateStats() {
+            document.getElementById('stat-sessions').textContent = stats.sessions;
+            document.getElementById('stat-success').textContent = stats.success;
+            document.getElementById('stat-failed').textContent = stats.failed;
+        }
+        
+        // Console logging
+        const consoleLog = document.getElementById('console-log');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleLog.appendChild(entry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+            console.log(message);
+        }
+        
+        // Initialize Voice Input Controller
+        const controller = new VoiceInputController({
+            onTranscript: (text, mode) => {
+                log(`Transcript received (${mode} mode): "${text}"`, 'success');
+                document.getElementById('transcript-box').value = text;
+                document.getElementById('send-button').disabled = false;
+                
+                // Auto-send in auto mode
+                if (mode === 'auto') {
+                    log('Auto mode: Auto-sending message...', 'info');
+                    setTimeout(() => {
+                        sendMessage();
+                    }, 500);
+                }
+                
+                stats.success++;
+                updateStats();
+            },
+            onError: (error) => {
+                log(`ERROR: ${error.message}`, 'error');
+                showError(error.message);
+                stats.failed++;
+                updateStats();
+            },
+            onStateChange: (state) => {
+                log(`State changed: ${state.state} (${state.mode} mode)`, 'info');
+                updateUI(state);
+                document.getElementById('stat-mode').textContent = 
+                    state.mode.charAt(0).toUpperCase() + state.mode.slice(1);
+            }
+        });
+        
+        // UI Elements
+        const micButton = document.getElementById('mic-button');
+        const statusText = document.getElementById('status-text');
+        const modeIndicator = document.getElementById('mode-indicator');
+        const transcriptBox = document.getElementById('transcript-box');
+        const sendButton = document.getElementById('send-button');
+        const errorMessage = document.getElementById('error-message');
+        const modeHoldBtn = document.getElementById('mode-hold');
+        const modeAutoBtn = document.getElementById('mode-auto');
+        
+        // Update UI based on state
+        function updateUI(state) {
+            // Update mic button
+            micButton.className = 'mic-button';
+            if (state.state === 'recording') {
+                micButton.classList.add('recording');
+                micButton.textContent = '⏹️';
+            } else if (state.state === 'processing') {
+                micButton.classList.add('processing');
+                micButton.textContent = '⏳';
+                micButton.disabled = true;
+            } else {
+                micButton.textContent = '🎤';
+                micButton.disabled = false;
+            }
+            
+            // Update status text
+            statusText.className = 'status-text';
+            switch (state.state) {
+                case 'idle':
+                    statusText.textContent = 'Ready to record';
+                    break;
+                case 'recording':
+                    statusText.textContent = state.mode === 'hold' ? 
+                        'Recording... (click to stop)' : 
+                        'Recording... (speak clearly)';
+                    statusText.classList.add('recording');
+                    break;
+                case 'processing':
+                    statusText.textContent = 'Processing...';
+                    statusText.classList.add('processing');
+                    break;
+                case 'transcribed':
+                    statusText.textContent = 'Transcription complete!';
+                    break;
+                case 'error':
+                    statusText.textContent = 'Error occurred';
+                    break;
+            }
+            
+            // Update mode indicator
+            modeIndicator.className = `mode-indicator ${state.mode}`;
+            modeIndicator.textContent = state.mode === 'hold' ? 'Hold Mode' : 'Auto Mode';
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+        
+        // Send message
+        function sendMessage() {
+            const text = transcriptBox.value.trim();
+            if (text) {
+                log(`Message sent: "${text}"`, 'success');
+                // Here you would send to your chat backend
+                transcriptBox.value = '';
+                sendButton.disabled = true;
+            }
+        }
+        
+        // Mic button click handler
+        micButton.addEventListener('click', async () => {
+            const state = controller.getState();
+            
+            if (state.state === 'idle') {
+                // Start recording
+                try {
+                    stats.sessions++;
+                    updateStats();
+                    await controller.startRecording();
+                } catch (error) {
+                    log(`Failed to start recording: ${error.message}`, 'error');
+                }
+            } else if (state.state === 'recording') {
+                // Stop recording (hold mode only)
+                if (state.mode === 'hold') {
+                    try {
+                        await controller.stopRecording();
+                    } catch (error) {
+                        log(`Failed to stop recording: ${error.message}`, 'error');
+                    }
+                }
+            }
+        });
+        
+        // Send button click handler
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Mode toggle handlers
+        modeHoldBtn.addEventListener('click', () => {
+            controller.setMode('hold');
+            modeHoldBtn.classList.add('active');
+            modeAutoBtn.classList.remove('active');
+            log('Switched to Hold mode', 'info');
+        });
+        
+        modeAutoBtn.addEventListener('click', () => {
+            controller.setMode('auto');
+            modeAutoBtn.classList.add('active');
+            modeHoldBtn.classList.remove('active');
+            log('Switched to Auto mode', 'info');
+        });
+        
+        // Test: Sequential Sessions
+        document.getElementById('test-sequential').addEventListener('click', async () => {
+            const button = document.getElementById('test-sequential');
+            button.disabled = true;
+            
+            log('=== Starting Sequential Session Test ===', 'warning');
+            
+            try {
+                for (let i = 1; i <= 3; i++) {
+                    log(`Session ${i}/3: Starting...`, 'info');
+                    stats.sessions++;
+                    updateStats();
+                    
+                    await controller.startRecording();
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    await controller.stopRecording();
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    log(`Session ${i}/3: Complete`, 'success');
+                }
+                
+                log('=== Sequential Session Test PASSED ===', 'success');
+            } catch (error) {
+                log(`Sequential Session Test FAILED: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        });
+        
+        // Test: Mode Toggle
+        document.getElementById('test-mode-toggle').addEventListener('click', () => {
+            log('=== Testing Mode Toggle ===', 'warning');
+            
+            const originalMode = controller.getMode();
+            log(`Original mode: ${originalMode}`, 'info');
+            
+            controller.toggleMode();
+            const newMode = controller.getMode();
+            log(`After toggle: ${newMode}`, 'info');
+            
+            controller.toggleMode();
+            const backMode = controller.getMode();
+            log(`After second toggle: ${backMode}`, 'info');
+            
+            if (backMode === originalMode) {
+                log('=== Mode Toggle Test PASSED ===', 'success');
+            } else {
+                log('=== Mode Toggle Test FAILED ===', 'error');
+            }
+        });
+        
+        // Test: Cancel Recording
+        document.getElementById('test-cancel').addEventListener('click', async () => {
+            const button = document.getElementById('test-cancel');
+            button.disabled = true;
+            
+            log('=== Testing Cancel Recording ===', 'warning');
+            
+            try {
+                stats.sessions++;
+                updateStats();
+                
+                await controller.startRecording();
+                log('Recording started', 'info');
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                await controller.cancelRecording();
+                log('Recording cancelled', 'info');
+                
+                const state = controller.getState();
+                if (state.state === 'idle') {
+                    log('=== Cancel Recording Test PASSED ===', 'success');
+                } else {
+                    log(`=== Cancel Recording Test FAILED (state: ${state.state}) ===`, 'error');
+                }
+            } catch (error) {
+                log(`Cancel Recording Test FAILED: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        });
+        
+        // Clear log
+        document.getElementById('clear-log').addEventListener('click', () => {
+            consoleLog.innerHTML = '';
+            log('Log cleared', 'info');
+        });
+        
+        // Initialize UI
+        const initialState = controller.getState();
+        updateUI(initialState);
+        
+        // Set initial mode buttons
+        if (initialState.mode === 'auto') {
+            modeAutoBtn.classList.add('active');
+            modeHoldBtn.classList.remove('active');
+        }
+        
+        log('Voice Input System initialized', 'success');
+        log(`Current mode: ${initialState.mode}`, 'info');
+    </script>
+</body>
+</html>

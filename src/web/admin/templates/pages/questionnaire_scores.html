@@ -1,0 +1,779 @@
+{% extends "base.html" %}
+
+{% block title %}Questionnaire Scores · Healthcare AI Admin{% endblock %}
+{% block page_title %}Questionnaire Scores{% endblock %}
+
+{% block breadcrumb %}
+<nav class="admin-header-breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/" style="font-weight: 500; color: #64748b; transition: color 150ms; text-decoration: none;" onmouseover="this.style.color='#334155'" onmouseout="this.style.color='#64748b'">Admin</a>
+    <span style="color: #cbd5e1;">/</span>
+    <span style="color: #475569; font-weight: 500;">Questionnaire Scores</span>
+</nav>
+{% endblock %}
+
+{% block page_description %}
+<div class="max-w-4xl">
+    <p class="text-sm leading-relaxed text-slate-600 mb-3">
+        View psychological assessment scores and risk analysis for all questionnaire responses. Track anxiety, emotional regulation, and overall mental health metrics.
+    </p>
+    <div class="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+        <div class="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center">
+            <i class="fas fa-chart-line text-blue-700"></i>
+        </div>
+        <div class="flex-1">
+            <p class="text-xs font-semibold text-blue-900">📊 Score Interpretation</p>
+            <p class="text-xs text-blue-700">Low Risk: 0-40 | Medium Risk: 40-70 | High Risk: 70-100</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div x-data="questionnaireScoresManager()" x-init="init()">
+    
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Total Questionnaires -->
+        <div class="bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-5 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clipboard-list text-2xl"></i>
+                </div>
+                <span class="text-2xl font-bold" x-text="stats.total_questionnaires"></span>
+            </div>
+            <p class="text-sm font-medium opacity-90">Total Questionnaires</p>
+        </div>
+        
+        <!-- Total Users Assessed -->
+        <div class="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl p-5 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-2xl"></i>
+                </div>
+                <span class="text-2xl font-bold" x-text="stats.total_users_assessed"></span>
+            </div>
+            <p class="text-sm font-medium opacity-90">Users Assessed</p>
+        </div>
+        
+        <!-- High Risk Count -->
+        <div class="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-5 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <span class="text-2xl font-bold" x-text="stats.high_risk_count"></span>
+            </div>
+            <p class="text-sm font-medium opacity-90">High Risk Cases</p>
+        </div>
+        
+        <!-- Average Score -->
+        <div class="bg-gradient-to-br from-teal-500 to-green-600 rounded-xl p-5 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-2">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-bar text-2xl"></i>
+                </div>
+                <span class="text-2xl font-bold" x-text="stats.average_score.toFixed(1)"></span>
+            </div>
+            <p class="text-sm font-medium opacity-90">Avg Wellbeing Score</p>
+        </div>
+    </div>
+
+    <!-- Questionnaire List -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+        <div class="border-b border-slate-200 px-6 py-4">
+            <h3 class="text-lg font-bold text-slate-900">Select Questionnaire</h3>
+            <p class="text-sm text-slate-600">Choose a questionnaire to view user scores</p>
+        </div>
+        
+        <div class="p-6">
+            <template x-if="loading">
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+                    <p class="mt-4 text-slate-600">Loading questionnaires...</p>
+                </div>
+            </template>
+            
+            <template x-if="!loading && questionnaires.length === 0">
+                <div class="text-center py-12">
+                    <i class="fas fa-clipboard-list text-6xl text-slate-300 mb-4"></i>
+                    <p class="text-slate-600">No questionnaires found</p>
+                </div>
+            </template>
+            
+            <template x-if="!loading && questionnaires.length > 0">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <template x-for="questionnaire in questionnaires" :key="questionnaire.id">
+                        <div @click="selectQuestionnaire(questionnaire)" 
+                             class="border-2 rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg"
+                             :class="selectedQuestionnaire?.id === questionnaire.id ? 'border-violet-500 bg-violet-50' : 'border-slate-200 hover:border-violet-300'">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-slate-900 text-sm mb-1" x-text="questionnaire.title"></h4>
+                                    <p class="text-xs text-slate-600" x-text="questionnaire.description"></p>
+                                </div>
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center"
+                                     :class="selectedQuestionnaire?.id === questionnaire.id ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-600'">
+                                    <i class="fas fa-check text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 text-xs text-slate-500 mt-3 pt-3 border-t border-slate-100">
+                                <span><i class="fas fa-question-circle mr-1"></i><span x-text="questionnaire.question_count"></span> questions</span>
+                                <span><i class="fas fa-user mr-1"></i><span x-text="questionnaire.response_count || 0"></span> responses</span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- User Scores Table -->
+    <template x-if="selectedQuestionnaire">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">User Scores</h3>
+                        <p class="text-sm text-slate-600">Questionnaire: <span class="font-medium" x-text="selectedQuestionnaire.title"></span></p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button @click="openAssignModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition">
+                            <i class="fas fa-user-plus mr-2"></i>Assign to User
+                        </button>
+                        <button @click="refreshScores()" class="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg text-sm font-medium hover:bg-violet-200 transition">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <template x-if="loadingScores">
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600"></div>
+                        <p class="mt-4 text-slate-600">Loading scores...</p>
+                    </div>
+                </template>
+                
+                <template x-if="!loadingScores && userScores.length === 0">
+                    <div class="text-center py-12">
+                        <i class="fas fa-user-slash text-6xl text-slate-300 mb-4"></i>
+                        <p class="text-slate-600">No users have completed this questionnaire yet</p>
+                    </div>
+                </template>
+                
+                <template x-if="!loadingScores && userScores.length > 0">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200">
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">User</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Responses</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Anxiety Risk</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Emotional Reg.</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Overall Wellbeing</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Risk Level</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="score in userScores" :key="score.user_id">
+                                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                                        <!-- User Info -->
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                                    <span x-text="score.username.charAt(0).toUpperCase()"></span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-slate-900" x-text="score.username"></p>
+                                                    <p class="text-xs text-slate-500">ID: <span x-text="score.user_id"></span></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Responses Count -->
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex flex-col items-center gap-1">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                      :class="{
+                                                          'bg-green-100 text-green-800': score.response_count === score.total_questions,
+                                                          'bg-yellow-100 text-yellow-800': score.response_count > 0 && score.response_count < score.total_questions,
+                                                          'bg-slate-100 text-slate-600': score.response_count === 0
+                                                      }">
+                                                    <span x-text="score.response_count"></span> / <span x-text="score.total_questions"></span>
+                                                </span>
+                                                <span class="text-xs text-slate-500" x-text="score.status"></span>
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Anxiety Risk Score -->
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-lg font-bold"
+                                                      :class="{
+                                                          'text-green-600': score.avg_anxiety_risk < 40,
+                                                          'text-orange-600': score.avg_anxiety_risk >= 40 && score.avg_anxiety_risk < 70,
+                                                          'text-red-600': score.avg_anxiety_risk >= 70
+                                                      }"
+                                                      x-text="score.avg_anxiety_risk ? score.avg_anxiety_risk.toFixed(1) : 'N/A'"></span>
+                                                <div class="w-20 bg-slate-200 rounded-full h-1.5 mt-1" x-show="score.avg_anxiety_risk">
+                                                    <div class="h-1.5 rounded-full transition-all"
+                                                         :class="{
+                                                             'bg-green-500': score.avg_anxiety_risk < 40,
+                                                             'bg-orange-500': score.avg_anxiety_risk >= 40 && score.avg_anxiety_risk < 70,
+                                                             'bg-red-500': score.avg_anxiety_risk >= 70
+                                                         }"
+                                                         :style="`width: ${score.avg_anxiety_risk}%`"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Emotional Regulation Score -->
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-lg font-bold"
+                                                      :class="{
+                                                          'text-red-600': score.avg_emotional_regulation < 40,
+                                                          'text-orange-600': score.avg_emotional_regulation >= 40 && score.avg_emotional_regulation < 70,
+                                                          'text-green-600': score.avg_emotional_regulation >= 70
+                                                      }"
+                                                      x-text="score.avg_emotional_regulation ? score.avg_emotional_regulation.toFixed(1) : 'N/A'"></span>
+                                                <div class="w-20 bg-slate-200 rounded-full h-1.5 mt-1" x-show="score.avg_emotional_regulation">
+                                                    <div class="h-1.5 rounded-full transition-all"
+                                                         :class="{
+                                                             'bg-red-500': score.avg_emotional_regulation < 40,
+                                                             'bg-orange-500': score.avg_emotional_regulation >= 40 && score.avg_emotional_regulation < 70,
+                                                             'bg-green-500': score.avg_emotional_regulation >= 70
+                                                         }"
+                                                         :style="`width: ${score.avg_emotional_regulation}%`"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Overall Wellbeing Score -->
+                                        <td class="px-4 py-3 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-lg font-bold"
+                                                      :class="{
+                                                          'text-red-600': score.avg_overall_wellbeing < 40,
+                                                          'text-orange-600': score.avg_overall_wellbeing >= 40 && score.avg_overall_wellbeing < 70,
+                                                          'text-green-600': score.avg_overall_wellbeing >= 70
+                                                      }"
+                                                      x-text="score.avg_overall_wellbeing ? score.avg_overall_wellbeing.toFixed(1) : 'N/A'"></span>
+                                                <div class="w-20 bg-slate-200 rounded-full h-1.5 mt-1" x-show="score.avg_overall_wellbeing">
+                                                    <div class="h-1.5 rounded-full transition-all"
+                                                         :class="{
+                                                             'bg-red-500': score.avg_overall_wellbeing < 40,
+                                                             'bg-orange-500': score.avg_overall_wellbeing >= 40 && score.avg_overall_wellbeing < 70,
+                                                             'bg-green-500': score.avg_overall_wellbeing >= 70
+                                                         }"
+                                                         :style="`width: ${score.avg_overall_wellbeing}%`"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        <!-- Risk Level Badge -->
+                                        <td class="px-4 py-3 text-center">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+                                                  :class="{
+                                                      'bg-green-100 text-green-800': score.risk_level === 'low',
+                                                      'bg-orange-100 text-orange-800': score.risk_level === 'medium',
+                                                      'bg-red-100 text-red-800': score.risk_level === 'high'
+                                                  }">
+                                                <i class="fas mr-1"
+                                                   :class="{
+                                                       'fa-check-circle': score.risk_level === 'low',
+                                                       'fa-exclamation-circle': score.risk_level === 'medium',
+                                                       'fa-exclamation-triangle': score.risk_level === 'high'
+                                                   }"></i>
+                                                <span x-text="score.risk_level.toUpperCase()"></span>
+                                            </span>
+                                        </td>
+                                        
+                                        <!-- Actions -->
+                                        <td class="px-4 py-3 text-center">
+                                            <button @click="viewDetailedReport(score)" 
+                                                    class="px-3 py-1.5 bg-violet-100 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-200 transition">
+                                                <i class="fas fa-chart-line mr-1"></i>Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <!-- Detailed Report Modal -->
+    <div x-show="showDetailModal" 
+         @click.self="closeDetailModal()"
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
+         style="display: none;">
+        <div @click.stop 
+             class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Detailed Psychological Report</span>
+                </h2>
+                <button @click="closeDetailModal()" 
+                        class="text-white/90 hover:text-white hover:bg-white/20 rounded-lg p-2 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto p-6" x-show="currentDetail">
+                <!-- User Info -->
+                <div class="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 mb-6 border border-violet-200">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                            <span x-text="currentDetail?.username?.charAt(0).toUpperCase()"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-violet-900" x-text="currentDetail?.username"></h3>
+                            <p class="text-sm text-violet-700">User ID: <span x-text="currentDetail?.user_id"></span></p>
+                            <p class="text-sm text-violet-700">Total Responses: <span x-text="currentDetail?.response_count"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Score Breakdown -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Anxiety Risk -->
+                    <div class="bg-white rounded-xl p-4 border-2"
+                         :class="{
+                             'border-green-200': currentDetail?.avg_anxiety_risk < 40,
+                             'border-orange-200': currentDetail?.avg_anxiety_risk >= 40 && currentDetail?.avg_anxiety_risk < 70,
+                             'border-red-200': currentDetail?.avg_anxiety_risk >= 70
+                         }">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-600 uppercase">Anxiety Risk</span>
+                            <i class="fas fa-brain text-orange-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold mb-2"
+                             :class="{
+                                 'text-green-600': currentDetail?.avg_anxiety_risk < 40,
+                                 'text-orange-600': currentDetail?.avg_anxiety_risk >= 40 && currentDetail?.avg_anxiety_risk < 70,
+                                 'text-red-600': currentDetail?.avg_anxiety_risk >= 70
+                             }"
+                             x-text="currentDetail?.avg_anxiety_risk ? currentDetail.avg_anxiety_risk.toFixed(1) : 'N/A'"></div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                 :class="{
+                                     'bg-green-500': currentDetail?.avg_anxiety_risk < 40,
+                                     'bg-orange-500': currentDetail?.avg_anxiety_risk >= 40 && currentDetail?.avg_anxiety_risk < 70,
+                                     'bg-red-500': currentDetail?.avg_anxiety_risk >= 70
+                                 }"
+                                 :style="`width: ${currentDetail?.avg_anxiety_risk || 0}%`"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Emotional Regulation -->
+                    <div class="bg-white rounded-xl p-4 border-2"
+                         :class="{
+                             'border-red-200': currentDetail?.avg_emotional_regulation < 40,
+                             'border-orange-200': currentDetail?.avg_emotional_regulation >= 40 && currentDetail?.avg_emotional_regulation < 70,
+                             'border-green-200': currentDetail?.avg_emotional_regulation >= 70
+                         }">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-600 uppercase">Emotional Reg.</span>
+                            <i class="fas fa-heart text-blue-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold mb-2"
+                             :class="{
+                                 'text-red-600': currentDetail?.avg_emotional_regulation < 40,
+                                 'text-orange-600': currentDetail?.avg_emotional_regulation >= 40 && currentDetail?.avg_emotional_regulation < 70,
+                                 'text-green-600': currentDetail?.avg_emotional_regulation >= 70
+                             }"
+                             x-text="currentDetail?.avg_emotional_regulation ? currentDetail.avg_emotional_regulation.toFixed(1) : 'N/A'"></div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                 :class="{
+                                     'bg-red-500': currentDetail?.avg_emotional_regulation < 40,
+                                     'bg-orange-500': currentDetail?.avg_emotional_regulation >= 40 && currentDetail?.avg_emotional_regulation < 70,
+                                     'bg-green-500': currentDetail?.avg_emotional_regulation >= 70
+                                 }"
+                                 :style="`width: ${currentDetail?.avg_emotional_regulation || 0}%`"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Overall Wellbeing -->
+                    <div class="bg-white rounded-xl p-4 border-2"
+                         :class="{
+                             'border-red-200': currentDetail?.avg_overall_wellbeing < 40,
+                             'border-orange-200': currentDetail?.avg_overall_wellbeing >= 40 && currentDetail?.avg_overall_wellbeing < 70,
+                             'border-green-200': currentDetail?.avg_overall_wellbeing >= 70
+                         }">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-600 uppercase">Overall Wellbeing</span>
+                            <i class="fas fa-smile text-teal-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold mb-2"
+                             :class="{
+                                 'text-red-600': currentDetail?.avg_overall_wellbeing < 40,
+                                 'text-orange-600': currentDetail?.avg_overall_wellbeing >= 40 && currentDetail?.avg_overall_wellbeing < 70,
+                                 'text-green-600': currentDetail?.avg_overall_wellbeing >= 70
+                             }"
+                             x-text="currentDetail?.avg_overall_wellbeing ? currentDetail.avg_overall_wellbeing.toFixed(1) : 'N/A'"></div>
+                        <div class="w-full bg-slate-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all"
+                                 :class="{
+                                     'bg-red-500': currentDetail?.avg_overall_wellbeing < 40,
+                                     'bg-orange-500': currentDetail?.avg_overall_wellbeing >= 40 && currentDetail?.avg_overall_wellbeing < 70,
+                                     'bg-green-500': currentDetail?.avg_overall_wellbeing >= 70
+                                 }"
+                                 :style="`width: ${currentDetail?.avg_overall_wellbeing || 0}%`"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Risk Assessment -->
+                <div class="bg-white rounded-xl p-4 border border-slate-200 mb-6">
+                    <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <i class="fas fa-shield-alt text-violet-600"></i>
+                        Risk Assessment
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-sm text-slate-600">Overall Risk Level:</span>
+                            <span class="ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-bold"
+                                  :class="{
+                                      'bg-green-100 text-green-800': currentDetail?.risk_level === 'low',
+                                      'bg-orange-100 text-orange-800': currentDetail?.risk_level === 'medium',
+                                      'bg-red-100 text-red-800': currentDetail?.risk_level === 'high'
+                                  }">
+                                <span x-text="currentDetail?.risk_level?.toUpperCase()"></span>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-sm text-slate-600">High Risk Responses:</span>
+                            <span class="ml-2 text-lg font-bold text-red-600" x-text="currentDetail?.high_risk_responses || 0"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Individual Responses -->
+                <div class="bg-white rounded-xl p-4 border border-slate-200">
+                    <h4 class="font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        <i class="fas fa-list text-violet-600"></i>
+                        Individual Responses
+                    </h4>
+                    <div class="space-y-3" x-show="currentDetail?.answers && currentDetail.answers.length > 0">
+                        <template x-for="(answer, idx) in currentDetail?.answers" :key="idx">
+                            <div class="border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-slate-900" x-text="answer.question_text"></p>
+                                        <p class="text-xs text-slate-600 mt-1"><strong>Response:</strong> <span x-text="answer.user_answer_text"></span></p>
+                                    </div>
+                                    <div class="ml-3">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold"
+                                              :class="{
+                                                  'bg-green-100 text-green-800': answer.answer_value !== null && answer.answer_value <= 1,
+                                                  'bg-orange-100 text-orange-800': answer.answer_value !== null && answer.answer_value === 2,
+                                                  'bg-red-100 text-red-800': answer.answer_value !== null && answer.answer_value === 3,
+                                                  'bg-slate-100 text-slate-600': answer.answer_value === null
+                                              }">
+                                            <span x-text="answer.answer_value !== null ? answer.answer_value : 'N/A'"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-slate-500" x-show="answer.confidence">
+                                    Confidence: <span x-text="answer.confidence ? (answer.confidence * 100).toFixed(0) + '%' : 'N/A'"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="text-center py-8 text-slate-500" x-show="!currentDetail?.answers || currentDetail.answers.length === 0">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No responses available</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-3">
+                <button @click="closeDetailModal()" 
+                        class="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign to User Modal -->
+    <div x-show="showAssignModal" 
+         @click.self="showAssignModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user-plus text-xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Assign Questionnaire to User</h2>
+                        <p class="text-sm text-slate-600" x-text="selectedQuestionnaire?.title"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Loading State -->
+                <template x-if="loadingUsers">
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <p class="mt-4 text-slate-600">Loading users...</p>
+                    </div>
+                </template>
+                
+                <!-- User Selection -->
+                <template x-if="!loadingUsers">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Select Patient
+                        </label>
+                        <select x-model="assignUserId" 
+                                class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                            <option value="">-- Select a patient --</option>
+                            <template x-for="user in availableUsers" :key="user.id">
+                                <option :value="user.id" x-text="`${user.username} (${user.email || 'No email'})`"></option>
+                            </template>
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500" x-show="availableUsers.length === 0">
+                            No patient users found. Please create patient accounts first.
+                        </p>
+                        <p class="mt-2 text-xs text-slate-600" x-show="availableUsers.length > 0">
+                            The selected patient will receive this questionnaire during Live2D chat sessions.
+                        </p>
+                    </div>
+                </template>
+            </div>
+            
+            <div class="border-t border-slate-200 px-6 py-4 flex gap-3">
+                <button @click="showAssignModal = false" 
+                        class="flex-1 px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">
+                    Cancel
+                </button>
+                <button @click="assignQuestionnaire()" 
+                        :disabled="!assignUserId || isAssigning"
+                        class="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isAssigning">
+                        <i class="fas fa-check mr-2"></i>
+                        Assign Questionnaire
+                    </span>
+                    <span x-show="isAssigning">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Assigning...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function questionnaireScoresManager() {
+    return {
+        questionnaires: [],
+        selectedQuestionnaire: null,
+        userScores: [],
+        loading: false,
+        loadingScores: false,
+        showDetailModal: false,
+        currentDetail: null,
+        // Assignment modal
+        showAssignModal: false,
+        availableUsers: [],
+        loadingUsers: false,
+        assignUserId: '',
+        isAssigning: false,
+        stats: {
+            total_questionnaires: 0,
+            total_users_assessed: 0,
+            high_risk_count: 0,
+            average_score: 0
+        },
+
+        async init() {
+            console.log('🎯 Questionnaire Scores Manager initialized');
+            await this.loadQuestionnaires();
+            this.calculateStats();
+        },
+
+        async loadQuestionnaires() {
+            this.loading = true;
+            try {
+                const response = await fetch('/api/v1/questionnaires/list');
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.questionnaires = data.questionnaires || [];
+                    console.log(`✅ Loaded ${this.questionnaires.length} questionnaires`);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load questionnaires:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async selectQuestionnaire(questionnaire) {
+            this.selectedQuestionnaire = questionnaire;
+            console.log(`📋 Selected questionnaire: ${questionnaire.title}`);
+            await this.loadScores();
+        },
+
+        async loadScores() {
+            if (!this.selectedQuestionnaire) return;
+            
+            this.loadingScores = true;
+            this.userScores = [];
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaire-scores/${this.selectedQuestionnaire.id}/users`);
+                const data = await response.json();
+                
+                console.log('🔍 API Response:', data);
+                console.log('🔍 data.success:', data.success);
+                console.log('🔍 data.scores:', data.scores);
+                console.log('🔍 data.user_scores:', data.user_scores);
+                
+                if (data.success) {
+                    this.userScores = data.scores || [];
+                    console.log(`✅ Loaded scores for ${this.userScores.length} users`);
+                    this.calculateStats();
+                } else {
+                    console.error('❌ API returned success=false');
+                }
+            } catch (error) {
+                console.error('❌ Failed to load scores:', error);
+            } finally {
+                this.loadingScores = false;
+            }
+        },
+
+        async refreshScores() {
+            await this.loadScores();
+        },
+
+        async viewDetailedReport(score) {
+            // Score object already contains all the data we need
+            this.currentDetail = score;
+            this.showDetailModal = true;
+            console.log(`📊 Showing detailed report for user ${score.username}`);
+        },
+
+        closeDetailModal() {
+            this.showDetailModal = false;
+            this.currentDetail = null;
+        },
+
+        async openAssignModal() {
+            if (!this.selectedQuestionnaire) {
+                alert('Please select a questionnaire first');
+                return;
+            }
+            
+            this.showAssignModal = true;
+            this.loadingUsers = true;
+            this.availableUsers = [];
+            this.assignUserId = '';
+            
+            try {
+                // Fetch users with role='user' (patients)
+                const response = await fetch('/api/v1/users?role=user&page_size=100');
+                const data = await response.json();
+                
+                if (data.users && Array.isArray(data.users)) {
+                    this.availableUsers = data.users;
+                    console.log(`✅ Loaded ${data.users.length} patient users`);
+                } else {
+                    console.error('Failed to load users:', data);
+                    this.availableUsers = [];
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Failed to load users');
+            } finally {
+                this.loadingUsers = false;
+            }
+        },
+
+        async assignQuestionnaire() {
+            if (!this.assignUserId) {
+                alert('Please select a patient');
+                return;
+            }
+            
+            this.isAssigning = true;
+            
+            try {
+                const response = await fetch('/api/v1/questionnaire-assignments/assign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        questionnaire_id: this.selectedQuestionnaire.id,
+                        user_id: parseInt(this.assignUserId),
+                        questions_per_conversation: 2,  // Default value
+                        ask_naturally: true,  // Default value
+                        priority: 5,  // Default value
+                        expires_in_days: 30,  // Default value
+                        admin_notes: null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questionnaire assigned successfully! The patient will receive questions during Live2D chat.');
+                    this.showAssignModal = false;
+                    // Reset form
+                    this.assignUserId = '';
+                } else {
+                    alert('Failed to assign questionnaire: ' + (data.message || data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error assigning questionnaire:', error);
+                alert('Failed to assign questionnaire: ' + error.message);
+            } finally {
+                this.isAssigning = false;
+            }
+        },
+
+        calculateStats() {
+            this.stats.total_questionnaires = this.questionnaires.length;
+            
+            if (this.userScores.length > 0) {
+                this.stats.total_users_assessed = this.userScores.length;
+                this.stats.high_risk_count = this.userScores.filter(s => s.risk_level === 'high').length;
+                
+                const totalWellbeing = this.userScores.reduce((sum, s) => sum + (s.avg_overall_wellbeing || 0), 0);
+                this.stats.average_score = totalWellbeing / this.userScores.length;
+            } else {
+                this.stats.total_users_assessed = 0;
+                this.stats.high_risk_count = 0;
+                this.stats.average_score = 0;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}
+
+
+
+

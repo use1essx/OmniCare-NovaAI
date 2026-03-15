@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioRecorder Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-stop {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-cleanup {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-play {
+            background: #007bff;
+            color: white;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        
+        .status.idle {
+            background: #e7f3ff;
+            border: 1px solid #007bff;
+            color: #004085;
+        }
+        
+        .status.recording {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .status.stopped {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .info strong {
+            color: #667eea;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 3px 0;
+        }
+        
+        .log-entry.success {
+            color: #4ec9b0;
+        }
+        
+        .log-entry.error {
+            color: #f48771;
+        }
+        
+        .log-entry.info {
+            color: #9cdcfe;
+        }
+        
+        audio {
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .badge.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .badge.info {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 AudioRecorder Component Test</h1>
+        <p class="subtitle">Test the AudioRecorder class for recording, stopping, canceling, and cleanup</p>
+        
+        <!-- Test 1: Basic Recording -->
+        <div class="test-section">
+            <h2>Test 1: Basic Recording Flow</h2>
+            <div class="controls">
+                <button id="test1-start" class="btn-start">Start Recording</button>
+                <button id="test1-stop" class="btn-stop" disabled>Stop Recording</button>
+                <button id="test1-play" class="btn-play" disabled>Play Recording</button>
+            </div>
+            <div id="test1-status" class="status idle">Status: Idle</div>
+            <div id="test1-info" class="info" style="display: none;"></div>
+            <audio id="test1-audio" controls style="display: none;"></audio>
+        </div>
+        
+        <!-- Test 2: Cancel Recording -->
+        <div class="test-section">
+            <h2>Test 2: Cancel Recording</h2>
+            <div class="controls">
+                <button id="test2-start" class="btn-start">Start Recording</button>
+                <button id="test2-cancel" class="btn-cancel" disabled>Cancel Recording</button>
+            </div>
+            <div id="test2-status" class="status idle">Status: Idle</div>
+            <div id="test2-info" class="info" style="display: none;"></div>
+        </div>
+        
+        <!-- Test 3: Sequential Sessions -->
+        <div class="test-section">
+            <h2>Test 3: Sequential Recording Sessions</h2>
+            <p style="margin-top: 0; color: #666; font-size: 13px;">
+                Tests the KEY FIX for "works first time only" bug - multiple recording sessions
+            </p>
+            <div class="controls">
+                <button id="test3-run" class="btn-start">Run 3 Sequential Sessions</button>
+            </div>
+            <div id="test3-status" class="status idle">Status: Ready</div>
+            <div id="test3-info" class="info" style="display: none;"></div>
+        </div>
+        
+        <!-- Test 4: Mime Type Detection -->
+        <div class="test-section">
+            <h2>Test 4: Mime Type Detection</h2>
+            <div class="controls">
+                <button id="test4-check" class="btn-start">Check Supported Types</button>
+            </div>
+            <div id="test4-info" class="info" style="display: none;"></div>
+        </div>
+        
+        <!-- Console Log -->
+        <div class="test-section">
+            <h2>📋 Console Log</h2>
+            <div id="console-log" class="log"></div>
+        </div>
+    </div>
+    
+    <script src="voice-input-v2.js"></script>
+    <script>
+        // Console logging
+        const consoleLog = document.getElementById('console-log');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleLog.appendChild(entry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+            console.log(message);
+        }
+        
+        // Test 1: Basic Recording Flow
+        let test1Recorder = null;
+        let test1Stream = null;
+        let test1Blob = null;
+        
+        document.getElementById('test1-start').addEventListener('click', async () => {
+            try {
+                log('Test 1: Starting recording...', 'info');
+                
+                // Get media stream
+                const streamMgr = new MediaStreamManager();
+                test1Stream = await streamMgr.acquire();
+                
+                // Create recorder
+                test1Recorder = new AudioRecorder(test1Stream);
+                
+                // Start recording
+                await test1Recorder.start();
+                
+                // Update UI
+                document.getElementById('test1-status').className = 'status recording';
+                document.getElementById('test1-status').textContent = 'Status: Recording... 🔴';
+                document.getElementById('test1-start').disabled = true;
+                document.getElementById('test1-stop').disabled = false;
+                
+                log('Test 1: Recording started successfully', 'success');
+                
+            } catch (error) {
+                log(`Test 1 ERROR: ${error.message}`, 'error');
+                document.getElementById('test1-status').className = 'status error';
+                document.getElementById('test1-status').textContent = `Error: ${error.message}`;
+            }
+        });
+        
+        document.getElementById('test1-stop').addEventListener('click', async () => {
+            try {
+                log('Test 1: Stopping recording...', 'info');
+                
+                // Stop recording
+                test1Blob = await test1Recorder.stop();
+                
+                // Cleanup
+                test1Recorder.cleanup();
+                const streamMgr = new MediaStreamManager();
+                streamMgr.stream = test1Stream;
+                await streamMgr.release();
+                
+                // Update UI
+                document.getElementById('test1-status').className = 'status stopped';
+                document.getElementById('test1-status').textContent = 'Status: Recording stopped ✅';
+                document.getElementById('test1-stop').disabled = true;
+                document.getElementById('test1-play').disabled = false;
+                
+                // Show info
+                const info = document.getElementById('test1-info');
+                info.style.display = 'block';
+                info.innerHTML = `
+                    <strong>Recording Details:</strong><br>
+                    Size: ${test1Blob.size} bytes<br>
+                    Type: ${test1Blob.type}<br>
+                    Duration: ~${(test1Blob.size / 16000).toFixed(1)}s (estimated)
+                `;
+                
+                log(`Test 1: Recording stopped. Blob size: ${test1Blob.size} bytes`, 'success');
+                
+            } catch (error) {
+                log(`Test 1 ERROR: ${error.message}`, 'error');
+                document.getElementById('test1-status').className = 'status error';
+                document.getElementById('test1-status').textContent = `Error: ${error.message}`;
+            }
+        });
+        
+        document.getElementById('test1-play').addEventListener('click', () => {
+            if (test1Blob) {
+                const audio = document.getElementById('test1-audio');
+                audio.src = URL.createObjectURL(test1Blob);
+                audio.style.display = 'block';
+                audio.play();
+                log('Test 1: Playing recording', 'info');
+            }
+        });
+        
+        // Test 2: Cancel Recording
+        let test2Recorder = null;
+        let test2Stream = null;
+        
+        document.getElementById('test2-start').addEventListener('click', async () => {
+            try {
+                log('Test 2: Starting recording...', 'info');
+                
+                // Get media stream
+                const streamMgr = new MediaStreamManager();
+                test2Stream = await streamMgr.acquire();
+                
+                // Create recorder
+                test2Recorder = new AudioRecorder(test2Stream);
+                
+                // Start recording
+                await test2Recorder.start();
+                
+                // Update UI
+                document.getElementById('test2-status').className = 'status recording';
+                document.getElementById('test2-status').textContent = 'Status: Recording... 🔴';
+                document.getElementById('test2-start').disabled = true;
+                document.getElementById('test2-cancel').disabled = false;
+                
+                log('Test 2: Recording started successfully', 'success');
+                
+            } catch (error) {
+                log(`Test 2 ERROR: ${error.message}`, 'error');
+                document.getElementById('test2-status').className = 'status error';
+                document.getElementById('test2-status').textContent = `Error: ${error.message}`;
+            }
+        });
+        
+        document.getElementById('test2-cancel').addEventListener('click', async () => {
+            try {
+                log('Test 2: Cancelling recording...', 'info');
+                
+                // Cancel recording
+                test2Recorder.cancel();
+                test2Recorder.cleanup();
+                
+                // Release stream
+                const streamMgr = new MediaStreamManager();
+                streamMgr.stream = test2Stream;
+                await streamMgr.release();
+                
+                // Update UI
+                document.getElementById('test2-status').className = 'status idle';
+                document.getElementById('test2-status').textContent = 'Status: Recording cancelled ⚠️';
+                document.getElementById('test2-start').disabled = false;
+                document.getElementById('test2-cancel').disabled = true;
+                
+                // Show info
+                const info = document.getElementById('test2-info');
+                info.style.display = 'block';
+                info.innerHTML = '<strong>Result:</strong> Recording cancelled successfully. No audio blob created.';
+                
+                log('Test 2: Recording cancelled successfully', 'success');
+                
+            } catch (error) {
+                log(`Test 2 ERROR: ${error.message}`, 'error');
+                document.getElementById('test2-status').className = 'status error';
+                document.getElementById('test2-status').textContent = `Error: ${error.message}`;
+            }
+        });
+        
+        // Test 3: Sequential Sessions
+        document.getElementById('test3-run').addEventListener('click', async () => {
+            const button = document.getElementById('test3-run');
+            button.disabled = true;
+            
+            const status = document.getElementById('test3-status');
+            const info = document.getElementById('test3-info');
+            info.style.display = 'block';
+            
+            try {
+                log('Test 3: Starting sequential session test...', 'info');
+                
+                const results = [];
+                
+                for (let i = 1; i <= 3; i++) {
+                    log(`Test 3: Session ${i}/3 starting...`, 'info');
+                    status.className = 'status recording';
+                    status.textContent = `Session ${i}/3: Recording... 🔴`;
+                    
+                    // Get stream
+                    const streamMgr = new MediaStreamManager();
+                    const stream = await streamMgr.acquire();
+                    
+                    // Create recorder
+                    const recorder = new AudioRecorder(stream);
+                    
+                    // Start recording
+                    await recorder.start();
+                    
+                    // Record for 1 second
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Stop recording
+                    const blob = await recorder.stop();
+                    
+                    // Cleanup
+                    recorder.cleanup();
+                    await streamMgr.release();
+                    
+                    results.push({
+                        session: i,
+                        size: blob.size,
+                        type: blob.type
+                    });
+                    
+                    log(`Test 3: Session ${i}/3 completed. Blob size: ${blob.size} bytes`, 'success');
+                    
+                    // Wait 500ms between sessions
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // All sessions completed
+                status.className = 'status stopped';
+                status.textContent = 'All sessions completed! ✅';
+                
+                info.innerHTML = `
+                    <strong>✅ Sequential Session Test PASSED</strong><br><br>
+                    ${results.map(r => `
+                        Session ${r.session}: ${r.size} bytes (${r.type})
+                    `).join('<br>')}
+                    <br><br>
+                    <strong>Result:</strong> All 3 sessions completed successfully!<br>
+                    This confirms the "works first time only" bug is FIXED. 🎉
+                `;
+                
+                log('Test 3: All sessions completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`Test 3 ERROR: ${error.message}`, 'error');
+                status.className = 'status error';
+                status.textContent = `Error: ${error.message}`;
+                info.innerHTML = `<strong>❌ Test FAILED:</strong> ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        });
+        
+        // Test 4: Mime Type Detection
+        document.getElementById('test4-check').addEventListener('click', () => {
+            log('Test 4: Checking supported mime types...', 'info');
+            
+            const types = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/mp4',
+                'audio/wav'
+            ];
+            
+            const results = types.map(type => ({
+                type,
+                supported: MediaRecorder.isTypeSupported(type)
+            }));
+            
+            const info = document.getElementById('test4-info');
+            info.style.display = 'block';
+            info.innerHTML = `
+                <strong>Mime Type Support:</strong><br><br>
+                ${results.map(r => `
+                    ${r.type}: ${r.supported ? 
+                        '<span class="badge success">✅ Supported</span>' : 
+                        '<span class="badge warning">❌ Not Supported</span>'}
+                `).join('<br>')}
+                <br><br>
+                <strong>Selected Type:</strong> ${results.find(r => r.supported)?.type || 'Default'}
+            `;
+            
+            results.forEach(r => {
+                log(`Test 4: ${r.type} - ${r.supported ? 'Supported' : 'Not Supported'}`, 
+                    r.supported ? 'success' : 'info');
+            });
+        });
+        
+        // Initial log
+        log('AudioRecorder test page loaded', 'success');
+        log('Ready to test AudioRecorder component', 'info');
+    </script>
+</body>
+</html>

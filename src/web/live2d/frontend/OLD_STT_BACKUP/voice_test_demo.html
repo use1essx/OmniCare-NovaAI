@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎤 Smart Voice Input Demo - Cantonese & English</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .voice-controls {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .voice-btn {
+            width: 100%;
+            padding: 1.5rem;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .voice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .voice-btn.listening {
+            background: #ef4444;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+
+        .mic-icon {
+            font-size: 2rem;
+        }
+
+        .voice-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .lang-select, .privacy-btn, .mode-btn {
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .lang-select:hover, .privacy-btn:hover, .mode-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .lang-select option {
+            color: #333;
+        }
+
+        .privacy-btn.active, .mode-btn.active {
+            background: rgba(255,255,255,0.4);
+            border-color: rgba(255,255,255,0.6);
+        }
+
+        .transcript-area {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 150px;
+        }
+
+        .interim-transcript {
+            color: #999;
+            font-style: italic;
+            margin-bottom: 1rem;
+            min-height: 1.5rem;
+        }
+
+        .final-transcript {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.active {
+            background: #10b981;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .info-box {
+            background: #e0e7ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .info-box ul {
+            margin-left: 1.5rem;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        .info-box li {
+            margin-bottom: 0.25rem;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .action-btn {
+            padding: 0.75rem;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #ef4444;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #991b1b;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #10b981;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .badge.warning {
+            background: #f59e0b;
+        }
+
+        .badge.error {
+            background: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Smart Voice Input Demo</h1>
+        <p class="subtitle">Test Web Speech API with Cantonese & English</p>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <h3>💡 How to Use:</h3>
+            <ul>
+                <li><strong>Click the microphone</strong> to start/stop listening</li>
+                <li><strong>Switch language</strong> to test Cantonese or English</li>
+                <li><strong>Try "Continuous"</strong> mode for hands-free input</li>
+                <li><strong>Privacy mode</strong> uses local Whisper (slower but private)</li>
+            </ul>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+            <div class="status-item">
+                <span id="methodBadge">Web Speech API</span>
+            </div>
+        </div>
+
+        <!-- Voice Controls -->
+        <div class="voice-controls">
+            <button class="voice-btn" id="voiceButton">
+                <span class="mic-icon">🎤</span>
+                <span class="status-text" id="buttonText">Tap to Speak</span>
+            </button>
+
+            <div class="voice-settings">
+                <select id="voiceLanguage" class="lang-select">
+                    <option value="zh-HK">🇭🇰 廣東話 (Cantonese)</option>
+                    <option value="en-US">🇺🇸 English (US)</option>
+                    <option value="en-GB">🇬🇧 English (UK)</option>
+                    <option value="yue-Hant-HK">🇭🇰 粵語 (Yue)</option>
+                </select>
+
+                <button id="modeToggle" class="mode-btn">
+                    <span class="icon">🔄</span>
+                    <span class="label">Push to Talk</span>
+                </button>
+
+                <button id="privacyToggle" class="privacy-btn" title="Toggle Privacy Mode">
+                    <span class="icon">🌐</span>
+                    <span class="label">Fast Mode</span>
+                </button>
+
+                <button id="clearButton" class="privacy-btn" title="Clear Transcript">
+                    <span class="icon">🗑️</span>
+                    <span class="label">Clear</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Transcript Area -->
+        <div class="transcript-area">
+            <div class="interim-transcript" id="interimTranscript">
+                Interim transcript will appear here...
+            </div>
+            <div class="final-transcript" id="finalTranscript">
+                Your speech will be transcribed here...
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn" id="copyButton">📋 Copy Text</button>
+            <button class="action-btn" id="sendButton">📤 Send Message</button>
+        </div>
+    </div>
+
+    <script>
+        // Smart Voice Input Class
+        class SmartVoiceInput {
+            constructor(options = {}) {
+                this.language = options.language || 'zh-HK';
+                this.mode = options.mode || 'push-to-talk'; // 'continuous' or 'push-to-talk'
+                this.useWebSpeech = this.detectWebSpeechSupport();
+                this.privacyMode = options.privacyMode || false;
+                
+                this.recognition = null;
+                this.isListening = false;
+                this.finalTranscript = '';
+                
+                this.onTranscript = options.onTranscript || (() => {});
+                this.onError = options.onError || (() => {});
+                this.onStatusChange = options.onStatusChange || (() => {});
+            }
+
+            detectWebSpeechSupport() {
+                const supported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+                console.log('Web Speech API supported:', supported);
+                return supported;
+            }
+
+            async start() {
+                if (this.privacyMode || !this.useWebSpeech) {
+                    this.onError('Privacy mode (Whisper) not implemented in demo. Use Web Speech API mode.');
+                    return;
+                }
+                
+                return this.startWebSpeechMode();
+            }
+
+            startWebSpeechMode() {
+                try {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    this.recognition = new SpeechRecognition();
+                    
+                    // Configuration
+                    this.recognition.lang = this.language;
+                    this.recognition.continuous = (this.mode === 'continuous');
+                    this.recognition.interimResults = true;
+                    this.recognition.maxAlternatives = 1;
+
+                    console.log('Starting recognition with:', {
+                        language: this.language,
+                        continuous: this.recognition.continuous,
+                        interimResults: this.recognition.interimResults
+                    });
+
+                    // Event handlers
+                    this.recognition.onstart = () => {
+                        console.log('Recognition started');
+                        this.isListening = true;
+                        this.onStatusChange('listening', 'Web Speech API');
+                    };
+
+                    this.recognition.onresult = (event) => {
+                        console.log('Recognition result:', event);
+                        
+                        let interimTranscript = '';
+                        let finalTranscript = '';
+                        
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript;
+                            const confidence = event.results[i][0].confidence;
+                            
+                            if (event.results[i].isFinal) {
+                                finalTranscript += transcript + ' ';
+                                console.log('Final transcript:', transcript, 'Confidence:', confidence);
+                            } else {
+                                interimTranscript += transcript;
+                                console.log('Interim transcript:', transcript);
+                            }
+                        }
+                        
+                        this.onTranscript({
+                            interim: interimTranscript,
+                            final: finalTranscript,
+                            confidence: event.results[event.results.length - 1][0].confidence,
+                            language: this.language
+                        });
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.error('Recognition error:', event.error);
+                        this.onError(event.error);
+                        
+                        if (event.error === 'no-speech') {
+                            this.onStatusChange('no-speech', null);
+                        } else if (event.error === 'network') {
+                            this.onStatusChange('network-error', null);
+                        }
+                    };
+
+                    this.recognition.onend = () => {
+                        console.log('Recognition ended');
+                        this.isListening = false;
+                        this.onStatusChange('stopped', null);
+                        
+                        // Auto-restart for continuous mode
+                        if (this.mode === 'continuous' && this.isListening) {
+                            console.log('Auto-restarting continuous mode');
+                            setTimeout(() => {
+                                if (this.recognition) {
+                                    this.recognition.start();
+                                }
+                            }, 100);
+                        }
+                    };
+
+                    this.recognition.start();
+                    
+                } catch (error) {
+                    console.error('Failed to start recognition:', error);
+                    this.onError(error.message);
+                }
+            }
+
+            stop() {
+                console.log('Stopping recognition');
+                if (this.recognition) {
+                    this.recognition.stop();
+                }
+                this.isListening = false;
+                this.onStatusChange('stopped', null);
+            }
+
+            switchLanguage(newLang) {
+                console.log('Switching language to:', newLang);
+                const wasListening = this.isListening;
+                if (wasListening) this.stop();
+                
+                this.language = newLang;
+                
+                if (wasListening) {
+                    setTimeout(() => this.start(), 100);
+                }
+            }
+
+            toggleMode() {
+                this.mode = (this.mode === 'continuous') ? 'push-to-talk' : 'continuous';
+                console.log('Mode switched to:', this.mode);
+                return this.mode;
+            }
+
+            togglePrivacyMode() {
+                this.privacyMode = !this.privacyMode;
+                console.log('Privacy mode:', this.privacyMode);
+                return this.privacyMode;
+            }
+        }
+
+        // Initialize UI
+        let finalTranscriptText = '';
+        
+        const voiceInput = new SmartVoiceInput({
+            language: 'zh-HK',
+            mode: 'push-to-talk',
+            onTranscript: (result) => {
+                const interimDiv = document.getElementById('interimTranscript');
+                const finalDiv = document.getElementById('finalTranscript');
+                
+                if (result.interim) {
+                    interimDiv.textContent = result.interim;
+                    interimDiv.style.color = '#999';
+                }
+                
+                if (result.final) {
+                    finalTranscriptText += result.final;
+                    finalDiv.textContent = finalTranscriptText;
+                    interimDiv.textContent = '';
+                }
+            },
+            onStatusChange: (status, method) => {
+                const statusDot = document.getElementById('statusDot');
+                const statusText = document.getElementById('statusText');
+                const methodBadge = document.getElementById('methodBadge');
+                const voiceBtn = document.getElementById('voiceButton');
+                const buttonText = document.getElementById('buttonText');
+                
+                if (status === 'listening') {
+                    statusDot.classList.add('active');
+                    statusText.textContent = 'Listening...';
+                    methodBadge.textContent = method || 'Web Speech API';
+                    voiceBtn.classList.add('listening');
+                    buttonText.textContent = 'Listening... (Click to Stop)';
+                } else if (status === 'no-speech') {
+                    statusText.textContent = 'No speech detected';
+                    showError('No speech detected. Please try again.');
+                } else if (status === 'network-error') {
+                    statusText.textContent = 'Network error';
+                    showError('Network error. Please check your connection.');
+                } else {
+                    statusDot.classList.remove('active');
+                    statusText.textContent = 'Ready';
+                    voiceBtn.classList.remove('listening');
+                    buttonText.textContent = 'Tap to Speak';
+                }
+            },
+            onError: (error) => {
+                console.error('Voice input error:', error);
+                showError(`Error: ${error}`);
+            }
+        });
+
+        // Check browser support
+        if (!voiceInput.useWebSpeech) {
+            showError('⚠️ Web Speech API not supported in this browser. Please use Chrome or Edge.');
+            document.getElementById('methodBadge').textContent = 'Not Supported';
+        }
+
+        // Voice button
+        document.getElementById('voiceButton').addEventListener('click', () => {
+            if (voiceInput.isListening) {
+                voiceInput.stop();
+            } else {
+                voiceInput.start();
+            }
+        });
+
+        // Language switcher
+        document.getElementById('voiceLanguage').addEventListener('change', (e) => {
+            voiceInput.switchLanguage(e.target.value);
+        });
+
+        // Mode toggle
+        document.getElementById('modeToggle').addEventListener('click', (e) => {
+            const newMode = voiceInput.toggleMode();
+            const btn = e.currentTarget;
+            const label = btn.querySelector('.label');
+            
+            if (newMode === 'continuous') {
+                label.textContent = 'Continuous';
+                btn.classList.add('active');
+            } else {
+                label.textContent = 'Push to Talk';
+                btn.classList.remove('active');
+            }
+        });
+
+        // Privacy toggle
+        document.getElementById('privacyToggle').addEventListener('click', (e) => {
+            const isPrivate = voiceInput.togglePrivacyMode();
+            const btn = e.currentTarget;
+            const icon = btn.querySelector('.icon');
+            const label = btn.querySelector('.label');
+            
+            if (isPrivate) {
+                icon.textContent = '🔒';
+                label.textContent = 'Private';
+                btn.classList.add('active');
+            } else {
+                icon.textContent = '🌐';
+                label.textContent = 'Fast Mode';
+                btn.classList.remove('active');
+            }
+        });
+
+        // Clear button
+        document.getElementById('clearButton').addEventListener('click', () => {
+            finalTranscriptText = '';
+            document.getElementById('finalTranscript').textContent = 'Your speech will be transcribed here...';
+            document.getElementById('interimTranscript').textContent = 'Interim transcript will appear here...';
+        });
+
+        // Copy button
+        document.getElementById('copyButton').addEventListener('click', () => {
+            if (finalTranscriptText) {
+                navigator.clipboard.writeText(finalTranscriptText).then(() => {
+                    alert('✅ Text copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    alert('❌ Failed to copy text');
+                });
+            } else {
+                alert('⚠️ No text to copy');
+            }
+        });
+
+        // Send button
+        document.getElementById('sendButton').addEventListener('click', () => {
+            if (finalTranscriptText) {
+                alert(`📤 Sending message:\n\n${finalTranscriptText}`);
+                // In real app, this would send to chat API
+            } else {
+                alert('⚠️ No text to send');
+            }
+        });
+
+        // Helper function to show errors
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Log browser info
+        console.log('Browser:', navigator.userAgent);
+        console.log('Web Speech API:', voiceInput.useWebSpeech);
+    </script>
+</body>
+</html>

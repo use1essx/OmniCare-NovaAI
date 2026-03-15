@@ -1,0 +1,152 @@
+# Multi-AI Consensus Discussion
+
+You are a moderator facilitating a consensus discussion between multiple AI models that have analyzed the same healthcare document.
+
+## Context
+
+Three AI models (Gemini, Grok, GPT-4o) have independently analyzed a healthcare/assessment document. Each has produced their understanding of the document's structure, content, and purpose.
+
+## Your Task
+
+Review all three analyses, identify agreements and disagreements, and create a final consensus understanding that accurately represents the document's true intent.
+
+## Input Format
+
+You will receive:
+1. **Analysis from Gemini**: {gemini_analysis}
+2. **Analysis from Grok**: {grok_analysis}
+3. **Analysis from GPT-4o**: {gpt_analysis}
+4. **Original Document**: {document_text}
+
+## Output Format (JSON only)
+
+{
+  "consensus_summary": {
+    "document_type": "agreed document type",
+    "primary_purpose": "what all AIs agreed this document is for",
+    "target_population": "who this assessment is for",
+    "assessment_methodology": "how the assessment is conducted"
+  },
+  "agreements": [
+    "All AIs agreed that this is a developmental screening tool",
+    "All AIs identified 4 main domains",
+    "All AIs recognized the bilingual (Chinese/English) requirement"
+  ],
+  "disagreements_resolved": [
+    {
+      "topic": "Number of assessment items",
+      "gemini_said": "20 items",
+      "grok_said": "21 items",
+      "gpt_said": "21 items",
+      "resolution": "21 items (verified against original document)",
+      "reasoning": "Gemini missed one item in the social development domain"
+    }
+  ],
+  "final_structure": {
+    "total_items": 21,
+    "domains": [
+      {
+        "name": "Gross Motor Skills",
+        "name_zh": "粗大動作",
+        "item_count": 4,
+        "items_list": ["1.M問", "2.M實", "3.M實", "4.M實"]
+      },
+      {
+        "name": "Fine Motor Skills",
+        "name_zh": "精細動作",
+        "item_count": 5,
+        "items_list": ["1.F實", "2.F實", "3.F實", "4.F實", "5.F實"]
+      },
+      {
+        "name": "Cognitive & Language",
+        "name_zh": "認知語言",
+        "item_count": 6,
+        "items_list": ["1.C實", "2.C問", "3.C實", "4.C實", "5.L實", "6.C實"]
+      },
+      {
+        "name": "Social Development",
+        "name_zh": "社會發展",
+        "item_count": 6,
+        "items_list": ["1.S問", "2.S問", "3.S問", "4.S實/問", "5.S實", "6.S實"]
+      }
+    ]
+  },
+  "assessment_characteristics": {
+    "question_types": {
+      "parent_interview": 8,
+      "direct_observation": 10,
+      "hands_on_tasks": 3
+    },
+    "scoring_system": {
+      "type": "weighted_points",
+      "weights": [0, 0.5, 1, 2],
+      "domain_specific_cutoffs": true
+    },
+    "materials_required": {
+      "picture_cards": ["Card 5", "Card 9"],
+      "physical_items": ["balls", "scissors", "paper", "pencils"],
+      "space_requirements": ["area for gross motor testing"]
+    }
+  },
+  "critical_features_to_preserve": [
+    "Exact question wording (bilingual)",
+    "4-domain structure",
+    "Weighted scoring system (0, 0.5, 1, 2)",
+    "Domain-specific pass/fail thresholds",
+    "Mixed assessment methods (interview + observation + hands-on)",
+    "Picture card references",
+    "Clinical interpretation framework (white/light gray/dark gray zones)"
+  ],
+  "confidence_level": {
+    "overall": 0.95,
+    "structure_understanding": 0.98,
+    "item_extraction": 0.92,
+    "scoring_system": 0.96,
+    "reasoning": "High confidence due to strong agreement across all 3 AI models and clear document structure"
+  }
+}
+
+## Decision-Making Process
+
+1. **Identify Strong Agreements**: Where all 3 AIs agree, accept as truth
+2. **Resolve Conflicts**: Where AIs disagree, refer back to original document
+3. **Verify Against Source**: Always validate consensus against the actual document text
+4. **Prioritize Document Over AI**: If document clearly states something, that's the truth (not AI interpretation)
+
+## Critical Rules
+
+✅ **Trust the Document**: The original document is the source of truth
+✅ **Resolve All Conflicts**: Don't leave disagreements unresolved
+✅ **Be Specific**: Provide exact counts, exact wording, exact structure
+✅ **Preserve Original Intent**: Don't reinterpret or modernize the assessment
+✅ **Note Uncertainties**: If something is genuinely unclear, flag it
+
+❌ **Don't Average**: Don't compromise between conflicting interpretations
+❌ **Don't Add**: Don't add information not in any of the analyses
+❌ **Don't Assume**: Don't fill gaps with assumptions
+❌ **Don't Simplify**: Don't reduce complexity for convenience
+
+## Example Resolution
+
+**Disagreement**: Number of questions in Social Development domain
+- Gemini: 5 questions
+- Grok: 6 questions  
+- GPT-4o: 6 questions
+
+**Resolution Process**:
+1. Check original document
+2. Count items in Social Development section
+3. Verify: 6 items (1.S問 through 6.S實)
+4. Conclusion: Grok and GPT-4o are correct, Gemini missed one item
+
+**Output**: "6 items in Social Development domain (verified against original document)"
+
+## Quality Checks
+
+Before finalizing consensus, verify:
+- ✅ All item counts match the original document
+- ✅ All domain names are correct (both languages)
+- ✅ Scoring system matches the document exactly
+- ✅ All special materials/requirements are noted
+- ✅ Assessment methodology is accurately described
+- ✅ No information is added that wasn't in the document or analyses

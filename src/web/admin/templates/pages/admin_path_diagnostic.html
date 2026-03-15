@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Path Diagnostic · Healthcare AI Admin{% endblock %}
+{% block page_title %}Admin Path Diagnostic{% endblock %}
+{% block breadcrumb_current %}Path Diagnostic{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">Admin Path Diagnostic</h2>
+            <p class="text-sm text-slate-500">Test if Web Speech API works on /admin/ path</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/admin/testing" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Testing Lab
+            </a>
+        </div>
+    </div>
+
+    <!-- Diagnostic Results -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Current Path Test -->
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-12 w-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-route text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900">Current Path</h3>
+                    <p class="text-sm text-slate-500">Testing on /admin/ path</p>
+                </div>
+            </div>
+            <div id="adminPathResult" class="space-y-2">
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                    <span class="text-slate-600">Testing...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live2D Path Test -->
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-900">Live2D Path</h3>
+                    <p class="text-sm text-slate-500">Known working path</p>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fas fa-check text-emerald-600"></i>
+                    <span class="text-slate-600">Web Speech API: <strong>Works</strong></span>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                    <i class="fas fa-check text-emerald-600"></i>
+                    <span class="text-slate-600">Microphone: <strong>Accessible</strong></span>
+                </div>
+                <a href="/live2d/voice-test-working" target="_blank" class="btn btn-sm btn-primary mt-3">
+                    <i class="fas fa-external-link-alt"></i>
+                    Test on /live2d/ path
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Test Results -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                <i class="fas fa-clipboard-list text-blue-600"></i>
+                Detailed Test Results
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <!-- Browser Info -->
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-2">Browser Information</h4>
+                    <div class="bg-slate-50 rounded-lg p-4 font-mono text-xs">
+                        <div><strong>User Agent:</strong> <span id="userAgent"></span></div>
+                        <div><strong>Current URL:</strong> <span id="currentUrl"></span></div>
+                        <div><strong>Protocol:</strong> <span id="protocol"></span></div>
+                        <div><strong>Hostname:</strong> <span id="hostname"></span></div>
+                    </div>
+                </div>
+
+                <!-- API Availability -->
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-2">API Availability</h4>
+                    <div class="space-y-2">
+                        <div id="speechApiCheck" class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                            <span>Checking Web Speech API...</span>
+                        </div>
+                        <div id="microphoneCheck" class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                            <span>Checking Microphone Access...</span>
+                        </div>
+                        <div id="getUserMediaCheck" class="flex items-center gap-2 text-sm">
+                            <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                            <span>Checking getUserMedia API...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Button -->
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-2">Manual Test</h4>
+                    <button id="testButton" class="btn btn-primary">
+                        <i class="fas fa-microphone"></i>
+                        Try Web Speech API
+                    </button>
+                    <div id="testResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conclusion -->
+    <div id="conclusion" class="bg-white rounded-lg shadow-sm border border-slate-200 p-6" style="display: none;">
+        <div class="flex items-start gap-3">
+            <div id="conclusionIcon" class="flex-shrink-0"></div>
+            <div class="flex-1">
+                <h3 id="conclusionTitle" class="font-bold text-lg mb-2"></h3>
+                <p id="conclusionText" class="text-sm text-slate-600 mb-4"></p>
+                <div id="conclusionAction"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Console Log -->
+    <div class="bg-gray-900 rounded-lg shadow-lg p-4">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-white font-mono text-sm">Diagnostic Console</h3>
+            <button onclick="clearDiagnosticLog()" class="text-gray-400 hover:text-white text-xs">Clear</button>
+        </div>
+        <div id="diagnosticConsole" class="font-mono text-xs text-gray-300 max-h-64 overflow-y-auto"></div>
+    </div>
+</div>
+
+<script>
+let testResults = {
+    speechApi: false,
+    microphone: false,
+    getUserMedia: false,
+    actualTest: false
+};
+
+function logDiagnostic(msg, type = 'info') {
+    const console = document.getElementById('diagnosticConsole');
+    const line = document.createElement('div');
+    const time = new Date().toLocaleTimeString();
+    const colors = {
+        info: 'text-blue-400',
+        success: 'text-green-400',
+        error: 'text-red-400',
+        warning: 'text-yellow-400'
+    };
+    line.className = colors[type] || colors.info;
+    line.textContent = `[${time}] ${msg}`;
+    console.appendChild(line);
+    console.scrollTop = console.scrollHeight;
+}
+
+function clearDiagnosticLog() {
+    document.getElementById('diagnosticConsole').innerHTML = '';
+}
+
+function updateCheck(elementId, success, message) {
+    const element = document.getElementById(elementId);
+    const icon = success ? 
+        '<i class="fas fa-check text-emerald-600"></i>' : 
+        '<i class="fas fa-times text-red-600"></i>';
+    element.innerHTML = `${icon} <span>${message}</span>`;
+}
+
+function showConclusion() {
+    const conclusion = document.getElementById('conclusion');
+    const icon = document.getElementById('conclusionIcon');
+    const title = document.getElementById('conclusionTitle');
+    const text = document.getElementById('conclusionText');
+    const action = document.getElementById('conclusionAction');
+
+    if (testResults.speechApi && testResults.getUserMedia && testResults.actualTest) {
+        // Everything works
+        icon.innerHTML = '<i class="fas fa-check-circle text-emerald-600 text-4xl"></i>';
+        title.textContent = '✅ Web Speech API Works on /admin/ Path';
+        title.className = 'font-bold text-lg mb-2 text-emerald-900';
+        text.textContent = 'Great news! The Web Speech API is working correctly on the /admin/ path. The voice test should work fine here.';
+        action.innerHTML = '<a href="/admin/voice-test-suite" class="btn btn-primary"><i class="fas fa-microphone"></i> Go to Voice Test Suite</a>';
+    } else {
+        // Something is blocked
+        icon.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 text-4xl"></i>';
+        title.textContent = '❌ Web Speech API Blocked on /admin/ Path';
+        title.className = 'font-bold text-lg mb-2 text-red-900';
+        text.textContent = 'Chrome is blocking the Web Speech API on /admin/ paths due to security restrictions. This is a known Chrome behavior for localhost admin paths.';
+        action.innerHTML = `
+            <div class="space-y-2">
+                <p class="text-sm font-semibold text-slate-900">Recommended Solution:</p>
+                <a href="/live2d/voice-test-working" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-external-link-alt"></i>
+                    Use Voice Test on /live2d/ Path (Works!)
+                </a>
+            </div>
+        `;
+    }
+
+    conclusion.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    logDiagnostic('Starting diagnostic tests...', 'info');
+
+    // Browser Info
+    document.getElementById('userAgent').textContent = navigator.userAgent;
+    document.getElementById('currentUrl').textContent = window.location.href;
+    document.getElementById('protocol').textContent = window.location.protocol;
+    document.getElementById('hostname').textContent = window.location.hostname;
+
+    // Test 1: Web Speech API availability
+    logDiagnostic('Test 1: Checking Web Speech API availability...', 'info');
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        testResults.speechApi = true;
+        updateCheck('speechApiCheck', true, 'Web Speech API: Available');
+        logDiagnostic('✓ Web Speech API is available', 'success');
+    } else {
+        updateCheck('speechApiCheck', false, 'Web Speech API: Not Available');
+        logDiagnostic('✗ Web Speech API is NOT available', 'error');
+    }
+
+    // Test 2: getUserMedia API
+    logDiagnostic('Test 2: Checking getUserMedia API...', 'info');
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        testResults.getUserMedia = true;
+        updateCheck('getUserMediaCheck', true, 'getUserMedia API: Available');
+        logDiagnostic('✓ getUserMedia API is available', 'success');
+    } else {
+        updateCheck('getUserMediaCheck', false, 'getUserMedia API: Not Available');
+        logDiagnostic('✗ getUserMedia API is NOT available', 'error');
+    }
+
+    // Test 3: Microphone permission
+    logDiagnostic('Test 3: Checking microphone permission...', 'info');
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        testResults.microphone = true;
+        updateCheck('microphoneCheck', true, 'Microphone: Permission Granted');
+        logDiagnostic('✓ Microphone permission granted', 'success');
+        stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+        updateCheck('microphoneCheck', false, `Microphone: ${error.name} - ${error.message}`);
+        logDiagnostic(`✗ Microphone error: ${error.name} - ${error.message}`, 'error');
+    }
+
+    // Update admin path result
+    const adminResult = document.getElementById('adminPathResult');
+    if (testResults.speechApi && testResults.getUserMedia && testResults.microphone) {
+        adminResult.innerHTML = `
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-check text-emerald-600"></i>
+                <span class="text-slate-600">Web Speech API: <strong>Available</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-check text-emerald-600"></i>
+                <span class="text-slate-600">Microphone: <strong>Accessible</strong></span>
+            </div>
+        `;
+    } else {
+        adminResult.innerHTML = `
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-times text-red-600"></i>
+                <span class="text-slate-600">Web Speech API: <strong>Blocked</strong></span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-times text-red-600"></i>
+                <span class="text-slate-600">Microphone: <strong>Restricted</strong></span>
+            </div>
+        `;
+    }
+
+    // Manual test button
+    document.getElementById('testButton').addEventListener('click', () => {
+        logDiagnostic('Manual test: Attempting to start Web Speech API...', 'info');
+        const testResult = document.getElementById('testResult');
+
+        if (!testResults.speechApi) {
+            testResult.innerHTML = '<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">Web Speech API is not available in this browser.</div>';
+            logDiagnostic('✗ Cannot test: Web Speech API not available', 'error');
+            return;
+        }
+
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                testResults.actualTest = true;
+                testResult.innerHTML = '<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-800"><i class="fas fa-check mr-2"></i>Success! Web Speech API started successfully.</div>';
+                logDiagnostic('✓ Web Speech API started successfully!', 'success');
+                recognition.stop();
+                showConclusion();
+            };
+
+            recognition.onerror = (event) => {
+                testResults.actualTest = false;
+                testResult.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800"><i class="fas fa-times mr-2"></i>Error: ${event.error}</div>`;
+                logDiagnostic(`✗ Web Speech API error: ${event.error}`, 'error');
+                showConclusion();
+            };
+
+            recognition.start();
+            logDiagnostic('Attempting to start recognition...', 'info');
+        } catch (error) {
+            testResults.actualTest = false;
+            testResult.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800"><i class="fas fa-times mr-2"></i>Exception: ${error.message}</div>`;
+            logDiagnostic(`✗ Exception: ${error.message}`, 'error');
+            showConclusion();
+        }
+    });
+
+    logDiagnostic('Diagnostic tests complete. Click "Try Web Speech API" button to test.', 'info');
+});
+</script>
+{% endblock %}

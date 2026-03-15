@@ -1,0 +1,52 @@
+{
+  "error_patterns": [
+    {
+      "pattern": "(?i)(error|exception|traceback|failed|critical)",
+      "severity": "error",
+      "category": "general"
+    },
+    {
+      "pattern": "(?i)(connection refused|could not connect|connection timeout)",
+      "severity": "error",
+      "category": "connectivity",
+      "recommendation": "Check if the target service is running and accessible"
+    },
+    {
+      "pattern": "(?i)(port.*already in use|address already in use)",
+      "severity": "error",
+      "category": "port_conflict",
+      "recommendation": "Stop the process using the port or change the port in .env"
+    },
+    {
+      "pattern": "(?i)(permission denied|access denied)",
+      "severity": "error",
+      "category": "permissions",
+      "recommendation": "Check file and directory permissions"
+    },
+    {
+      "pattern": "(?i)(out of memory|memory allocation failed)",
+      "severity": "error",
+      "category": "resources",
+      "recommendation": "Increase Docker memory limits in Docker Desktop settings"
+    },
+    {
+      "pattern": "(?i)(no space left on device|disk full)",
+      "severity": "error",
+      "category": "disk_space",
+      "recommendation": "Free up disk space or run: docker system prune -af"
+    }
+  ],
+  "warning_patterns": [
+    {
+      "pattern": "(?i)(warning|warn|deprecated)",
+      "severity": "warning",
+      "category": "general"
+    }
+  ],
+  "ignore_patterns": [
+    "already seeded",
+    "already up to date",
+    "Skipping seed",
+    "No changes detected"
+  ]
+}

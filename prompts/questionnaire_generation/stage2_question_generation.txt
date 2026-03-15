@@ -1,0 +1,221 @@
+# Document-Faithful Question Generation
+
+## CRITICAL INSTRUCTION - READ FIRST
+
+**YOU MUST GENERATE QUESTIONS ONLY FROM THE PROVIDED DOCUMENT.**
+
+**DO NOT USE YOUR GENERAL KNOWLEDGE.**
+**DO NOT CREATE NEW QUESTIONS.**
+**DO NOT ADD "HELPFUL" QUESTIONS.**
+
+Your job is to EXTRACT and RECREATE questions that exist in the source document, NOT to generate new ones from your knowledge.
+
+---
+
+## Your Role
+
+Generator Instance: {instance_name}
+Focus Area: {focus_area}
+
+## Document Understanding (AI Consensus)
+
+{consensus_understanding}
+
+## Original Document Content
+
+{document_text}
+
+## Extracted Document Structure
+
+{extracted_structure}
+
+---
+
+## Your Task
+
+Based on the document understanding and extracted structure above:
+
+1. **Extract questions from your assigned focus area**: {focus_area}
+2. **Preserve exact wording** from the original document
+3. **Maintain original structure** (categories, domains, scoring)
+4. **Keep bilingual content** if present in source
+5. **Note assessment method** (parent interview, observation, hands-on task)
+
+## Focus Area Assignment
+
+- **primary-motor-skills**: Extract gross motor and fine motor assessment items
+- **cognitive-language**: Extract cognitive, language, and communication items
+- **social-emotional**: Extract social development and emotional regulation items
+- **validation-oriented**: Extract items that require direct observation/testing
+- **parent-report**: Extract items that are parent interview questions
+
+## Output Format (JSON array only)
+
+[
+  {
+    "id": "{instance_name}-{item_number}",
+    "source_item_number": "1.M問",
+    "domain": "Gross Motor Skills",
+    "domain_zh": "粗大動作",
+    "question_en": "Can the child walk on tiptoes for at least 3 meters?",
+    "question_zh": "孩子能否用腳尖走至少3米？",
+    "question_type": "yes_no|likert5|multiple_choice|performance_task",
+    "administration_method": "parent_interview|direct_observation|hands_on_task",
+    "administration_code": "問|實|實/問",
+    "age_band": "5-7",
+    "category": "{focus_area}",
+    "response_options": [
+      {"text_en": "Pass", "text_zh": "通過", "value": 2, "score": 2},
+      {"text_en": "Partial", "text_zh": "部分通過", "value": 1, "score": 1},
+      {"text_en": "Fail", "text_zh": "不通過", "value": 0, "score": 0}
+    ],
+    "scoring_weight": 2,
+    "pass_criteria_en": "Can walk on tiptoes for 3+ meters without support",
+    "pass_criteria_zh": "能夠在沒有支撐的情況下用腳尖走3米以上",
+    "fail_criteria_en": "Cannot maintain tiptoe position or needs support",
+    "fail_criteria_zh": "無法保持腳尖姿勢或需要支撐",
+    "materials_needed": ["open space", "measuring tape"],
+    "picture_card_reference": null,
+    "special_instructions_en": "Observe child walking in open space",
+    "special_instructions_zh": "觀察孩子在開放空間行走",
+    "source_page": 2,
+    "source_section": "Gross Motor Assessment",
+    "extracted_from_document": true,
+    "fidelity_score": 1.0
+  }
+]
+
+---
+
+## Strict Fidelity Requirements
+
+### 85-90% Rule
+
+- **85-90%** of questions MUST be directly from the document
+- **10-15%** can be clarifying questions ONLY if absolutely necessary
+- **0%** should be from your general knowledge
+
+### What Counts as "From Document"
+
+✅ **Acceptable**:
+- Exact question from document
+- Translated version of document question
+- Reformatted for digital use (e.g., converting table row to question format)
+
+❌ **NOT Acceptable**:
+- Questions you think would be helpful
+- Questions from your knowledge of the topic
+- "Improved" versions of document questions
+- Additional questions to "fill gaps"
+
+---
+
+## Quality Requirements
+
+1. **Exact Wording**: Use the exact wording from the document (or accurate translation)
+2. **Preserve Structure**: Keep original categories, domains, and organization
+3. **Maintain Scoring**: Use the exact scoring system from the document
+4. **Bilingual Accuracy**: If document is bilingual, preserve both languages
+5. **Assessment Method**: Correctly identify if it's interview, observation, or hands-on
+6. **Materials**: Note any picture cards, props, or materials mentioned
+7. **Age Appropriateness**: Use the age range specified in the document
+
+---
+
+## What NOT to Do
+
+❌ **Do NOT** generate questions from your general knowledge about child development
+❌ **Do NOT** add questions that aren't in the source document
+❌ **Do NOT** create variations or alternatives to document questions
+❌ **Do NOT** reorganize the structure (keep original domains/categories)
+❌ **Do NOT** modify the scoring system
+❌ **Do NOT** paraphrase unless translating to target language
+❌ **Do NOT** add "helpful" questions to improve the assessment
+❌ **Do NOT** generate questions just to reach a target count
+
+---
+
+## Example: WRONG Approach ❌
+
+**Document says**: "Can the child balance on one foot for 5 seconds?"
+
+**WRONG Output** (using general knowledge):
+1. Can the child balance on one foot for 5 seconds? ✓ (from document)
+2. Can the child balance on one foot for 10 seconds? ✗ (NOT in document)
+3. Can the child hop on one foot? ✗ (NOT in document)
+4. Can the child stand on tiptoes? ✗ (NOT in document)
+5. Can the child walk in a straight line? ✗ (NOT in document)
+
+**Problem**: Only 1/5 questions came from the document (20% fidelity) ❌
+
+---
+
+## Example: CORRECT Approach ✅
+
+**Document contains**: 4 gross motor items, 5 fine motor items, 6 cognitive items, 6 social items
+
+**CORRECT Output**:
+- Extract all 4 gross motor items exactly as stated
+- Extract all 5 fine motor items exactly as stated
+- Extract all 6 cognitive items exactly as stated
+- Extract all 6 social items exactly as stated
+- Total: 21 items (100% from document) ✅
+
+---
+
+## Validation Checklist
+
+Before submitting your output, verify:
+
+- ✅ Every question came from the source document (check source_item_number)
+- ✅ Original wording is preserved (or accurately translated)
+- ✅ Scoring matches the document exactly
+- ✅ Domain/category structure matches original
+- ✅ Assessment methods are correctly identified
+- ✅ Materials and picture cards are noted
+- ✅ No questions added from your general knowledge
+- ✅ Fidelity score is 0.9 or higher for each question
+
+---
+
+## Special Cases
+
+### If Document Has Tables
+
+Extract each row as a separate question item, preserving:
+- Row number/identifier
+- Question text
+- Response options
+- Scoring criteria
+
+### If Document Has Picture Cards
+
+Note the picture card reference (e.g., "Card 5", "圖卡9") and describe what it shows based on the document.
+
+### If Document Has Multiple Languages
+
+Preserve all language versions exactly as they appear in the document.
+
+### If Document Has Scoring Tables
+
+Extract the complete scoring framework:
+- Point values
+- Pass/fail thresholds
+- Domain-specific cutoffs
+- Interpretation guidelines
+
+---
+
+## Remember
+
+**Your goal is EXTRACTION, not GENERATION.**
+
+**The document is the source of truth, not your knowledge.**
+
+**Fidelity to the original document is more important than quantity.**
+
+If the document has 21 questions, generate 21 questions (not 50, not 100).
+If the document has 4 domains, preserve those 4 domains (don't create new ones).
+If the document uses specific wording, use that exact wording (don't improve it).
+
+**EXTRACT. PRESERVE. DON'T GENERATE.**

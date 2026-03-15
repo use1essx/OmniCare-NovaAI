@@ -1,0 +1,73 @@
+{
+  "models": {
+    "Natori": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Natori",
+      "model_file": "Natori.model3.json",
+      "last_modified": 1757793365
+    },
+    "Mark": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Mark",
+      "model_file": "Mark.model3.json",
+      "last_modified": 1757793365
+    },
+    "Wanko": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Wanko",
+      "model_file": "Wanko.model3.json",
+      "last_modified": 1757793365
+    },
+    "Rice": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Rice",
+      "model_file": "Rice.model3.json",
+      "last_modified": 1757793365
+    },
+    "Mao": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Mao",
+      "model_file": "Mao.model3.json",
+      "last_modified": 1757793365
+    },
+    "Haru": {
+      "enabled": false,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Haru",
+      "model_file": "Haru.model3.json",
+      "last_modified": 1757793365
+    },
+    "Hiyori": {
+      "enabled": true,
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/Hiyori",
+      "model_file": "Hiyori.model3.json",
+      "last_modified": 1757793365
+    }
+  },
+  "current_background": "@back_class_normal.png",
+  "backgrounds": {
+    "@back_class_normal.png": {
+      "path": "/workspaces/fyp2526-use1essx/healthcare_ai_live2d_unified/src/web/live2d/frontend/Resources/back_class_normal.png",
+      "size": 282114,
+      "last_modified": 1727547374,
+      "type": "png"
+    },
+    "sample_red_bg.png": {
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/sample_red_bg.png",
+      "size": 2789,
+      "last_modified": 1757845973,
+      "type": "png"
+    },
+    "sample_blue_bg.png": {
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/sample_blue_bg.png",
+      "size": 2791,
+      "last_modified": 1757845973,
+      "type": "png"
+    },
+    "sample_bg_1.jpg": {
+      "path": "/workspaces/fyp2526-use1essx/official-live2d-test/Samples/TypeScript/Demo/dist/Resources/sample_bg_1.jpg",
+      "size": 78845,
+      "last_modified": 1757845952,
+      "type": "jpg"
+    }
+  }
+}

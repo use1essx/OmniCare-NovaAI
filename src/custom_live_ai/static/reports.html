@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Reports - Custom Live AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            min-width: 120px;
+        }
+
+        input, select, button {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 30px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .session-id {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .quality-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .quality-excellent {
+            background: #10b981;
+            color: white;
+        }
+
+        .quality-good {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .quality-fair {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .quality-poor {
+            background: #ef4444;
+            color: white;
+        }
+
+        .report-body {
+            margin: 15px 0;
+        }
+
+        .report-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .report-row:last-child {
+            border-bottom: none;
+        }
+
+        .report-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .report-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .emotion-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .emotion-happy { background: #fef3c7; color: #92400e; }
+        .emotion-neutral { background: #e5e7eb; color: #374151; }
+        .emotion-sad { background: #dbeafe; color: #1e40af; }
+        .emotion-angry { background: #fee2e2; color: #991b1b; }
+
+        .report-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .btn-view, .btn-delete {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5568d3;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .no-reports {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .no-reports-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .no-reports-text {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .pagination button {
+            padding: 10px 20px;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 40px;
+            padding: 0;
+        }
+
+        .report-detail-section {
+            margin-bottom: 25px;
+        }
+
+        .report-detail-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .detail-item-label {
+            color: #666;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .detail-item-value {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Session Reports</h1>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-row">
+                <label>User ID:</label>
+                <input type="text" id="userIdInput" placeholder="Enter user ID (optional)">
+                <label>Min Quality:</label>
+                <input type="number" id="minQualityInput" min="0" max="100" placeholder="0-100">
+                <button onclick="loadReports()">🔄 Load Reports</button>
+                <button onclick="window.location.href='/'">🏠 Home</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats" id="statsContainer">
+            <div class="stat-card">
+                <div class="stat-value" id="totalReports">0</div>
+                <div class="stat-label">Total Reports</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgQuality">0</div>
+                <div class="stat-label">Avg Quality</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalInterventions">0</div>
+                <div class="stat-label">Total Interventions</div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingIndicator" style="display: none;">
+            Loading reports
+        </div>
+
+        <!-- Reports Grid -->
+        <div class="reports-grid" id="reportsGrid"></div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="paginationContainer"></div>
+    </div>
+
+    <!-- Modal for Report Details -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="reportDetailContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        const pageSize = 12;
+        let allReports = [];
+
+        // Load reports on page load
+        window.addEventListener('load', () => {
+            loadReports();
+        });
+
+        async function loadReports() {
+            const userId = document.getElementById('userIdInput').value.trim();
+            const minQuality = document.getElementById('minQualityInput').value;
+            
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('reportsGrid').innerHTML = '';
+            
+            try {
+                let url = '/api/reports/all?limit=100';
+                
+                if (minQuality) {
+                    url += `&min_quality=${minQuality}`;
+                }
+                
+                // If user ID provided, use user-specific endpoint
+                if (userId) {
+                    url = `/api/reports/user/${userId}/all?limit=100`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                allReports = data.reports || [];
+                
+                // Update stats
+                updateStats(allReports);
+                
+                // Display reports
+                currentPage = 0;
+                displayReports();
+                
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                document.getElementById('reportsGrid').innerHTML = `
+                    <div class="no-reports">
+                        <div class="no-reports-icon">❌</div>
+                        <div class="no-reports-text">Error loading reports: ${error.message}</div>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        }
+
+        function updateStats(reports) {
+            document.getElementById('totalReports').textContent = reports.length;
+            
+            if (reports.length > 0) {
+                const avgQuality = reports.reduce((sum, r) => sum + (r.overall_quality_score || 0), 0) / reports.length;
+                document.getElementById('avgQuality').textContent = avgQuality.toFixed(1);
+                
+                const totalInt = reports.reduce((sum, r) => sum + (r.total_interventions || 0), 0);
+                document.getElementById('totalInterventions').textContent = totalInt;
+            } else {
+                document.getElementById('avgQuality').textContent = '0';
+                document.getElementById('totalInterventions').textContent = '0';
+            }
+        }
+
+        function displayReports() {
+            const grid = document.getElementById('reportsGrid');
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            const pageReports = allReports.slice(start, end);
+            
+            if (pageReports.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-reports">
+                        <div class="no-reports-icon">📭</div>
+                        <div class="no-reports-text">No reports found</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = pageReports.map(report => createReportCard(report)).join('');
+            
+            // Update pagination
+            updatePagination();
+        }
+
+        function createReportCard(report) {
+            const quality = report.overall_quality_score || 0;
+            const qualityClass = quality >= 80 ? 'excellent' : quality >= 60 ? 'good' : quality >= 40 ? 'fair' : 'poor';
+            const emotionClass = `emotion-${report.dominant_emotion || 'neutral'}`;
+            
+            return `
+                <div class="report-card">
+                    <div class="report-header">
+                        <div class="session-id">${report.session_id}</div>
+                        <div class="quality-badge quality-${qualityClass}">${quality.toFixed(0)}</div>
+                    </div>
+                    
+                    <div class="report-body">
+                        <div class="report-row">
+                            <span class="report-label">User:</span>
+                            <span class="report-value">${report.user_id || 'N/A'}</span>
+                        </div>
+                        <div class="report-row">
+                            <span class="report-label">Emotion:</span>
+                            <span class="emotion-badge ${emotionClass}">${report.dominant_emotion || 'N/A'}</span>
+                        </div>
+                        <div class="report-row">
+                            <span class="report-label">Posture:</span>
+                            <span class="report-value">${report.average_posture_quality || 'N/A'}</span>
+                        </div>
+                        <div class="report-row">
+                            <span class="report-label">Engagement:</span>
+                            <span class="report-value">${((report.engagement_level || 0) * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="report-row">
+                            <span class="report-label">Interventions:</span>
+                            <span class="report-value">${report.total_interventions || 0}</span>
+                        </div>
+                        <div class="report-row">
+                            <span class="report-label">Generated:</span>
+                            <span class="report-value">${new Date(report.generated_at).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="report-footer">
+                        <button class="btn-view" onclick="viewReportDetail('${report.session_id}')">👁️ View Full</button>
+                        <button class="btn-delete" onclick="deleteReport('${report.session_id}')">🗑️ Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updatePagination() {
+            const container = document.getElementById('paginationContainer');
+            const totalPages = Math.ceil(allReports.length / pageSize);
+            
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = `
+                <button onclick="changePage(-1)" ${currentPage === 0 ? 'disabled' : ''}>← Previous</button>
+                <span style="color: white; padding: 10px;">Page ${currentPage + 1} of ${totalPages}</span>
+                <button onclick="changePage(1)" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
+            `;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            displayReports();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function viewReportDetail(sessionId) {
+            try {
+                const response = await fetch(`/api/reports/session/${sessionId}`);
+                const report = await response.json();
+                
+                const content = document.getElementById('reportDetailContent');
+                content.innerHTML = `
+                    <h2>📊 Report: ${sessionId}</h2>
+                    
+                    <div class="report-detail-section">
+                        <h3>Overview</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">Overall Quality</div>
+                                <div class="detail-item-value">${report.overall_quality_score.toFixed(1)}/100</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Duration</div>
+                                <div class="detail-item-value">${report.duration_seconds.toFixed(1)}s</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">User ID</div>
+                                <div class="detail-item-value">${report.user_id || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-detail-section">
+                        <h3>Emotion Timeline</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">Dominant Emotion</div>
+                                <div class="detail-item-value">${report.emotion_timeline.dominant_emotion}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Emotion Stability</div>
+                                <div class="detail-item-value">${(report.emotion_timeline.emotion_stability * 100).toFixed(0)}%</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Total Changes</div>
+                                <div class="detail-item-value">${report.emotion_timeline.total_changes}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-detail-section">
+                        <h3>Posture Analysis</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">Average Quality</div>
+                                <div class="detail-item-value">${report.posture_analysis.average_quality}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Stability</div>
+                                <div class="detail-item-value">${(report.posture_analysis.posture_stability * 100).toFixed(0)}%</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Total Slouches</div>
+                                <div class="detail-item-value">${report.posture_analysis.total_slouches}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-detail-section">
+                        <h3>Engagement Metrics</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">Engagement Level</div>
+                                <div class="detail-item-value">${(report.engagement.engagement_level * 100).toFixed(0)}%</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Face Detection Rate</div>
+                                <div class="detail-item-value">${(report.engagement.face_detection_rate * 100).toFixed(0)}%</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-item-label">Attention Span</div>
+                                <div class="detail-item-value">${report.engagement.attention_span_minutes.toFixed(1)} min</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${report.intervention_summary ? `
+                    <div class="report-detail-section">
+                        <h3>Interventions</h3>
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-item-label">Total Interventions</div>
+                                <div class="detail-item-value">${report.intervention_summary.total_interventions}</div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('reportModal').classList.add('active');
+            } catch (error) {
+                alert('Error loading report details: ' + error.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('reportModal').classList.remove('active');
+        }
+
+        async function deleteReport(sessionId) {
+            if (!confirm(`Are you sure you want to delete report for ${sessionId}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/reports/session/${sessionId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Report deleted successfully!');
+                    loadReports(); // Reload the list
+                } else {
+                    alert('Error deleting report');
+                }
+            } catch (error) {
+                alert('Error deleting report: ' + error.message);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('reportModal').addEventListener('click', (e) => {
+            if (e.target.id === 'reportModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
+
+

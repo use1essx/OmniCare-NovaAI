@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microphone Diagnostic</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+        #log { background: #000; padding: 20px; margin-top: 20px; border: 1px solid #333; max-height: 500px; overflow-y: auto; }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .info { color: #0ff; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Microphone Diagnostic Tool</h1>
+    
+    <button onclick="testGetUserMedia()">Test 1: getUserMedia()</button>
+    <button onclick="testWebSpeech()">Test 2: Web Speech API</button>
+    <button onclick="checkPermissions()">Test 3: Check Permissions</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <div id="log"></div>
+
+    <script>
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('log').appendChild(div);
+            console.log(msg);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function testGetUserMedia() {
+            log('=== TEST 1: getUserMedia() ===', 'info');
+            try {
+                log('Requesting microphone access...', 'info');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                log('✅ SUCCESS! Microphone access granted', 'success');
+                log(`Stream ID: ${stream.id}`, 'success');
+                log(`Audio tracks: ${stream.getAudioTracks().length}`, 'success');
+                stream.getTracks().forEach(track => {
+                    log(`Track: ${track.label} (${track.kind})`, 'success');
+                    track.stop();
+                });
+                log('Stream stopped', 'info');
+            } catch (error) {
+                log(`❌ FAILED: ${error.name} - ${error.message}`, 'error');
+                log(`Error details: ${JSON.stringify(error)}`, 'error');
+            }
+        }
+
+        async function testWebSpeech() {
+            log('=== TEST 2: Web Speech API ===', 'info');
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                log('❌ Web Speech API not supported', 'error');
+                return;
+            }
+            
+            log('✅ Web Speech API is available', 'success');
+            
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                
+                recognition.onstart = () => {
+                    log('✅ Recognition started successfully!', 'success');
+                    setTimeout(() => recognition.stop(), 2000);
+                };
+                
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    log(`✅ Heard: "${transcript}"`, 'success');
+                };
+                
+                recognition.onerror = (event) => {
+                    log(`❌ Recognition error: ${event.error}`, 'error');
+                    log(`Error message: ${event.message || 'none'}`, 'error');
+                };
+                
+                recognition.onend = () => {
+                    log('Recognition ended', 'info');
+                };
+                
+                log('Starting recognition...', 'info');
+                recognition.start();
+                
+            } catch (error) {
+                log(`❌ FAILED: ${error.name} - ${error.message}`, 'error');
+            }
+        }
+
+        async function checkPermissions() {
+            log('=== TEST 3: Permissions API ===', 'info');
+            
+            try {
+                const result = await navigator.permissions.query({ name: 'microphone' });
+                log(`Permission state: ${result.state}`, result.state === 'granted' ? 'success' : 'error');
+                
+                result.onchange = () => {
+                    log(`Permission changed to: ${result.state}`, 'info');
+                };
+                
+            } catch (error) {
+                log(`❌ Permissions API error: ${error.message}`, 'error');
+            }
+            
+            // Check site settings
+            log('Browser info:', 'info');
+            log(`User Agent: ${navigator.userAgent}`, 'info');
+            log(`Platform: ${navigator.platform}`, 'info');
+            log(`Language: ${navigator.language}`, 'info');
+            log(`Online: ${navigator.onLine}`, 'info');
+            log(`Protocol: ${window.location.protocol}`, 'info');
+            log(`Host: ${window.location.host}`, 'info');
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            log('🔧 Diagnostic tool loaded', 'success');
+            log('Click buttons above to run tests', 'info');
+            checkPermissions();
+        };
+    </script>
+</body>
+</html>

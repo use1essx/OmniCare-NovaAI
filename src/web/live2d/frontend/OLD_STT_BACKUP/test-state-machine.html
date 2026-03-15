@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StateMachine Test</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .current-state {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+            margin: 10px 0;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 StateMachine Test Suite</h1>
+    
+    <div class="test-section">
+        <h2>Current State</h2>
+        <div class="current-state" id="currentState">idle</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual State Transitions</h2>
+        <button onclick="tryTransition('recording')">→ recording</button>
+        <button onclick="tryTransition('processing')">→ processing</button>
+        <button onclick="tryTransition('transcribed')">→ transcribed</button>
+        <button onclick="tryTransition('idle')">→ idle</button>
+        <button onclick="tryTransition('error')">→ error</button>
+        <button onclick="resetState()">Reset</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Automated Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="testResults"></div>
+    </div>
+
+    <script src="voice-input-v2.js"></script>
+    <script>
+        // Create StateMachine instance
+        const sm = new StateMachine();
+        
+        // Update display
+        function updateDisplay() {
+            document.getElementById('currentState').textContent = sm.getState();
+        }
+        
+        // Try a transition
+        function tryTransition(newState) {
+            try {
+                sm.transition(newState);
+                addResult(`✅ Transition to ${newState} succeeded`, 'pass');
+                updateDisplay();
+            } catch (error) {
+                addResult(`❌ Transition to ${newState} failed: ${error.message}`, 'fail');
+            }
+        }
+        
+        // Reset state
+        function resetState() {
+            sm.reset();
+            updateDisplay();
+            addResult('🔄 State reset to idle', 'pass');
+        }
+        
+        // Add test result
+        function addResult(message, type) {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            document.getElementById('testResults').appendChild(div);
+        }
+        
+        // Clear results
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+        
+        // Run all automated tests
+        function runAllTests() {
+            clearResults();
+            addResult('=== Starting Automated Tests ===', 'pass');
+            
+            // Test 1: Valid transition sequence
+            try {
+                sm.reset();
+                sm.transition('recording');
+                sm.transition('processing');
+                sm.transition('transcribed');
+                sm.transition('idle');
+                addResult('Test 1: Valid sequence (idle→recording→processing→transcribed→idle) PASSED', 'pass');
+            } catch (error) {
+                addResult(`Test 1: Valid sequence FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 2: Invalid transition should throw error
+            try {
+                sm.reset();
+                sm.transition('processing'); // Can't go from idle to processing
+                addResult('Test 2: Invalid transition (idle→processing) FAILED - should have thrown error', 'fail');
+            } catch (error) {
+                addResult('Test 2: Invalid transition correctly rejected PASSED', 'pass');
+            }
+            
+            // Test 3: Recording can go to idle (cancel)
+            try {
+                sm.reset();
+                sm.transition('recording');
+                sm.transition('idle'); // Cancel recording
+                addResult('Test 3: Cancel recording (recording→idle) PASSED', 'pass');
+            } catch (error) {
+                addResult(`Test 3: Cancel recording FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 4: Recording can go to error
+            try {
+                sm.reset();
+                sm.transition('recording');
+                sm.transition('error');
+                sm.transition('idle'); // Recover from error
+                addResult('Test 4: Error handling (recording→error→idle) PASSED', 'pass');
+            } catch (error) {
+                addResult(`Test 4: Error handling FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 5: Processing can go to error
+            try {
+                sm.reset();
+                sm.transition('recording');
+                sm.transition('processing');
+                sm.transition('error');
+                sm.transition('idle');
+                addResult('Test 5: Processing error (processing→error→idle) PASSED', 'pass');
+            } catch (error) {
+                addResult(`Test 5: Processing error FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 6: canTransition() method
+            try {
+                sm.reset();
+                const canGoToRecording = sm.canTransition('recording');
+                const canGoToProcessing = sm.canTransition('processing');
+                
+                if (canGoToRecording && !canGoToProcessing) {
+                    addResult('Test 6: canTransition() method PASSED', 'pass');
+                } else {
+                    addResult('Test 6: canTransition() method FAILED', 'fail');
+                }
+            } catch (error) {
+                addResult(`Test 6: canTransition() FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Test 7: getState() method
+            try {
+                sm.reset();
+                if (sm.getState() === 'idle') {
+                    sm.transition('recording');
+                    if (sm.getState() === 'recording') {
+                        addResult('Test 7: getState() method PASSED', 'pass');
+                    } else {
+                        addResult('Test 7: getState() returned wrong state', 'fail');
+                    }
+                } else {
+                    addResult('Test 7: getState() initial state wrong', 'fail');
+                }
+            } catch (error) {
+                addResult(`Test 7: getState() FAILED: ${error.message}`, 'fail');
+            }
+            
+            // Reset to idle for manual testing
+            sm.reset();
+            updateDisplay();
+            
+            addResult('=== All Tests Complete ===', 'pass');
+        }
+        
+        // Initialize display
+        updateDisplay();
+        
+        // Run tests on load
+        console.log('StateMachine test page loaded. Click "Run All Tests" to verify functionality.');
+    </script>
+</body>
+</html>

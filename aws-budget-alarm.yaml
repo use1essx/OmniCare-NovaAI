@@ -1,0 +1,327 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: |
+  AWS Budget Alarm for OmniCare Healthcare AI - Bedrock Nova
+  
+  This CloudFormation template creates AWS Budget alerts for Amazon Bedrock usage
+  with a $50 monthly limit. Alerts are triggered at 80%, 90%, 95%, and 100% thresholds.
+  
+  IMPORTANT: AWS Budgets cannot automatically disable IAM keys. When you receive
+  a 100% alert, you must manually disable IAM credentials to stop all requests.
+  
+  Created: March 2026
+  Version: 1.0
+
+Parameters:
+  BudgetAmount:
+    Type: Number
+    Default: 50
+    Description: Monthly budget limit in USD
+    MinValue: 1
+    MaxValue: 10000
+  
+  AlertEmail:
+    Type: String
+    Description: Email address for budget alerts
+    AllowedPattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address
+    Default: admin@healthcare.ai
+  
+  BudgetName:
+    Type: String
+    Default: healthcare-ai-bedrock-budget
+    Description: Name for the budget
+    MinLength: 1
+    MaxLength: 100
+  
+  IncludeSafetyNet:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Include 110% safety net alert (recommended)
+
+Conditions:
+  CreateSafetyNetAlert: !Equals [!Ref IncludeSafetyNet, 'true']
+
+Resources:
+  # SNS Topic for Budget Alerts
+  BudgetAlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${BudgetName}-alerts'
+      DisplayName: Bedrock Budget Alerts
+      Subscription:
+        - Endpoint: !Ref AlertEmail
+          Protocol: email
+      Tags:
+        - Key: Application
+          Value: OmniCare Healthcare AI
+        - Key: Purpose
+          Value: Budget Monitoring
+        - Key: CostCenter
+          Value: AI Services
+
+  # SNS Topic Policy
+  BudgetAlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref BudgetAlertTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowBudgetsToPublish
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action:
+              - SNS:Publish
+            Resource: !Ref BudgetAlertTopic
+
+  # Main Budget with Multiple Alerts
+  BedrockBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Ref BudgetName
+        BudgetLimit:
+          Amount: !Ref BudgetAmount
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+        CostFilters:
+          Service:
+            - Amazon Bedrock
+        CostTypes:
+          IncludeTax: true
+          IncludeSubscription: true
+          UseBlended: false
+          IncludeRefund: false
+          IncludeCredit: false
+          IncludeUpfront: true
+          IncludeRecurring: true
+          IncludeOtherSubscription: true
+          IncludeSupport: false
+          IncludeDiscount: true
+          UseAmortized: false
+      NotificationsWithSubscribers:
+        # 80% Warning Alert
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertTopic
+        
+        # 90% Critical Alert
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 90
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertTopic
+        
+        # 95% Final Warning Alert
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 95
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertTopic
+        
+        # 100% Budget Exceeded Alert
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertTopic
+        
+        # 110% Safety Net Alert (Conditional)
+        - !If
+          - CreateSafetyNetAlert
+          - Notification:
+              NotificationType: ACTUAL
+              ComparisonOperator: GREATER_THAN
+              Threshold: 110
+              ThresholdType: PERCENTAGE
+              NotificationState: ALARM
+            Subscribers:
+              - SubscriptionType: SNS
+                Address: !Ref BudgetAlertTopic
+          - !Ref AWS::NoValue
+        
+        # Forecasted 100% Alert (Early Warning)
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetAlertTopic
+
+Outputs:
+  BudgetName:
+    Description: Name of the created budget
+    Value: !Ref BudgetName
+    Export:
+      Name: !Sub '${AWS::StackName}-BudgetName'
+  
+  SNSTopicArn:
+    Description: ARN of the SNS topic for budget alerts
+    Value: !Ref BudgetAlertTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-SNSTopicArn'
+  
+  BudgetAmount:
+    Description: Monthly budget limit in USD
+    Value: !Ref BudgetAmount
+    Export:
+      Name: !Sub '${AWS::StackName}-BudgetAmount'
+  
+  AlertEmail:
+    Description: Email address receiving alerts
+    Value: !Ref AlertEmail
+  
+  AlertThresholds:
+    Description: Alert thresholds configured
+    Value: !Sub |
+      80% ($${BudgetAmount} × 0.80) - Warning
+      90% ($${BudgetAmount} × 0.90) - Critical
+      95% ($${BudgetAmount} × 0.95) - Final Warning
+      100% ($${BudgetAmount}) - Budget Exceeded
+      110% ($${BudgetAmount} × 1.10) - Safety Net (if enabled)
+  
+  ManualActionRequired:
+    Description: Important reminder about manual intervention
+    Value: |
+      IMPORTANT: AWS Budgets cannot automatically disable IAM keys.
+      When you receive a 100% budget alert, you MUST manually disable
+      IAM credentials to stop all Bedrock API requests.
+      
+      To disable IAM keys:
+      aws iam update-access-key --access-key-id YOUR_KEY --status Inactive --user-name YOUR_USER
+  
+  DeploymentInstructions:
+    Description: How to deploy this template
+    Value: |
+      Deploy via AWS Console:
+      1. Go to CloudFormation → Create Stack
+      2. Upload this template file
+      3. Enter parameters (budget amount, email)
+      4. Review and create
+      5. Confirm SNS subscription email
+      
+      Deploy via AWS CLI:
+      aws cloudformation create-stack \
+        --stack-name healthcare-ai-budget \
+        --template-body file://aws-budget-alarm.yaml \
+        --parameters \
+          ParameterKey=BudgetAmount,ParameterValue=50 \
+          ParameterKey=AlertEmail,ParameterValue=admin@healthcare.ai \
+        --capabilities CAPABILITY_IAM
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Budget Configuration
+        Parameters:
+          - BudgetName
+          - BudgetAmount
+      - Label:
+          default: Alert Configuration
+        Parameters:
+          - AlertEmail
+          - IncludeSafetyNet
+    
+    ParameterLabels:
+      BudgetName:
+        default: Budget Name
+      BudgetAmount:
+        default: Monthly Budget Limit (USD)
+      AlertEmail:
+        default: Alert Email Address
+      IncludeSafetyNet:
+        default: Include 110% Safety Net Alert
+
+  Documentation:
+    Description: |
+      AWS Budget Alarm for OmniCare Healthcare AI Platform
+      
+      This template creates a comprehensive budget monitoring system for
+      Amazon Bedrock usage with multiple alert thresholds.
+      
+      ALERT THRESHOLDS:
+      - 80% ($40 for $50 budget) - Warning: Monitor usage closely
+      - 90% ($45 for $50 budget) - Critical: Reduce usage immediately
+      - 95% ($47.50 for $50 budget) - Final Warning: Prepare to disable
+      - 100% ($50 for $50 budget) - EXCEEDED: Disable IAM keys NOW
+      - 110% ($55 for $50 budget) - Safety Net: Backup alert
+      
+      IMPORTANT NOTES:
+      1. AWS Budgets update every 8-12 hours, not real-time
+      2. Application-level budget protection ($50 hard limit) is primary
+      3. AWS Budget alerts are secondary/backup protection
+      4. Manual IAM key disabling required at 100% threshold
+      
+      MANUAL INTERVENTION REQUIRED:
+      When you receive a 100% budget alert, immediately disable IAM keys:
+      
+      Via AWS CLI:
+        aws iam update-access-key \
+          --access-key-id AKIAUKXJ...NTB7 \
+          --status Inactive \
+          --user-name bedrock-healthcare-ai
+      
+      Via AWS Console:
+        1. Go to IAM → Users → bedrock-healthcare-ai
+        2. Security credentials tab
+        3. Find access key
+        4. Click "Make inactive"
+      
+      COST TRACKING:
+      - Application tracks costs in real-time (ai_usage_tracking table)
+      - AWS Budget provides backup monitoring
+      - Both systems should align within 1-2%
+      
+      MONTHLY RESET:
+      Budget resets automatically on the 1st of each month.
+      Application budget must be reset manually (see budget_protection.md).
+      
+      TESTING:
+      After deployment:
+      1. Confirm SNS subscription email
+      2. Verify budget appears in AWS Console
+      3. Check alert configuration
+      4. Test with small Bedrock usage
+      
+      TROUBLESHOOTING:
+      - If no alerts received: Check SNS subscription confirmed
+      - If alerts delayed: AWS Budgets update every 8-12 hours
+      - If costs don't match: Compare with application tracking
+      
+      For more information, see:
+      - docs/aws_nova_setup.md
+      - docs/budget_protection.md
+      - docs/migration_log.md
+    
+    Version: 1.0
+    LastUpdated: March 2026
+    Author: OmniCare Healthcare AI Team
+    License: MIT

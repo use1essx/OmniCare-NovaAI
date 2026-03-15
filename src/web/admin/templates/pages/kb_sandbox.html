@@ -1,0 +1,1127 @@
+{% extends "base.html" %}
+
+{% block title %}KB/RAG Sandbox - OmniCare Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --panel: #ffffff;
+    --border: #d9dce7;
+    --text: #1c1f2a;
+    --muted: #6b7280;
+    --accent: #1f4b99;
+    --accent-2: #0d6efd;
+  }
+  .kb-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .kb-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .kb-panel h3 { margin: 0 0 10px; }
+  .kb-label { display: block; margin: 8px 0 4px; font-size: 13px; color: var(--muted); }
+  .kb-input, .kb-select, .kb-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .kb-textarea { resize: vertical; min-height: 80px; }
+  .kb-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .kb-btn.secondary { background: #384152; }
+  .kb-row { display: flex; gap: 8px; align-items: center; }
+  .kb-row > * { flex: 1; }
+  #log {
+    border: 1px solid var(--border);
+    background: #fff;
+    padding: 10px;
+    height: 300px;
+    overflow-y: auto;
+  }
+  .msg { margin-bottom: 10px; }
+  .ai { color: var(--accent-2); }
+  .user { color: #111; }
+  .cite { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .status { font-size: 12px; color: var(--muted); margin-left: 8px; }
+  
+  /* Form download link styling */
+  .form-download-link {
+    display: inline-block;
+    background: var(--accent-2);
+    color: #fff !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    margin: 4px 0;
+    transition: background 0.2s;
+  }
+  .form-download-link:hover {
+    background: #0b5ed7;
+    text-decoration: none;
+  }
+  .form-download-link::before {
+    content: "📄 ";
+  }
+  .doc { border-bottom: 1px dashed var(--border); padding: 6px 0; }
+  .doc:last-child { border-bottom: none; }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 12px;
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 280px;
+    font-size: 12px;
+  }
+  #kb-db {
+    max-height: 180px;
+    width: 100%;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .muted { color: var(--muted); font-size: 12px; }
+  .tree-node { margin-left: 16px; }
+  .tree-item { 
+    padding: 4px 0; 
+    cursor: pointer;
+    user-select: none;
+  }
+  .tree-item:hover { background: #f0f0f0; }
+  .tree-toggle { 
+    display: inline-block; 
+    width: 16px; 
+    text-align: center;
+    font-weight: bold;
+  }
+  .tree-icon { margin-right: 4px; }
+  .tree-count { 
+    color: var(--muted); 
+    font-size: 11px; 
+    margin-left: 6px;
+  }
+  .btn-remove {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .btn-remove:hover {
+    opacity: 1;
+  }
+  @media (max-width: 960px) {
+    .kb-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <h2 class="text-xl font-semibold text-slate-900 mb-2">KB/RAG Sandbox</h2>
+    <p class="text-sm text-slate-600">Dev-only UI: upload docs, chat with RAG, and view retrieval trace.</p>
+  </div>
+
+  <div class="kb-grid">
+    <section class="kb-panel">
+      <h3>KB Upload</h3>
+      <form id="kb-upload">
+        <label class="kb-label">Title</label>
+        <input id="kb-title" type="text" class="kb-input" placeholder="Document title" required />
+        <div class="kb-row">
+          <div>
+            <label class="kb-label">Age Group</label>
+            <select id="kb-age-group" class="kb-select">
+              <option value="">Select Age Group</option>
+              <option value="elderly">Elderly (長者)</option>
+              <option value="child">Child (兒童)</option>
+              <option value="teen">Teen (青少年)</option>
+              <option value="adult">Adult (成人)</option>
+            </select>
+          </div>
+          <div>
+            <label class="kb-label">Language</label>
+            <select id="kb-language" class="kb-select">
+              <option value="en">English</option>
+              <option value="zh-HK">Cantonese (zh-HK)</option>
+            </select>
+          </div>
+        </div>
+        <div class="kb-row">
+          <div>
+            <label class="kb-label">Category</label>
+            <select id="kb-category" class="kb-select">
+              <option value="">Select Category</option>
+            </select>
+          </div>
+          <div>
+            <label class="kb-label">Topic</label>
+            <select id="kb-topic" class="kb-select">
+              <option value="">Select Topic (optional)</option>
+            </select>
+          </div>
+        </div>
+        <div class="kb-row">
+          <label style="margin:0;">
+            <input type="checkbox" id="kb-auto-tag" checked />
+            Auto Tag (topics, age groups, category)
+          </label>
+          <label style="margin:0;">
+            <input type="checkbox" id="kb-auto-summary" checked />
+            Auto Summary
+          </label>
+        </div>
+        <div class="kb-row">
+          <label style="margin:0;">
+            <input type="checkbox" id="kb-is-form" />
+            📄 Is Form (表格)
+          </label>
+        </div>
+        <div id="kb-form-metadata" style="display:none; border-left: 3px solid #4CAF50; padding-left: 15px; margin: 10px 0;">
+          <label class="kb-label">Form Type</label>
+          <select id="kb-form-type" class="kb-select">
+            <option value="">Select Form Type</option>
+            <option value="application">Application (申請)</option>
+            <option value="assessment">Assessment (評估)</option>
+            <option value="registration">Registration (登記)</option>
+            <option value="consent">Consent (同意)</option>
+          </select>
+          <label class="kb-label">Submission Instructions</label>
+          <textarea id="kb-submission-instructions" class="kb-input" placeholder="e.g., Please complete and return to your caregiver" rows="2"></textarea>
+        </div>
+        <label class="kb-label">Organization ID (optional)</label>
+        <input id="kb-org" type="number" min="1" class="kb-input" placeholder="1" />
+        <div class="kb-row">
+          <div>
+            <label class="kb-label">Visibility</label>
+            <select id="kb-visibility" class="kb-select">
+              <option value="org" selected>Org</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+          <div>
+            <label class="kb-label">Tags (comma separated)</label>
+            <input id="kb-tags" type="text" class="kb-input" placeholder="nutrition, sleep" />
+          </div>
+        </div>
+        <div class="kb-row">
+          <div>
+            <label class="kb-label">Create Category</label>
+            <div class="kb-row">
+              <input id="kb-category-new" type="text" class="kb-input" placeholder="e.g. 長者交通" />
+              <button id="kb-category-add" type="button" class="kb-btn secondary" style="flex:0 0 auto;">Add</button>
+            </div>
+          </div>
+          <div>
+            <label class="kb-label">Create Topic</label>
+            <div class="kb-row">
+              <input id="kb-topic-new" type="text" class="kb-input" placeholder="e.g. 八達通優惠" />
+              <button id="kb-topic-add" type="button" class="kb-btn secondary" style="flex:0 0 auto;">Add</button>
+            </div>
+          </div>
+        </div>
+        <label class="kb-label">File (pdf/txt/docx/image/audio/video)</label>
+        <input id="kb-file" type="file" />
+        <label class="kb-label">Or Text Content</label>
+        <textarea id="kb-text" class="kb-textarea" placeholder="Paste plain text here..."></textarea>
+        <div class="kb-row" style="margin-top:8px;">
+          <button type="submit" class="kb-btn">Upload</button>
+          <span class="status" id="kb-upload-status"></span>
+        </div>
+        <div class="muted">Note: In dev mode, KB auth can be bypassed.</div>
+      </form>
+      <hr />
+      <div class="kb-row" style="margin-bottom:6px;">
+        <h3 style="margin:0; flex:1;">
+          <span style="cursor: pointer; user-select: none;" onclick="toggleSection('kb-list-section')">
+            <span id="kb-list-toggle">▼</span> KB Documents
+          </span>
+        </h3>
+        <button class="kb-btn secondary" id="kb-refresh" type="button">Refresh</button>
+      </div>
+      <div id="kb-list-section">
+        <div id="kb-list" class="muted">Loading...</div>
+      </div>
+      <hr />
+      <div class="kb-row" style="margin-bottom:6px;">
+        <h3 style="margin:0; flex:1;">Category Tree</h3>
+        <button class="kb-btn secondary" id="kb-tree-refresh" type="button">Refresh Tree</button>
+      </div>
+      <div id="kb-tree" class="muted">Loading...</div>
+      <hr />
+      <div class="kb-row" style="margin-bottom:6px;">
+        <h3 style="margin:0; flex:1;">DB Snapshot</h3>
+        <button class="kb-btn secondary" id="kb-db-refresh" type="button">Load DB</button>
+      </div>
+      <div class="kb-row">
+        <div>
+          <label class="kb-label">Docs Limit</label>
+          <input id="kb-doc-limit" type="number" min="1" max="200" value="20" class="kb-input" />
+        </div>
+        <div>
+          <label class="kb-label">Chunks Limit</label>
+          <input id="kb-chunk-limit" type="number" min="1" max="500" value="50" class="kb-input" />
+        </div>
+      </div>
+      <label class="kb-label">Doc ID (optional)</label>
+      <input id="kb-doc-id" type="number" min="1" class="kb-input" placeholder="e.g. 12" />
+      <pre id="kb-db">No data.</pre>
+    </section>
+
+    <section class="kb-panel">
+      <h3>Chat (Same API as main index)</h3>
+      <div class="kb-row">
+        <div>
+          <label class="kb-label">Agent</label>
+          <select id="agent" class="kb-select">
+            <option value="">Auto</option>
+            <option value="wellness_coach">wellness_coach</option>
+            <option value="mental_health">mental_health</option>
+            <option value="safety_guardian">safety_guardian</option>
+            <option value="smartkidpath_screener">smartkidpath_screener</option>
+          </select>
+        </div>
+        <div>
+          <label class="kb-label">Language</label>
+          <select id="lang" class="kb-select">
+            <option value="en">English</option>
+            <option value="zh-HK">Cantonese</option>
+            <option value="auto" selected>Auto</option>
+          </select>
+        </div>
+      </div>
+      <label class="kb-label">RAG Skills (comma-separated)</label>
+      <input id="rag-skills" type="text" class="kb-input" placeholder="mental_health, wellness_coaching" />
+      <label class="kb-label">RAG Doc ID (optional)</label>
+      <input id="rag-doc-id" type="number" min="1" class="kb-input" placeholder="e.g. 3" />
+      <label class="kb-label">RAG Mode</label>
+      <select id="rag-mode" class="kb-select">
+        <option value="bm25" selected>BM25 Only (fast)</option>
+        <option value="hybrid">Hybrid (BM25 + Vector)</option>
+      </select>
+      <div class="kb-row" style="margin-top:6px;">
+        <label style="margin:0;">
+          <input type="checkbox" id="rag-force" />
+          Force RAG
+        </label>
+        <label style="margin:0;">
+          <input type="checkbox" id="rag-debug" checked />
+          Show RAG Trace
+        </label>
+        <label style="margin:0;">
+          <input type="checkbox" id="rag-use-history" checked />
+          Use Chat History for RAG
+        </label>
+      </div>
+      <div id="log" style="margin-top:10px;"></div>
+      <div style="margin-top:10px;">
+        <textarea id="msg" rows="3" class="kb-textarea" placeholder="Type message..."></textarea>
+        <div class="kb-row" style="margin-top:6px;">
+          <button id="send" type="button" class="kb-btn" style="flex:0 0 auto;">Send</button>
+          <button id="reset-chat" type="button" class="kb-btn secondary" style="flex:0 0 auto;">Reset Chat</button>
+          <span class="status" id="chat-status"></span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="kb-panel" style="margin-top:16px;">
+    <h3>RAG Trace</h3>
+    <pre id="trace">No trace yet.</pre>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const log = document.getElementById('log');
+  const msgBox = document.getElementById('msg');
+  const trace = document.getElementById('trace');
+  const chatStatus = document.getElementById('chat-status');
+  const STORAGE_KEY = 'kb_sandbox_chat_v1';
+  let chatState = { messages: [], trace: null };
+
+  document.getElementById('send').onclick = async () => {
+    const text = msgBox.value.trim();
+    if (!text) return;
+    append('user', text);
+    msgBox.value = '';
+    chatStatus.textContent = 'Sending...';
+
+    const ragSkills = document.getElementById('rag-skills').value
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const payload = {
+      message: text,
+      language: document.getElementById('lang').value,
+      session_id: "kb_sandbox",
+      agent_type: document.getElementById('agent').value || undefined,
+      context: {
+        rag_force: document.getElementById('rag-force').checked,
+        rag_debug: document.getElementById('rag-debug').checked,
+        rag_mode: document.getElementById('rag-mode').value,
+        rag_doc_id: document.getElementById('rag-doc-id').value || undefined,
+        rag_use_history: document.getElementById('rag-use-history').checked,
+        rag_skills: ragSkills.length ? ragSkills : undefined
+      }
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
+      const res = await fetch('/api/v1/agents/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (!res.ok) {
+        append('ai', data.detail || '(error)');
+        chatStatus.textContent = 'Error';
+        return;
+      }
+      const citeText = (data.citations || []).slice(0, 4).map(c => {
+        const title = c.title || `Doc ${c.document_id || ''}`;
+        const loc = c.page != null ? `p.${c.page}` : (c.timestamp_start != null ? `t+${Math.round(c.timestamp_start)}s` : '');
+        return `${title}${loc ? ' (' + loc + ')' : ''}`;
+      }).join(' | ');
+      append('ai', data.message || '(no message)', citeText);
+      const traceText = data.rag_trace ? JSON.stringify(data.rag_trace, null, 2) : 'No trace (enable RAG Trace).';
+      trace.textContent = traceText;
+      chatState.trace = traceText;
+      persistChat();
+      chatStatus.textContent = 'OK';
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        append('ai', 'Request timed out. Try BM25-only or wait for vector model download.');
+        chatStatus.textContent = 'Timeout';
+        return;
+      }
+      append('ai', 'Request failed');
+      chatStatus.textContent = 'Error';
+    } finally {
+      if (chatStatus.textContent === 'Sending...') {
+        chatStatus.textContent = 'Done';
+      }
+    }
+  };
+
+  // SECURITY: Sanitize URL to prevent XSS attacks
+  function sanitizeUrl(url) {
+    // Only allow http, https, and relative URLs
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+      return url;
+    }
+    return '#'; // Invalid URL, return safe fallback
+  }
+
+  // Parse markdown links and convert to HTML
+  function parseMarkdownLinks(text) {
+    // Match markdown links: [text](url)
+    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    
+    // Replace markdown links with HTML anchor tags
+    return text.replace(linkRegex, (match, linkText, url) => {
+      const safeUrl = sanitizeUrl(url);
+      // Return placeholder that we'll replace with actual HTML element
+      return `<a href="${safeUrl}" target="_blank" class="form-download-link">${linkText}</a>`;
+    });
+  }
+
+  function renderMessage(role, text, cite) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    
+    // Parse markdown links for AI messages (form delivery)
+    const prefix = role === 'ai' ? 'AI: ' : 'You: ';
+    const parsedText = parseMarkdownLinks(text);
+    
+    // Use innerHTML for AI messages to render links, textContent for user messages (security)
+    if (role === 'ai' && parsedText !== text) {
+      // Contains links - use innerHTML
+      div.innerHTML = prefix + parsedText;
+    } else {
+      // No links or user message - use textContent for safety
+      div.textContent = prefix + text;
+    }
+    
+    if (cite) {
+      const c = document.createElement('div');
+      c.className = 'cite';
+      c.textContent = 'Sources: ' + cite;
+      div.appendChild(c);
+    }
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function append(role, text, cite) {
+    renderMessage(role, text, cite);
+    chatState.messages.push({ role, text, cite: cite || null });
+    persistChat();
+  }
+
+  function persistChat() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chatState));
+    } catch (err) {
+      // Ignore storage failures
+    }
+  }
+
+  function loadChat() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.messages)) {
+        chatState = { messages: parsed.messages || [], trace: parsed.trace || null };
+        chatState.messages.forEach(m => renderMessage(m.role, m.text, m.cite));
+        if (chatState.trace) {
+          trace.textContent = chatState.trace;
+        }
+      }
+    } catch (err) {
+      // Ignore parse errors
+    }
+  }
+
+  function resetChat() {
+    if (!confirm('Clear chat history?')) return;
+    chatState = { messages: [], trace: null };
+    log.innerHTML = '';
+    trace.textContent = 'No trace yet.';
+    chatStatus.textContent = '';
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      // Ignore storage failures
+    }
+  }
+
+  document.getElementById('reset-chat').onclick = resetChat;
+
+  // KB upload + listing
+  const kbList = document.getElementById('kb-list');
+  const kbStatus = document.getElementById('kb-upload-status');
+
+  // Category tree for dropdowns
+  let categoryTree = [];
+  
+  // Load category tree and populate dropdowns
+  async function loadCategoryTreeForDropdowns() {
+    try {
+      const res = await fetch('/api/v1/knowledge/categories/tree');
+      if (!res.ok) {
+        console.error('Failed to load category tree: HTTP', res.status);
+        kbStatus.textContent = 'Failed to load categories. Run fix_kb_setup.py';
+        return;
+      }
+      categoryTree = await res.json();
+      console.log('Loaded category tree:', categoryTree);
+      
+      // Verify we have age groups
+      if (!categoryTree || categoryTree.length === 0) {
+        console.warn('Category tree is empty. Run fix_kb_setup.py to seed categories.');
+        kbStatus.textContent = 'No categories found. Run fix_kb_setup.py';
+      }
+    } catch (err) {
+      console.error('Failed to load category tree:', err);
+      kbStatus.textContent = 'Error loading categories: ' + err.message;
+    }
+  }
+  
+  // Populate category dropdown based on selected age group
+  document.getElementById('kb-age-group').addEventListener('change', function() {
+    const ageGroupSlug = this.value;
+    const categorySelect = document.getElementById('kb-category');
+    const topicSelect = document.getElementById('kb-topic');
+    
+    console.log('Age group changed to:', ageGroupSlug);
+    
+    // Clear existing options
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    topicSelect.innerHTML = '<option value="">Select Topic (optional)</option>';
+    
+    if (!ageGroupSlug) return;
+    
+    if (!categoryTree || categoryTree.length === 0) {
+      console.warn('Category tree not loaded yet');
+      kbStatus.textContent = 'Categories not loaded. Refresh page or run fix_kb_setup.py';
+      return;
+    }
+    
+    // Find the age group in the tree
+    const ageGroup = categoryTree.find(ag => ag.slug === ageGroupSlug);
+    if (!ageGroup) {
+      console.warn('Age group not found in tree:', ageGroupSlug);
+      kbStatus.textContent = 'Age group not found. Run fix_kb_setup.py';
+      return;
+    }
+    
+    if (!ageGroup.children || ageGroup.children.length === 0) {
+      console.log('No categories under age group:', ageGroupSlug);
+      return;
+    }
+    
+    console.log('Found age group with', ageGroup.children.length, 'categories');
+    
+    // Populate categories
+    ageGroup.children.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.id;
+      option.textContent = `${cat.icon || ''} ${cat.name_zh || cat.name_en}`;
+      option.dataset.slug = cat.slug;
+      option.dataset.children = JSON.stringify(cat.children || []);
+      categorySelect.appendChild(option);
+    });
+  });
+  
+  // Handle "Is Form" checkbox - show/hide form metadata fields
+  document.getElementById('kb-is-form').addEventListener('change', function() {
+    const formMetadata = document.getElementById('kb-form-metadata');
+    if (this.checked) {
+      formMetadata.style.display = 'block';
+    } else {
+      formMetadata.style.display = 'none';
+      // Clear form fields when unchecked
+      document.getElementById('kb-form-type').value = '';
+      document.getElementById('kb-submission-instructions').value = '';
+    }
+  });
+  
+  // Populate topic dropdown based on selected category
+  document.getElementById('kb-category').addEventListener('change', function() {
+    const topicSelect = document.getElementById('kb-topic');
+    topicSelect.innerHTML = '<option value="">Select Topic (optional)</option>';
+    
+    const selectedOption = this.options[this.selectedIndex];
+    if (!selectedOption || !selectedOption.dataset.children) return;
+    
+    const topics = JSON.parse(selectedOption.dataset.children);
+    topics.forEach(topic => {
+      const option = document.createElement('option');
+      option.value = topic.id;
+      option.textContent = `${topic.icon || ''} ${topic.name_zh || topic.name_en}`;
+      topicSelect.appendChild(option);
+    });
+  });
+  
+  // Create Category button
+  document.getElementById('kb-category-add').onclick = async () => {
+    const ageGroupSelect = document.getElementById('kb-age-group');
+    const categoryName = document.getElementById('kb-category-new').value.trim();
+    
+    if (!ageGroupSelect.value) {
+      alert('Please select an Age Group first');
+      return;
+    }
+    
+    if (!categoryName) {
+      alert('Please enter a category name');
+      return;
+    }
+    
+    // Find the selected age group
+    const ageGroup = categoryTree.find(ag => ag.slug === ageGroupSelect.value);
+    if (!ageGroup) return;
+    
+    try {
+      // Create the category via API using FormData
+      const formData = new FormData();
+      formData.append('name_zh', categoryName);
+      formData.append('name_en', categoryName);
+      formData.append('parent_id', ageGroup.id);
+      formData.append('level', '2');
+      formData.append('icon', '📁');
+      
+      const res = await fetch('/api/v1/knowledge/categories', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || 'Failed to create category');
+        return;
+      }
+      
+      const result = await res.json();
+      
+      // Reload tree and refresh dropdowns
+      await loadCategoryTreeForDropdowns();
+      ageGroupSelect.dispatchEvent(new Event('change'));
+      document.getElementById('kb-category-new').value = '';
+      await loadCategoryTree(); // Refresh tree display
+      alert(`Category "${categoryName}" created successfully!`);
+    } catch (err) {
+      console.error('Failed to create category:', err);
+      alert('Failed to create category: ' + err.message);
+    }
+  };
+  
+  // Create Topic button
+  document.getElementById('kb-topic-add').onclick = async () => {
+    const categorySelect = document.getElementById('kb-category');
+    const topicName = document.getElementById('kb-topic-new').value.trim();
+    
+    if (!categorySelect.value) {
+      alert('Please select a Category first');
+      return;
+    }
+    
+    if (!topicName) {
+      alert('Please enter a topic name');
+      return;
+    }
+    
+    try {
+      // Create the topic via API using FormData
+      const formData = new FormData();
+      formData.append('name_zh', topicName);
+      formData.append('name_en', topicName);
+      formData.append('parent_id', categorySelect.value);
+      formData.append('level', '3');
+      formData.append('icon', '📄');
+      
+      const res = await fetch('/api/v1/knowledge/categories', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || 'Failed to create topic');
+        return;
+      }
+      
+      const result = await res.json();
+      
+      // Reload tree and refresh dropdowns
+      await loadCategoryTreeForDropdowns();
+      categorySelect.dispatchEvent(new Event('change'));
+      document.getElementById('kb-topic-new').value = '';
+      await loadCategoryTree(); // Refresh tree display
+      alert(`Topic "${topicName}" created successfully!`);
+    } catch (err) {
+      console.error('Failed to create topic:', err);
+      alert('Failed to create topic: ' + err.message);
+    }
+  };
+
+  async function loadDocs() {
+    try {
+      const orgId = document.getElementById('kb-org').value.trim();
+      const url = orgId
+        ? `/api/v1/knowledge/documents?org_id=${encodeURIComponent(orgId)}`
+        : '/api/v1/knowledge/documents';
+      const res = await fetch(url);
+      if (res.status === 401 || res.status === 403) {
+        kbList.textContent = 'Login required for KB list.';
+        return;
+      }
+      const docs = await res.json();
+      if (!Array.isArray(docs) || docs.length === 0) {
+        kbList.textContent = 'No documents found.';
+        return;
+      }
+      kbList.innerHTML = docs.map(d => `
+        <div class="doc">
+          <div class="kb-row" style="align-items:flex-start;">
+            <div style="flex:1;">
+              <strong>#${d.id}</strong> ${d.title} 
+              <span class="status">[${d.status}]</span><br/>
+              <span class="muted">visibility=${d.visibility}, chunks=${d.chunk_count || 0}, org=${d.organization_id || 'n/a'}</span>
+            </div>
+            <button class="kb-btn secondary" data-doc-download="${d.id}" type="button">📥 Download</button>
+            <button class="kb-btn secondary" data-doc-reindex="${d.id}" type="button">Reindex</button>
+            <button class="kb-btn secondary" data-doc-delete="${d.id}" type="button">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      kbList.textContent = 'Failed to load documents.';
+    }
+  }
+
+  document.getElementById('kb-refresh').onclick = loadDocs;
+  kbList.addEventListener('click', async (e) => {
+    // Handle download button
+    const downloadBtn = e.target.closest('[data-doc-download]');
+    if (downloadBtn) {
+      const docId = downloadBtn.getAttribute('data-doc-download');
+      if (!docId) return;
+      // Open download in new window
+      window.open(`/api/v1/knowledge/${docId}/download`, '_blank');
+      return;
+    }
+    
+    const reindexBtn = e.target.closest('[data-doc-reindex]');
+    if (reindexBtn) {
+      const docId = reindexBtn.getAttribute('data-doc-reindex');
+      if (!docId) return;
+      if (!confirm(`Reindex document ${docId}?`)) return;
+      const fd = new FormData();
+      fd.append('auto_tag', document.getElementById('kb-auto-tag').checked ? 'true' : 'false');
+      fd.append('auto_summary', document.getElementById('kb-auto-summary').checked ? 'true' : 'false');
+      try {
+        const res = await fetch(`/api/v1/knowledge/${docId}/reindex`, {
+          method: 'POST',
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.detail || 'Reindex failed.');
+          return;
+        }
+        await loadDocs();
+        await loadDbSnapshot();
+      } catch (err) {
+        alert('Reindex failed.');
+      }
+      return;
+    }
+    const btn = e.target.closest('[data-doc-delete]');
+    if (!btn) return;
+    const docId = btn.getAttribute('data-doc-delete');
+    if (!docId) return;
+    if (!confirm(`Delete document ${docId}? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/v1/knowledge/${docId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        alert('Delete failed.');
+        return;
+      }
+      await loadDocs();
+      await loadDbSnapshot();
+    } catch (err) {
+      alert('Delete failed.');
+    }
+  });
+
+  document.getElementById('kb-upload').onsubmit = async (e) => {
+    e.preventDefault();
+    kbStatus.textContent = 'Uploading...';
+    const fd = new FormData();
+    const title = document.getElementById('kb-title').value.trim();
+    const categoryId = document.getElementById('kb-category').value;
+    const topicId = document.getElementById('kb-topic').value;
+    const language = document.getElementById('kb-language').value;
+    const visibility = document.getElementById('kb-visibility').value;
+    const tags = document.getElementById('kb-tags').value.trim();
+    const autoTag = document.getElementById('kb-auto-tag').checked;
+    const autoSummary = document.getElementById('kb-auto-summary').checked;
+    const orgId = document.getElementById('kb-org').value.trim();
+    const file = document.getElementById('kb-file').files[0];
+    const text = document.getElementById('kb-text').value.trim();
+    
+    // Form metadata
+    const isForm = document.getElementById('kb-is-form').checked;
+    const formType = document.getElementById('kb-form-type').value;
+    const submissionInstructions = document.getElementById('kb-submission-instructions').value.trim();
+
+    if (!title) {
+      kbStatus.textContent = 'Title is required.';
+      return;
+    }
+    if (!file && !text) {
+      kbStatus.textContent = 'Provide a file or text.';
+      return;
+    }
+    
+    fd.append('title', title);
+    
+    // Use topic ID if selected, otherwise use category ID
+    if (topicId) {
+      fd.append('category_id', topicId);
+    } else if (categoryId) {
+      fd.append('category_id', categoryId);
+    }
+    
+    fd.append('category', 'auto'); // Keep for backward compatibility
+    fd.append('language', language);
+    fd.append('visibility', visibility);
+    if (orgId) fd.append('organization_id', orgId);
+    if (tags) fd.append('tags', tags);
+    fd.append('auto_tag', autoTag ? 'true' : 'false');
+    fd.append('auto_summary', autoSummary ? 'true' : 'false');
+    
+    // Add form metadata if form is checked
+    if (isForm) {
+      fd.append('is_form', 'true');
+      if (formType) fd.append('form_type', formType);
+      if (submissionInstructions) fd.append('submission_instructions', submissionInstructions);
+    }
+    
+    if (file) fd.append('file', file);
+    if (text) fd.append('text_content', text);
+
+    try {
+      const res = await fetch('/api/v1/knowledge/upload', {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        kbStatus.textContent = data.detail || 'Upload failed.';
+        return;
+      }
+      kbStatus.textContent = data.status ? `Status: ${data.status}` : 'Uploaded.';
+      await loadDocs();
+      await loadCategoryTree();
+    } catch (err) {
+      kbStatus.textContent = 'Upload failed.';
+    }
+  };
+
+  loadChat();
+  loadDocs();
+  loadCategoryTreeForDropdowns();
+
+  // DB snapshot (knowledge tables)
+  const dbPanel = document.getElementById('kb-db');
+  async function loadDbSnapshot() {
+    try {
+      const orgId = document.getElementById('kb-org').value.trim();
+      const docId = document.getElementById('kb-doc-id').value.trim();
+      const docLimit = document.getElementById('kb-doc-limit').value.trim();
+      const chunkLimit = document.getElementById('kb-chunk-limit').value.trim();
+      const params = [];
+      if (orgId) params.push(`org_id=${encodeURIComponent(orgId)}`);
+      if (docId) params.push(`doc_id=${encodeURIComponent(docId)}`);
+      if (docLimit) params.push(`limit_docs=${encodeURIComponent(docLimit)}`);
+      if (chunkLimit) params.push(`limit_chunks=${encodeURIComponent(chunkLimit)}`);
+      const url = params.length
+        ? `/api/v1/knowledge/debug/db?${params.join('&')}`
+        : '/api/v1/knowledge/debug/db';
+      const res = await fetch(url);
+      if (res.status === 401 || res.status === 403) {
+        dbPanel.textContent = 'Login required for DB snapshot.';
+        return;
+      }
+      const data = await res.json();
+      dbPanel.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      dbPanel.textContent = 'Failed to load DB snapshot.';
+    }
+  }
+  document.getElementById('kb-db-refresh').onclick = loadDbSnapshot;
+
+  // Category Tree
+  const treePanel = document.getElementById('kb-tree');
+  async function loadCategoryTree() {
+    try {
+      treePanel.textContent = 'Loading...';
+      const res = await fetch('/api/v1/knowledge/categories/tree');
+      if (!res.ok) {
+        treePanel.textContent = `Failed to load category tree (HTTP ${res.status}). Run fix_kb_setup.py to seed categories.`;
+        return;
+      }
+      const categories = await res.json();
+      console.log('Category tree loaded:', categories);
+      if (!categories || categories.length === 0) {
+        treePanel.textContent = 'No categories found. Run: python healthcare_ai_live2d_unified/scripts/fix_kb_setup.py';
+        return;
+      }
+      treePanel.innerHTML = renderTree(categories);
+    } catch (err) {
+      console.error('Error loading category tree:', err);
+      treePanel.textContent = 'Error loading category tree: ' + err.message;
+    }
+  }
+
+  function renderTree(categories, level = 0) {
+    let html = '';
+    for (const cat of categories) {
+      const hasChildren = cat.children && cat.children.length > 0;
+      const hasDirectDocs = (cat.direct_document_count || 0) > 0;
+      const hasDocs = cat.document_count > 0;
+      const hasContent = hasChildren || hasDirectDocs;
+      const indent = level * 16;
+      
+      // Age Groups (level 1 in DB, level 0 in rendering) should be expanded by default
+      const isAgeGroup = cat.level === 1;
+      const toggleIcon = isAgeGroup ? '▼' : '▶';
+      const toggle = hasContent ? `<span class="tree-toggle" onclick="toggleNode(this)">${toggleIcon}</span>` : '<span class="tree-toggle"></span>';
+      
+      const icon = cat.icon || '📁';
+      const name = cat.name_zh || cat.name_en;
+      const count = cat.document_count || 0;
+      
+      // Add remove button for Level 2 (categories) and Level 3 (topics) only
+      // Level 1 (age groups) cannot be deleted
+      const removeBtn = (cat.level && cat.level > 1) 
+        ? `<button class="btn-remove" onclick="deleteCategory(${cat.id}, '${name.replace(/'/g, "\\'")}', event)" title="Delete">🗑️</button>`
+        : '';
+      
+      html += `<div class="tree-item" style="margin-left:${indent}px;">
+        ${toggle}
+        <span class="tree-icon">${icon}</span>
+        <span>${name}</span>
+        <span class="tree-count">(${count} docs)</span>
+        ${removeBtn}
+      </div>`;
+      
+      if (hasContent) {
+        // Age Groups (level 1 in DB) children should be visible by default
+        const displayStyle = isAgeGroup ? 'block' : 'none';
+        html += `<div class="tree-node" style="display:${displayStyle};">`;
+        
+        // Render children first
+        if (hasChildren) {
+          html += renderTree(cat.children, level + 1);
+        }
+        
+        // Only render document loader if this category has DIRECT documents
+        if (hasDirectDocs) {
+          const directCount = cat.direct_document_count || 0;
+          html += `<div class="tree-docs" data-category-id="${cat.id}" data-loaded="false" style="margin-left:${(level + 1) * 16}px; color: var(--muted); font-size: 12px;">
+            <span style="cursor: pointer;" onclick="loadCategoryDocs(${cat.id})">📄 Click to load ${directCount} document${directCount > 1 ? 's' : ''}...</span>
+          </div>`;
+        }
+        
+        html += `</div>`;
+      }
+    }
+    return html;
+  }
+
+  window.toggleNode = function(toggle) {
+    const node = toggle.parentElement.nextElementSibling;
+    if (node && node.classList.contains('tree-node')) {
+      if (node.style.display === 'none') {
+        node.style.display = 'block';
+        toggle.textContent = '▼';
+      } else {
+        node.style.display = 'none';
+        toggle.textContent = '▶';
+      }
+    }
+  };
+
+  window.toggleSection = function(sectionId) {
+    const section = document.getElementById(sectionId);
+    const toggle = document.getElementById(sectionId.replace('-section', '-toggle'));
+    if (section && toggle) {
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+        toggle.textContent = '▼';
+      } else {
+        section.style.display = 'none';
+        toggle.textContent = '▶';
+      }
+    }
+  };
+
+  window.deleteCategory = async function(categoryId, categoryName, event) {
+    // Prevent event bubbling to tree-item click
+    event.stopPropagation();
+    
+    // Confirmation dialog
+    const confirmed = confirm(`Are you sure you want to delete "${categoryName}"?\n\nThis action cannot be undone.`);
+    if (!confirmed) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/v1/knowledge/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`✅ ${result.message || 'Category deleted successfully'}`);
+        // Refresh the tree to show updated structure
+        loadCategoryTree();
+      } else {
+        alert(`❌ Failed to delete category: ${result.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('Error deleting category:', err);
+      alert(`❌ Error deleting category: ${err.message}`);
+    }
+  };
+
+  // Load and display documents for a specific category
+  window.loadCategoryDocs = async function(categoryId) {
+    const docsContainer = document.querySelector(`.tree-docs[data-category-id="${categoryId}"]`);
+    if (!docsContainer) return;
+    
+    // Check if already loaded
+    if (docsContainer.dataset.loaded === 'true') {
+      return;
+    }
+    
+    try {
+      docsContainer.innerHTML = '<span style="color: var(--muted);">Loading...</span>';
+      
+      const response = await fetch(`/api/v1/knowledge/categories/${categoryId}/documents`);
+      if (!response.ok) {
+        docsContainer.innerHTML = '<span style="color: red;">Failed to load documents</span>';
+        return;
+      }
+      
+      const docs = await response.json();
+      
+      if (!docs || docs.length === 0) {
+        docsContainer.innerHTML = '<span style="color: var(--muted); font-style: italic;">No documents</span>';
+        docsContainer.dataset.loaded = 'true';
+        return;
+      }
+      
+      // Render document list
+      let html = '<div style="margin-top: 4px;">';
+      docs.forEach(doc => {
+        const sizeKB = doc.file_size ? Math.round(doc.file_size / 1024) : 0;
+        html += `
+          <div style="padding: 2px 0; cursor: pointer;" onclick="window.open('/api/v1/knowledge/${doc.id}/download', '_blank')">
+            📄 <span style="color: var(--accent-2);">${doc.title}</span>
+            <span style="color: var(--muted); font-size: 11px;">(${sizeKB} KB)</span>
+          </div>
+        `;
+      });
+      html += '</div>';
+      
+      docsContainer.innerHTML = html;
+      docsContainer.dataset.loaded = 'true';
+      
+    } catch (err) {
+      console.error('Error loading category documents:', err);
+      docsContainer.innerHTML = '<span style="color: red;">Error loading documents</span>';
+    }
+  };
+
+  document.getElementById('kb-tree-refresh').onclick = loadCategoryTree;
+  loadCategoryTree();
+</script>
+{% endblock %}

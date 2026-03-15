@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Test - Working</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-8">🎤 Voice Input Test (Working Version)</h1>
+        
+        <!-- Voice Testing -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+            <div class="flex justify-center mb-6">
+                <button id="voiceButton" class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center cursor-pointer transform hover:scale-105 active:scale-95">
+                    <i class="fas fa-microphone text-white text-5xl"></i>
+                </button>
+            </div>
+            
+            <div class="text-center mb-6">
+                <p id="statusText" class="text-lg font-semibold text-gray-700">Click to Start</p>
+            </div>
+
+            <!-- Language Selector -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-600 mb-2">Language</label>
+                <select id="languageSelector" class="w-full px-4 py-2 border border-gray-200 rounded-lg">
+                    <option value="zh-HK">🇭🇰 廣東話 (Cantonese)</option>
+                    <option value="en-US">🇺🇸 English (US)</option>
+                </select>
+            </div>
+
+            <!-- Transcript -->
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-2">Transcript</label>
+                <div id="transcript" class="min-h-[120px] p-4 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-700">
+                    <span class="text-gray-400 italic">Your speech will appear here...</span>
+                </div>
+                <div class="mt-2 flex justify-between text-sm text-gray-500">
+                    <span id="wordCount">0 words</span>
+                    <span id="confidence"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Console Log -->
+        <div class="bg-gray-900 rounded-lg shadow-lg p-4">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-white font-mono text-sm">Console</h3>
+                <button onclick="clearLog()" class="text-gray-400 hover:text-white text-xs">Clear</button>
+            </div>
+            <div id="console" class="font-mono text-xs text-gray-300 max-h-64 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        let recognition = null;
+        let isListening = false;
+
+        function log(msg, type = 'info') {
+            const console = document.getElementById('console');
+            const line = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            line.className = colors[type] || colors.info;
+            line.textContent = `[${time}] ${msg}`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('console').innerHTML = '';
+        }
+
+        document.getElementById('voiceButton').addEventListener('click', () => {
+            if (isListening) {
+                if (recognition) recognition.stop();
+                return;
+            }
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                log('Web Speech API not supported', 'error');
+                alert('Your browser does not support Web Speech API. Please use Chrome or Edge.');
+                return;
+            }
+
+            try {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                const lang = document.getElementById('languageSelector').value;
+                recognition.lang = lang;
+                recognition.continuous = true;
+                recognition.interimResults = true;
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    document.getElementById('statusText').textContent = 'Listening...';
+                    document.getElementById('statusText').className = 'text-lg font-semibold text-green-600';
+                    
+                    // Clear transcript when starting new session
+                    document.getElementById('transcript').innerHTML = '<span class="text-gray-400 italic">Listening...</span>';
+                    document.getElementById('wordCount').textContent = '0 words';
+                    document.getElementById('confidence').textContent = '';
+                    
+                    log('Started listening', 'success');
+                };
+
+                let sessionTranscript = ''; // Track transcript for this session
+
+                recognition.onresult = (event) => {
+                    const result = event.results[event.results.length - 1];
+                    const transcript = result[0].transcript;
+                    const confidence = result[0].confidence || 0.9;
+                    const isFinal = result.isFinal;
+
+                    const display = document.getElementById('transcript');
+                    
+                    if (isFinal) {
+                        // Append to session transcript
+                        if (sessionTranscript) {
+                            sessionTranscript += ' ' + transcript;
+                        } else {
+                            sessionTranscript = transcript;
+                        }
+                        
+                        display.innerHTML = `<span class="text-gray-900">${sessionTranscript}</span>`;
+                        
+                        const words = sessionTranscript.trim().split(/\s+/).filter(w => w.length > 0);
+                        document.getElementById('wordCount').textContent = `${words.length} words`;
+                        
+                        const conf = Math.round(confidence * 100);
+                        document.getElementById('confidence').textContent = `Confidence: ${conf}%`;
+                        
+                        log(`Final: "${transcript}" (${conf}%)`, 'success');
+                    } else {
+                        // Show interim with existing session transcript
+                        const interim = sessionTranscript ? sessionTranscript + ' ' + transcript : transcript;
+                        display.innerHTML = `<span class="text-gray-900">${sessionTranscript}</span><span class="text-gray-500 italic"> ${transcript}</span>`;
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    log(`Error: ${event.error}`, 'error');
+                    if (event.error === 'not-allowed') {
+                        alert('Microphone permission denied. Please allow microphone access in your browser settings.');
+                    }
+                };
+
+                recognition.onend = () => {
+                    isListening = false;
+                    sessionTranscript = ''; // Reset session transcript
+                    document.getElementById('statusText').textContent = 'Click to Start';
+                    document.getElementById('statusText').className = 'text-lg font-semibold text-gray-700';
+                    log('Stopped listening', 'info');
+                };
+
+                recognition.start();
+                
+            } catch (error) {
+                log(`Failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Log on load
+        window.onload = () => {
+            log('Page loaded - ready to test', 'success');
+            log('Click the microphone button to start', 'info');
+        };
+    </script>
+</body>
+</html>

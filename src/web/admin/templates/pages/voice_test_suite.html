@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Voice Input Test Suite · Healthcare AI Admin{% endblock %}
+{% block page_title %}Smart Voice Input Testing{% endblock %}
+{% block breadcrumb_current %}Voice Testing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Header with Back Button -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">Smart Voice Input Testing</h2>
+            <p class="text-sm text-slate-500">Test STT engines, silence detection, and voice recognition in real-time.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/admin/testing" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Testing Lab
+            </a>
+            <a href="/live2d/voice-test-working" target="_blank" class="btn btn-primary">
+                <i class="fas fa-external-link-alt"></i>
+                Open Full Screen
+            </a>
+        </div>
+    </div>
+
+    <!-- Chrome Path Info -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-600 text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-bold text-blue-900 mb-1">Voice Test via Iframe</h3>
+                <p class="text-sm text-blue-800 leading-relaxed">
+                    This page embeds the voice test from <code class="px-1.5 py-0.5 bg-blue-200 rounded text-xs font-mono">/live2d/voice-test-working</code> via iframe.
+                    Chrome's security policy requires microphone access from the <code class="px-1.5 py-0.5 bg-blue-200 rounded text-xs font-mono">/live2d/</code> path.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 border-l-4 border-l-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Unit Tests</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">15</p>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 border-l-4 border-l-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Property Tests</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">11</p>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i class="fas fa-flask text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 border-l-4 border-l-emerald-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Engines</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">2</p>
+                    <p class="text-xs text-slate-500 mt-1">Web Speech + Whisper</p>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-microphone text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 border-l-4 border-l-amber-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Languages</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">2</p>
+                    <p class="text-xs text-slate-500 mt-1">Cantonese + English</p>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fas fa-language text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embedded Voice Test via Iframe -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-microphone text-xl"></i>
+                <h3 class="font-bold text-lg">Live Voice Input Test</h3>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-white/80">Embedded from /live2d/voice-test-working</span>
+            </div>
+        </div>
+        <div class="bg-gray-50" style="height: 600px;">
+            <iframe 
+                id="voiceTestFrame"
+                src="/live2d/voice-test-working" 
+                class="w-full h-full border-0"
+                title="Voice Input Test"
+                allow="microphone *"
+            ></iframe>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/live2d/mic-diagnostic" target="_blank" class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-blue-500">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-stethoscope"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900">Microphone Diagnostic</h4>
+                    <p class="text-xs text-slate-500">Test mic permissions & API</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/live2d/" target="_blank" class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-purple-500">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900">Live2D Interface</h4>
+                    <p class="text-xs text-slate-500">Test in production UI</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/docs" target="_blank" class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-emerald-500">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900">API Documentation</h4>
+                    <p class="text-xs text-slate-500">View STT endpoints</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                <i class="fas fa-info-circle text-blue-600"></i>
+                Technical Details
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-3">Features Tested</h4>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-emerald-600 mt-0.5"></i>
+                            <span>Web Speech API (browser-native, fast)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-emerald-600 mt-0.5"></i>
+                            <span>Whisper Engine (server-side, private)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-emerald-600 mt-0.5"></i>
+                            <span>Smart silence detection (2s pause, 3s send)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-emerald-600 mt-0.5"></i>
+                            <span>Language switching (Cantonese/English)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-emerald-600 mt-0.5"></i>
+                            <span>Real-time transcription with confidence scores</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-3">Test Coverage</h4>
+                    <ul class="space-y-2 text-sm text-slate-600">
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-vial text-blue-600 mt-0.5"></i>
+                            <span>Unit tests for core components</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-vial text-blue-600 mt-0.5"></i>
+                            <span>Property-based tests (100+ iterations)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-vial text-blue-600 mt-0.5"></i>
+                            <span>Integration tests with Live2D</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-vial text-blue-600 mt-0.5"></i>
+                            <span>Error handling and recovery</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-vial text-blue-600 mt-0.5"></i>
+                            <span>TTS coordination (prevents echo)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

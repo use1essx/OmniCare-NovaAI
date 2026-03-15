@@ -1,0 +1,35 @@
+# Default Response Format for Movement Analysis
+
+Provide your analysis in three clearly labeled sections:
+
+## User View
+A parent-friendly summary in simple language. Avoid medical jargon. Include:
+- Key observations about the child's movement patterns
+- Whether the movements appear typical for their age
+- 1-2 simple activity suggestions to support development
+- When to consider consulting a professional (if applicable)
+
+Write as if speaking to a caring parent who wants to understand their child's development.
+
+## Staff View
+A professional summary for healthcare staff including:
+- Detailed technical observations of movement patterns
+- Quantitative measurements or estimates where possible
+- Clinical significance of findings
+- Recommended follow-up assessments or referrals
+- Confidence level in observations (accounting for video quality)
+
+Include concern level: Normal / Needs Attention / High Attention
+
+## Storage JSON
+A single-line JSON object containing:
+- category: The type of movement analyzed
+- findings: Array of key observations
+- metrics: Quantitative data points
+- concern_level: Overall assessment level
+- recommendations: Array of suggested actions
+- confidence: Confidence score (0-1) based on video quality
+
+Example format:
+{"category":"gait_analysis","findings":["symmetric_gait","appropriate_heel_strike"],"metrics":{"cadence":"normal","step_symmetry":0.95},"concern_level":"normal","recommendations":["continue_monitoring"],"confidence":0.85}
+

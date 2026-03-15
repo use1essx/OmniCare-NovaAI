@@ -1,0 +1,2032 @@
+{% extends "base.html" %}
+
+{% block title %}Questionnaire Manager · Healthcare AI Admin{% endblock %}
+{% block page_title %}Questionnaire Manager{% endblock %}
+
+{% block breadcrumb %}
+<nav class="admin-header-breadcrumb" aria-label="Breadcrumb">
+    <a href="/admin/" class="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200">Dashboard</a>
+    <i class="fas fa-chevron-right mx-2 text-xs text-slate-400"></i>
+    <span class="text-sm font-semibold text-slate-900">Questionnaire Manager</span>
+</nav>
+{% endblock %}
+
+{% block page_description %}
+<div class="max-w-5xl">
+    <div class="bg-gradient-to-r from-white to-violet-50 rounded-2xl border border-violet-200 p-6 mb-6 shadow-sm">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center shadow-md">
+                        <i class="fas fa-file-alt text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Questionnaire Management</h2>
+                        <p class="text-sm text-slate-600">Create, manage, and analyze your health screening questionnaires</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <div class="flex items-center gap-2 text-sm text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                        <i class="fas fa-check-circle text-emerald-600"></i>
+                        <span>AI-Powered Generation</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                        <i class="fas fa-chart-bar text-blue-600"></i>
+                        <span>Detailed Analytics</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-700 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                        <i class="fas fa-language text-amber-600"></i>
+                        <span>Bilingual Support</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md:text-right">
+                <div class="text-xs text-slate-500 mb-2">💡 Pro Tip</div>
+                <p class="text-sm font-medium text-slate-900 mb-3 max-w-xs">Use AI to create professional questionnaires in minutes instead of hours</p>
+                <a href="/admin/questionnaires/ai-generator" 
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    Try AI Generator
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block header_actions %}
+<div class="flex items-center gap-3">
+    <button @click="showFileImportModal = true" class="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+        <i class="fas fa-file-upload text-slate-600"></i>
+        Import
+    </button>
+    <a href="/admin/questionnaires/ai-generator" class="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all flex items-center gap-2 shadow-md">
+        <i class="fas fa-wand-magic-sparkles"></i>
+        AI Generate
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Prevent Alpine.js flash of unstyled content */
+    [x-cloak] { display: none !important; }
+</style>
+
+<div x-data="questionnaireManager()" x-init="init()" x-cloak>
+    <!-- Main Action Bar -->
+    <div class="mb-8">
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 shadow-xl">
+            <div class="relative z-10">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <div class="flex-1">
+                        <h2 class="text-xl font-bold text-white mb-2">AI Questionnaire Generator</h2>
+                        <p class="text-slate-300 mb-4 max-w-2xl">
+                            Upload documents (PDF, images, Word) and let our AI automatically generate professional questionnaires
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <div class="flex items-center gap-2 text-sm text-slate-300">
+                                <i class="fas fa-check-circle text-emerald-400"></i>
+                                <span>Multi-format support</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-slate-300">
+                                <i class="fas fa-check-circle text-emerald-400"></i>
+                                <span>Bilingual generation</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-slate-300">
+                                <i class="fas fa-check-circle text-emerald-400"></i>
+                                <span>Smart scoring rules</span>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/admin/questionnaires/ai-generator" 
+                       class="px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-3 whitespace-nowrap">
+                        <i class="fas fa-magic text-lg"></i>
+                        <div class="text-left">
+                            <div class="text-sm opacity-90">Start Creating</div>
+                            <div class="text-lg">AI Generator</div>
+                        </div>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full -translate-y-32 translate-x-32"></div>
+        </div>
+    </div>
+
+    <!-- Statistics Dashboard -->
+    <div class="grid gap-6 mb-8 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Total Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+                        <i class="fas fa-clipboard-list text-xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">Total</p>
+                        <p class="text-2xl font-bold text-slate-900" x-text="stats.total"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">All questionnaires in system</div>
+        </div>
+
+        <!-- Active Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center">
+                        <i class="fas fa-check-circle text-xl text-emerald-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">Active</p>
+                        <p class="text-2xl font-bold text-emerald-600" x-text="stats.active"></p>
+                    </div>
+                </div>
+                <div class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">
+                    Live
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">Currently active and in use</div>
+        </div>
+
+        <!-- AI Generated Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-100 to-purple-50 flex items-center justify-center">
+                        <i class="fas fa-wand-magic-sparkles text-xl text-violet-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">AI Generated</p>
+                        <p class="text-2xl font-bold text-violet-900" x-text="stats.ai_generated"></p>
+                    </div>
+                </div>
+                <div class="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-xs font-semibold">
+                    AI
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">Created by AI Assistant</div>
+        </div>
+
+        <!-- Pending Approval Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                        <i class="fas fa-clock text-xl text-amber-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">Pending</p>
+                        <p class="text-2xl font-bold text-amber-900" x-text="stats.pending_approval"></p>
+                    </div>
+                </div>
+                <div class="px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">
+                    Review
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">Awaiting review & approval</div>
+        </div>
+
+        <!-- Archived Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
+                        <i class="fas fa-archive text-xl text-slate-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">Archived</p>
+                        <p class="text-2xl font-bold text-slate-700" x-text="stats.archived"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">Inactive but stored</div>
+        </div>
+
+        <!-- Responses Card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-50 flex items-center justify-center">
+                        <i class="fas fa-chart-line text-xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-slate-600">Responses</p>
+                        <p class="text-2xl font-bold text-blue-600" x-text="stats.responses"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-xs text-slate-500">Total responses collected</div>
+        </div>
+    </div>
+
+    <!-- Pending AI Generations Section (Only shown when there are pending questionnaires) -->
+    <div x-show="pendingGenerations.length > 0" class="mb-8">
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                        <i class="fas fa-clock text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Pending AI Generations</h2>
+                        <p class="text-sm text-slate-600">Review and approve AI-generated questionnaires</p>
+                    </div>
+                </div>
+                <button @click="refreshPending()" 
+                        class="px-4 py-2 bg-white border border-amber-300 text-amber-700 font-medium rounded-lg hover:bg-amber-50 transition-colors flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+            
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <template x-for="pending in pendingGenerations" :key="pending.analysis_id">
+                    <div class="bg-white rounded-xl border border-amber-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                        <div class="p-5">
+                            <!-- Header -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <i class="fas fa-file-alt text-violet-600"></i>
+                                        <h3 class="font-bold text-slate-900 truncate" x-text="pending.document_filename"></h3>
+                                    </div>
+                                    <p class="text-xs text-slate-500" x-text="formatDate(pending.created_at)"></p>
+                                </div>
+                                <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-semibold">
+                                    Pending
+                                </span>
+                            </div>
+                            
+                            <!-- Stats -->
+                            <div class="grid grid-cols-2 gap-3 mb-4">
+                                <div class="bg-slate-50 rounded-lg p-3">
+                                    <div class="text-xs text-slate-500 mb-1">Questions</div>
+                                    <div class="text-lg font-bold text-slate-900" x-text="pending.selected_count"></div>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-3">
+                                    <div class="text-xs text-slate-500 mb-1">Avg Quality</div>
+                                    <div class="text-lg font-bold text-emerald-600" x-text="pending.avg_fidelity + '%'"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Sample Questions Preview -->
+                            <div class="mb-4">
+                                <div class="text-xs font-semibold text-slate-600 mb-2">Sample Questions:</div>
+                                <div class="space-y-2">
+                                    <template x-for="(sample, idx) in pending.sample_questions.slice(0, 2)" :key="idx">
+                                        <div class="text-xs text-slate-700 bg-slate-50 rounded-lg p-2 line-clamp-2">
+                                            <span class="font-medium" x-text="sample.question_en"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex gap-2 pt-4 border-t border-slate-100">
+                                <button @click="reviewPending(pending.analysis_id)" 
+                                        class="flex-1 px-3 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-md">
+                                    <i class="fas fa-eye"></i>
+                                    Review
+                                </button>
+                                <button @click="discardPending(pending.analysis_id)" 
+                                        class="px-3 py-2.5 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Pending Generation Modal -->
+    <div x-show="showReviewModal" 
+         @click.self="showReviewModal = false" 
+         class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="border-b border-slate-200 px-6 py-4 sticky top-0 bg-white z-10">
+                <h2 class="text-xl font-semibold text-slate-900">
+                    Review AI-Generated Questions
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                    Select questions to include in your questionnaire
+                </p>
+            </div>
+            
+            <!-- Question List -->
+            <div class="px-6 py-4 space-y-3">
+                <template x-for="(candidate, idx) in reviewCandidates" :key="candidate.id">
+                    <div class="rounded-xl border-2 p-4 transition-all cursor-pointer"
+                         :class="selectedCandidates.includes(candidate.id) ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'"
+                         @click="toggleCandidateSelection(candidate.id)">
+                        <div class="flex gap-4">
+                            <!-- Checkbox -->
+                            <input type="checkbox" 
+                                   :id="'candidate-' + candidate.id"
+                                   :value="candidate.id"
+                                   :checked="selectedCandidates.includes(candidate.id)"
+                                   @click.stop
+                                   @change="toggleCandidateSelection(candidate.id)"
+                                   class="mt-1 h-5 w-5 rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                            
+                            <!-- Question Content -->
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between mb-3">
+                                    <span class="text-sm font-semibold text-slate-500">#<span x-text="idx + 1"></span></span>
+                                    <div class="flex gap-2">
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+                                            Fidelity: <span x-text="(candidate.question_data.fidelity_score * 100).toFixed(0) + '%'"></span>
+                                        </span>
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold"
+                                              x-text="candidate.question_data.category"></span>
+                                    </div>
+                                </div>
+                                
+                                <!-- English Question -->
+                                <div class="mb-2" x-show="candidate.question_data.question_en">
+                                    <span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded mr-2">EN</span>
+                                    <span class="font-medium text-slate-900" x-text="candidate.question_data.question_en"></span>
+                                </div>
+                                
+                                <!-- Chinese Question -->
+                                <div x-show="candidate.question_data.question_zh">
+                                    <span class="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-semibold rounded mr-2">中文</span>
+                                    <span class="text-slate-700" x-text="candidate.question_data.question_zh"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="border-t border-slate-200 px-6 py-4 sticky bottom-0 bg-white">
+                <!-- Description Field (Optional) -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Description (Optional)
+                    </label>
+                    <textarea x-model="reviewDescription" 
+                              rows="3"
+                              placeholder="Add a description for this questionnaire..."
+                              class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all resize-none text-sm"></textarea>
+                    <p class="text-xs text-slate-500 mt-1">This description will help others understand the purpose of this questionnaire.</p>
+                </div>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm text-slate-600">
+                        <strong x-text="selectedCandidates.length"></strong> of 
+                        <strong x-text="reviewCandidates.length"></strong> questions selected
+                    </p>
+                    <div class="flex gap-2">
+                        <button @click="selectAllCandidates()" class="btn btn-secondary btn-sm">
+                            Select All
+                        </button>
+                        <button @click="selectedCandidates = []" class="btn btn-secondary btn-sm">
+                            Clear Selection
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button @click="showReviewModal = false" class="btn btn-secondary flex-1">
+                        Cancel
+                    </button>
+                    <button @click="approvePendingGeneration()" 
+                            :disabled="selectedCandidates.length === 0"
+                            class="btn btn-primary flex-1 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+                            :class="{ 'opacity-50 cursor-not-allowed': selectedCandidates.length === 0 }">
+                        <i class="fas fa-check"></i>
+                        Approve & Save (<span x-text="selectedCandidates.length"></span> questions)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-3">
+                    <i class="fas fa-filter text-slate-500"></i>
+                    <h3 class="font-semibold text-slate-900">Filters</h3>
+                </div>
+                
+                <div class="flex flex-wrap gap-3">
+                    <div class="relative">
+                        <select x-model="filter.status" @change="applyFilters()" class="pl-10 pr-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all appearance-none">
+                            <option value="">All Status</option>
+                            <option value="active">✅ Active</option>
+                            <option value="draft">📝 Draft</option>
+                            <option value="archived">📦 Archived</option>
+                        </select>
+                        <i class="fas fa-circle-check absolute left-3 top-3 text-slate-400"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select x-model="filter.category" @change="applyFilters()" class="pl-10 pr-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all appearance-none">
+                            <option value="">All Categories</option>
+                            <option value="mental_health">🧠 Mental Health</option>
+                            <option value="wellness">💚 Wellness</option>
+                            <option value="screening">🔍 Screening</option>
+                        </select>
+                        <i class="fas fa-tag absolute left-3 top-3 text-slate-400"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select x-model="filter.language" @change="applyFilters()" class="pl-10 pr-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all appearance-none">
+                            <option value="">All Languages</option>
+                            <option value="en">🇬🇧 English</option>
+                            <option value="zh-HK">🇭🇰 Traditional Chinese</option>
+                        </select>
+                        <i class="fas fa-language absolute left-3 top-3 text-slate-400"></i>
+                    </div>
+
+                    <div class="relative">
+                        <select x-model="filter.source" @change="applyFilters()" class="pl-10 pr-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all appearance-none">
+                            <option value="">All Sources</option>
+                            <option value="ai_generated">🤖 AI Generated</option>
+                            <option value="manual">✍️ Manual</option>
+                            <option value="imported">📥 Imported</option>
+                        </select>
+                        <i class="fas fa-code-branch absolute left-3 top-3 text-slate-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button @click="resetFilters()" class="px-4 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2">
+                    <i class="fas fa-rotate-right"></i>
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div x-show="loading" class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-blue-100 to-violet-100 mb-6">
+            <i class="fas fa-spinner fa-spin text-2xl text-violet-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 mb-2">Loading Questionnaires</h3>
+        <p class="text-slate-600 max-w-md mx-auto">Fetching your questionnaires from the database...</p>
+    </div>
+
+    <!-- Questionnaires Grid -->
+    <!-- Questionnaires List (Vertical Layout) -->
+    <div x-show="!loading" class="space-y-4">
+        <template x-for="questionnaire in filteredQuestionnaires" :key="questionnaire.id">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+                 :class="questionnaire.source === 'ai_generated' ? 'border-l-4 border-l-violet-500' : ''">
+                <div class="p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <!-- Left: Icon and Info -->
+                        <div class="flex items-start gap-4 flex-1 min-w-0">
+                            <div class="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
+                                <i class="fas fa-file-alt text-2xl text-slate-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <!-- Title (Full, not truncated) -->
+                                <h3 class="font-bold text-lg text-slate-900 mb-2" x-text="questionnaire.title"></h3>
+                                <p class="text-sm text-slate-600 mb-3 line-clamp-2" x-text="questionnaire.description || 'No description'"></p>
+                                
+                                <!-- Tags -->
+                                <div class="flex flex-wrap gap-2 mb-3">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                                          :class="{
+                                              'bg-emerald-100 text-emerald-800': questionnaire.status === 'active',
+                                              'bg-amber-100 text-amber-800': questionnaire.status === 'draft',
+                                              'bg-slate-100 text-slate-800': questionnaire.status === 'archived'
+                                          }">
+                                        <span x-text="questionnaire.status.charAt(0).toUpperCase() + questionnaire.status.slice(1)"></span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                                        <i class="fas fa-language"></i>
+                                        <span x-text="questionnaire.language"></span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 text-violet-700 rounded-full text-xs">
+                                        <i class="fas fa-tag"></i>
+                                        <span x-text="questionnaire.category"></span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 text-slate-700 rounded-full text-xs">
+                                        <i class="fas fa-question-circle"></i>
+                                        <span x-text="questionnaire.total_questions + ' questions'"></span>
+                                    </span>
+                                    <span x-show="questionnaire.source === 'ai_generated'" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-violet-50 to-purple-50 text-violet-700 rounded-full text-xs font-semibold">
+                                        <i class="fas fa-wand-magic-sparkles"></i>
+                                        AI Generated
+                                    </span>
+                                </div>
+                                
+                                <!-- Created Date -->
+                                <div class="text-xs text-slate-500">
+                                    Created: <span x-text="new Date(questionnaire.created_at).toLocaleDateString()"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Actions -->
+                        <div class="flex flex-col gap-2 flex-shrink-0">
+                            <button @click="viewDetails(questionnaire.id)" 
+                                    class="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2 text-sm whitespace-nowrap">
+                                <i class="fas fa-eye"></i>
+                                View
+                            </button>
+                            <!-- Toggle Active/Draft -->
+                            <button @click="toggleQuestionnaireStatus(questionnaire.id, questionnaire.status)" 
+                                    :class="questionnaire.status === 'active' ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-400 hover:bg-slate-500'"
+                                    class="px-4 py-2 text-white font-semibold rounded-lg transition-colors text-sm whitespace-nowrap">
+                                <i class="fas" :class="questionnaire.status === 'active' ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                                <span x-text="questionnaire.status === 'active' ? 'Active' : 'Draft'"></span>
+                            </button>
+                            <button @click="confirmDelete(questionnaire)" 
+                                    class="px-4 py-2 bg-red-50 text-red-700 font-medium rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2 text-sm whitespace-nowrap">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="filteredQuestionnaires.length === 0 && !loading" class="text-center py-16">
+        <div class="max-w-md mx-auto">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-r from-slate-100 to-slate-200 flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-clipboard-list text-3xl text-slate-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-3">No Questionnaires Found</h3>
+            <p class="text-slate-600 mb-8">
+                <span x-show="filter.status || filter.category || filter.language || filter.source">
+                    No questionnaires match your current filters. Try adjusting your search criteria.
+                </span>
+                <span x-show="!filter.status && !filter.category && !filter.language && !filter.source">
+                    Get started by creating your first questionnaire with AI or importing an existing one.
+                </span>
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/admin/questionnaires/ai-generator" 
+                   class="px-6 py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    Create with AI
+                </a>
+                <button @click="showImportModal = true" 
+                        class="px-6 py-3.5 bg-white border-2 border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-3">
+                    <i class="fas fa-file-import"></i>
+                    Import JSON
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div x-show="showImportModal" 
+         @click.self="showImportModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                        <i class="fas fa-file-import text-violet-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Import Questionnaire</h2>
+                        <p class="text-sm text-slate-600">Paste JSON from AI generation or exported questionnaire</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <textarea x-model="importJson" 
+                          rows="12"
+                          class="w-full rounded-xl border border-slate-300 px-4 py-3 font-mono text-sm focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all"
+                          placeholder='{
+  "title": "Questionnaire Title",
+  "description": "Description here...",
+  "questions": []
+}'></textarea>
+                
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-600 mt-0.5"></i>
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium mb-1">Supported Formats:</p>
+                            <p class="text-blue-700">• AI-generated JSON output</p>
+                            <p class="text-blue-700">• Exported questionnaire JSON</p>
+                            <p class="text-blue-700">• Standard questionnaire schema</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
+                <div class="flex gap-3">
+                    <button @click="importQuestionnaire()" 
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-lg hover:from-violet-700 hover:to-purple-700 transition-all">
+                        Import Now
+                    </button>
+                    <button @click="showImportModal = false" 
+                            class="px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Import Modal -->
+    <div x-show="showFileImportModal" 
+         @click.self="showFileImportModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-file-upload text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Import from File</h2>
+                        <p class="text-sm text-slate-600">Upload a JSON file containing questionnaire data</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="border-3 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                     @click="document.getElementById('jsonFileInput').click()">
+                    <div class="mb-4">
+                        <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-blue-600"></i>
+                        </div>
+                    </div>
+                    <p class="font-medium text-slate-900 mb-2">Click to select or drag and drop</p>
+                    <p class="text-sm text-slate-600">JSON files only (.json, .json)</p>
+                </div>
+                
+                <input type="file" 
+                       id="jsonFileInput" 
+                       @change="handleJsonFileSelect" 
+                       accept=".json"
+                       class="hidden">
+                
+                <div x-show="selectedJsonFile" class="mt-6 p-4 bg-slate-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-file-code text-2xl text-violet-600"></i>
+                            <div>
+                                <p class="font-medium text-slate-900" x-text="selectedJsonFile?.name"></p>
+                                <p class="text-sm text-slate-500" x-text="formatFileSize(selectedJsonFile?.size)"></p>
+                            </div>
+                        </div>
+                        <button @click="clearJsonFile" 
+                                class="text-slate-400 hover:text-red-600 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 px-6 py-4 flex gap-3">
+                <button @click="importFromFile()" 
+                        :disabled="!selectedJsonFile"
+                        class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    Upload & Import
+                </button>
+                <button @click="showFileImportModal = false; clearJsonFile()" 
+                        class="px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div x-show="showDetailsModal" 
+         @click.self="showDetailsModal = false" 
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+         x-transition
+         style="display: none;">
+        <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h2 class="text-xl font-semibold text-slate-900" x-text="selectedQuestionnaire?.title || 'Questionnaire Details'"></h2>
+            </div>
+            
+            <div class="px-6 py-4 space-y-6">
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Description</h3>
+                    <p class="text-sm text-slate-600" x-text="selectedQuestionnaire?.description"></p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-3">Questions</h3>
+                    <div class="space-y-3">
+                        <template x-for="(question, index) in selectedQuestionnaire?.questions" :key="question.id">
+                            <div class="rounded-xl bg-slate-50 border border-slate-200 p-4" x-data="{editing: false, editedQuestion: {}}">
+                                <div class="flex gap-3">
+                                    <span class="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-health-blue text-white text-xs font-semibold" x-text="index + 1"></span>
+                                    <div class="flex-1">
+                                        <!-- View Mode -->
+                                        <div x-show="!editing">
+                                            <!-- English Question -->
+                                            <div class="mb-2" x-show="question.question_text">
+                                                <span class="inline-block text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mb-1">EN</span>
+                                                <p class="font-medium text-slate-900" x-text="question.question_text"></p>
+                                            </div>
+                                            <!-- Chinese Question -->
+                                            <div class="mb-2" x-show="question.question_text_zh">
+                                                <span class="inline-block text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded mb-1">中文</span>
+                                                <p class="font-medium text-slate-900" x-text="question.question_text_zh"></p>
+                                            </div>
+                                            <div class="flex gap-3 text-xs text-slate-500 mb-2">
+                                                <span>Type: <span class="font-medium" x-text="question.question_type"></span></span>
+                                                <span x-show="question.category">Category: <span class="font-medium" x-text="question.category"></span></span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2" x-show="question.options?.length > 0">
+                                                <template x-for="option in question.options" :key="option.id">
+                                                    <span class="inline-flex items-center px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs">
+                                                        <span x-text="option.option_text"></span>
+                                                        <span class="ml-1 text-health-blue font-semibold" x-text="'(' + option.option_value + ')'"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Edit Mode -->
+                                        <div x-show="editing" class="space-y-3">
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-700 mb-1">English Question</label>
+                                                <input type="text" x-model="editedQuestion.question_text" 
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-health-blue focus:border-health-blue">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-700 mb-1">Chinese Question (中文)</label>
+                                                <input type="text" x-model="editedQuestion.question_text_zh" 
+                                                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-health-blue focus:border-health-blue">
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-medium text-slate-700 mb-1">Type</label>
+                                                    <select x-model="editedQuestion.question_type" 
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-health-blue focus:border-health-blue">
+                                                        <option value="scale">Scale</option>
+                                                        <option value="multiple_choice">Multiple Choice</option>
+                                                        <option value="text">Text</option>
+                                                        <option value="yes_no">Yes/No</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs font-medium text-slate-700 mb-1">Category</label>
+                                                    <input type="text" x-model="editedQuestion.category" 
+                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-health-blue focus:border-health-blue">
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2 pt-2">
+                                                <button @click="saveQuestionEdit(question, editedQuestion)" 
+                                                    class="px-4 py-2 bg-health-blue text-white rounded-lg text-sm hover:bg-health-blue/90 transition">
+                                                    Save
+                                                </button>
+                                                <button @click="editing = false" 
+                                                    class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm hover:bg-slate-300 transition">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <button @click="editing = !editing; if(editing) editedQuestion = {...question}" 
+                                            class="text-slate-400 hover:text-health-blue transition p-2" x-show="!editing">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div x-show="selectedQuestionnaire?.scoring_rules?.length > 0">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-3">Scoring Rules</h3>
+                    <div class="space-y-2">
+                        <template x-for="rule in selectedQuestionnaire?.scoring_rules" :key="rule.category">
+                            <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 text-sm">
+                                <div class="font-semibold text-slate-900" x-text="rule.category_name_en || rule.category"></div>
+                                <div class="text-slate-600 mt-1">
+                                    Weight: <span class="font-medium" x-text="rule.weight"></span> | 
+                                    Alert if below: <span class="font-medium" x-text="rule.alert_if_below"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 px-6 py-4">
+                <button @click="showDetailsModal = false" class="btn btn-secondary w-full">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal (NEW!) -->
+    <!-- Delete Confirmation Modal -->
+    <div x-show="showDeleteModal" 
+         @click.self="showDeleteModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-xl text-red-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Delete Questionnaire</h2>
+                        <p class="text-sm text-slate-600">This action cannot be undone</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-red-800 font-medium mb-2">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Warning: This will permanently delete:
+                    </p>
+                    <ul class="text-sm text-red-700 space-y-1 ml-6">
+                        <li>• Questionnaire structure and questions</li>
+                        <li>• All associated responses</li>
+                        <li>• Statistical data and reports</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-slate-50 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-slate-700 mb-1">
+                        <strong>Questionnaire:</strong> 
+                        <span x-text="questionnaireToDelete?.title" class="font-semibold"></span>
+                    </p>
+                    <div class="flex gap-4 text-xs text-slate-500">
+                        <span>ID: <span x-text="questionnaireToDelete?.id"></span></span>
+                        <span>• <span x-text="questionnaireToDelete?.total_questions"></span> questions</span>
+                        <span>• <span x-text="questionnaireToDelete?.status"></span></span>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-sm text-slate-600 mb-2">Type <code class="px-2 py-1 bg-slate-100 rounded text-red-600 font-mono text-xs">DELETE</code> to confirm:</p>
+                    <input type="text" 
+                           x-model="deleteConfirmText"
+                           placeholder="Type DELETE here..."
+                           class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all"
+                           @keyup.enter="deleteConfirmText === 'DELETE' && deleteQuestionnaire()">
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 px-6 py-4 flex gap-3">
+                <button @click="showDeleteModal = false; deleteConfirmText = ''" 
+                        class="flex-1 px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">
+                    Cancel
+                </button>
+                <button @click="deleteQuestionnaire()" 
+                        :disabled="deleteConfirmText !== 'DELETE' || isDeleting"
+                        class="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isDeleting">
+                        <i class="fas fa-trash mr-2"></i>
+                        Delete Permanently
+                    </span>
+                    <span x-show="isDeleting">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Deleting...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign to User Modal -->
+    <div x-show="showAssignModal" 
+         @click.self="showAssignModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fas fa-user-plus text-xl text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Assign Questionnaire to User</h2>
+                        <p class="text-sm text-slate-600" x-text="selectedQuestionnaireForAssign?.title"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Loading State -->
+                <template x-if="loadingUsers">
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <p class="mt-4 text-slate-600">Loading users...</p>
+                    </div>
+                </template>
+                
+                <!-- User Selection -->
+                <template x-if="!loadingUsers">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Select User (Patients only)
+                        </label>
+                        <select x-model="assignUserId" 
+                                class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                            <option value="">-- Select a user --</option>
+                            <template x-for="user in availableUsers" :key="user.id">
+                                <option :value="user.id" x-text="`${user.username} (${user.email || 'No email'})`"></option>
+                            </template>
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500" x-show="availableUsers.length === 0">
+                            No users with role 'user' found. Please create patient accounts first.
+                        </p>
+                    </div>
+                </template>
+                
+                <!-- Assignment Options -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Questions per conversation
+                        </label>
+                        <input type="number" 
+                               x-model.number="assignQuestionsPerConv" 
+                               min="1" 
+                               max="10" 
+                               class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                        <p class="mt-1 text-xs text-slate-500">How many questions AI should ask per conversation session</p>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" 
+                                   x-model="assignAskNaturally" 
+                                   class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                            <span class="text-sm font-medium text-slate-700">Ask questions naturally during conversation</span>
+                        </label>
+                        <p class="mt-1 ml-7 text-xs text-slate-500">AI will integrate questions into natural conversation flow</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Priority (1-10)
+                        </label>
+                        <input type="number" 
+                               x-model.number="assignPriority" 
+                               min="1" 
+                               max="10" 
+                               class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                        <p class="mt-1 text-xs text-slate-500">Higher priority questionnaires are asked first</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Expires in (days)
+                        </label>
+                        <input type="number" 
+                               x-model.number="assignExpiresInDays" 
+                               min="1" 
+                               max="365" 
+                               class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                        <p class="mt-1 text-xs text-slate-500">Assignment will expire after this many days</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">
+                            Admin Notes (Optional)
+                        </label>
+                        <textarea x-model="assignAdminNotes" 
+                                  rows="3" 
+                                  maxlength="1000"
+                                  placeholder="Add any notes about this assignment..."
+                                  class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 px-6 py-4 flex gap-3">
+                <button @click="showAssignModal = false" 
+                        class="flex-1 px-6 py-3 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors">
+                    Cancel
+                </button>
+                <button @click="assignQuestionnaire()" 
+                        :disabled="!assignUserId || isAssigning"
+                        class="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!isAssigning">
+                        <i class="fas fa-check mr-2"></i>
+                        Assign Questionnaire
+                    </span>
+                    <span x-show="isAssigning">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Assigning...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div x-show="showDetailsModal" 
+         @click.self="showDetailsModal = false" 
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+         x-transition>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-5 z-10">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <i class="fas fa-info-circle text-slate-600"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900" x-text="selectedQuestionnaire?.title || 'Questionnaire Details'"></h2>
+                            <p class="text-sm text-slate-600">Detailed view of questionnaire structure</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="toggleEditMode()" 
+                                class="px-4 py-2 font-medium rounded-lg transition-colors"
+                                :class="editMode ? 'bg-slate-200 text-slate-700' : 'bg-blue-600 text-white hover:bg-blue-700'">
+                            <i class="fas" :class="editMode ? 'fa-times' : 'fa-edit'"></i>
+                            <span x-text="editMode ? 'Cancel Edit' : 'Edit'"></span>
+                        </button>
+                        <button @click="showDetailsModal = false" 
+                                class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Description -->
+                <div class="bg-slate-50 rounded-xl p-4">
+                    <h3 class="font-semibold text-slate-900 mb-3">Description</h3>
+                    
+                    <!-- View Mode -->
+                    <div x-show="!editMode">
+                        <p class="text-slate-700" x-text="selectedQuestionnaire?.description || 'No description provided'"></p>
+                    </div>
+                    
+                    <!-- Edit Mode -->
+                    <div x-show="editMode">
+                        <textarea x-model="editedDescription" 
+                                  rows="3"
+                                  placeholder="Enter questionnaire description..."
+                                  class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all resize-none text-sm"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Metadata -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white border border-slate-200 rounded-xl p-4">
+                        <h4 class="text-sm font-medium text-slate-500 mb-3">Basic Info</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Questions:</span>
+                                <span class="font-semibold text-slate-900" x-text="selectedQuestionnaire?.questions?.length || 0"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Language:</span>
+                                <span class="font-semibold text-slate-900" x-text="selectedQuestionnaire?.language"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white border border-slate-200 rounded-xl p-4">
+                        <h4 class="text-sm font-medium text-slate-500 mb-3">Status</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Current:</span>
+                                <span class="font-semibold text-slate-900 capitalize" x-text="selectedQuestionnaire?.status"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Category:</span>
+                                <span class="font-semibold text-slate-900 capitalize" x-text="selectedQuestionnaire?.category?.replace('_', ' ')"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-600">Source:</span>
+                                <span class="font-semibold text-slate-900 capitalize" x-text="selectedQuestionnaire?.source?.replace('_', ' ')"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Questions -->
+                <div>
+                    <h3 class="font-semibold text-slate-900 mb-4">Questions <span class="text-slate-500 font-normal">(<span x-text="selectedQuestionnaire?.questions?.length || 0"></span>)</span></h3>
+                    <div class="space-y-3">
+                        <template x-for="(question, index) in selectedQuestionnaire?.questions" :key="question.id">
+                            <div class="bg-white border border-slate-200 rounded-xl p-4 transition-colors"
+                                 :class="editMode ? 'border-blue-200' : 'hover:border-slate-300'">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm flex items-center justify-center" 
+                                          x-text="index + 1"></span>
+                                    <div class="flex-1">
+                                        <!-- View Mode -->
+                                        <div x-show="!editMode">
+                                            <p class="font-medium text-slate-900 mb-2" x-text="question.question_text"></p>
+                                            <div class="flex flex-wrap gap-3 text-xs text-slate-500 mb-3">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <i class="fas fa-tag"></i>
+                                                    Type: <span class="font-medium" x-text="question.question_type"></span>
+                                                </span>
+                                                <span x-show="question.category" class="inline-flex items-center gap-1">
+                                                    <i class="fas fa-folder"></i>
+                                                    Category: <span class="font-medium" x-text="question.category"></span>
+                                                </span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2" x-show="question.options?.length > 0">
+                                                <template x-for="option in question.options" :key="option.id">
+                                                    <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm">
+                                                        <span x-text="option.option_text"></span>
+                                                        <span class="ml-1.5 font-semibold text-blue-600" x-text="'(' + option.option_value + ')'"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Edit Mode -->
+                                        <div x-show="editMode" class="space-y-3">
+                                            <textarea :value="editedQuestions[index]?.question_text || ''"
+                                                      @input="if (editedQuestions[index]) editedQuestions[index].question_text = $event.target.value"
+                                                      rows="2"
+                                                      class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all resize-none text-sm"></textarea>
+                                            <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+                                                <span class="inline-flex items-center gap-1">
+                                                    <i class="fas fa-tag"></i>
+                                                    Type: <span class="font-medium" x-text="question.question_type"></span>
+                                                </span>
+                                                <span x-show="question.category" class="inline-flex items-center gap-1">
+                                                    <i class="fas fa-folder"></i>
+                                                    Category: <span class="font-medium" x-text="question.category"></span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-200 px-6 py-4 bg-slate-50">
+                <div x-show="editMode" class="mb-3">
+                    <button @click="saveAllChanges()" 
+                            class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Save All Changes
+                    </button>
+                </div>
+                <button @click="showDetailsModal = false" class="btn btn-secondary w-full">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+function questionnaireManager() {
+    return {
+        questionnaires: [],
+        filteredQuestionnaires: [],
+        pendingGenerations: [],
+        showReviewModal: false,
+        reviewCandidates: [],
+        selectedCandidates: [],
+        currentReviewAnalysisId: null,
+        reviewSuggestedTitle: '',
+        reviewDescription: '',
+        loading: false,
+        showImportModal: false,
+        showFileImportModal: false,
+        showDetailsModal: false,
+        showStatsModal: false,
+        showDeleteModal: false,
+        selectedQuestionnaire: null,
+        editingDescription: false,
+        editedDescription: '',
+        editMode: false,
+        editedQuestions: [],
+        statistics: null,
+        importJson: '',
+        selectedJsonFile: null,
+        questionnaireToDelete: null,
+        deleteConfirmText: '',
+        isDeleting: false,
+        // Assignment modal
+        showAssignModal: false,
+        selectedQuestionnaireForAssign: null,
+        availableUsers: [],
+        loadingUsers: false,
+        assignUserId: '',
+        assignQuestionsPerConv: 2,
+        assignAskNaturally: true,
+        assignPriority: 5,
+        assignExpiresInDays: 30,
+        assignAdminNotes: '',
+        isAssigning: false,
+        filter: {
+            status: '',
+            category: '',
+            language: '',
+            source: ''
+        },
+        stats: {
+            total: 0,
+            active: 0,
+            draft: 0,
+            archived: 0,
+            responses: 0,
+            ai_generated: 0,
+            pending_approval: 0
+        },
+
+        init() {
+            console.log('Questionnaire Manager initialized');
+            // Ensure all modals are closed on init
+            this.showImportModal = false;
+            this.showFileImportModal = false;
+            this.showDetailsModal = false;
+            this.showStatsModal = false;
+            this.showDeleteModal = false;
+            this.showReviewModal = false;
+            this.loadQuestionnaires();
+            this.loadPendingGenerations();
+            
+            // Check if we should auto-open review modal for latest pending (from generator)
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoReview = urlParams.get('auto_review');
+            if (autoReview === 'latest') {
+                console.log('Auto-opening review for latest pending generation');
+                // Wait for pending generations to load, then open the first one
+                setTimeout(() => {
+                    if (this.pendingGenerations.length > 0) {
+                        const latestAnalysisId = this.pendingGenerations[0].analysis_id;
+                        this.reviewPending(latestAnalysisId);
+                        // Clean up URL
+                        window.history.replaceState({}, '', '/admin/questionnaires/manage');
+                    } else {
+                        alert('No pending generations found. The questionnaire may still be processing.');
+                    }
+                }, 2000);
+            }
+        },
+
+        async loadQuestionnaires() {
+            this.loading = true;
+            try {
+                console.log('Loading questionnaires...');
+                const response = await fetch('/api/v1/questionnaires/list');
+                const data = await response.json();
+                
+                console.log('Questionnaires loaded:', data);
+                
+                if (data.success) {
+                    this.questionnaires = data.questionnaires || [];
+                    this.filteredQuestionnaires = data.questionnaires || [];
+                    this.updateStats();
+                } else {
+                    console.error('Failed to load questionnaires:', data);
+                    this.questionnaires = [];
+                    this.filteredQuestionnaires = [];
+                    this.updateStats();
+                }
+            } catch (error) {
+                console.error('Error loading questionnaires:', error);
+                this.questionnaires = [];
+                this.filteredQuestionnaires = [];
+                this.updateStats();
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        updateStats() {
+            this.stats.total = this.questionnaires.length;
+            this.stats.active = this.questionnaires.filter(q => q.status === 'active').length;
+            this.stats.draft = this.questionnaires.filter(q => q.status === 'draft').length;
+            this.stats.archived = this.questionnaires.filter(q => q.status === 'archived').length;
+            this.stats.ai_generated = this.questionnaires.filter(q => q.source === 'ai_generated').length;
+            this.stats.responses = 0;
+        },
+
+        applyFilters() {
+            this.filteredQuestionnaires = this.questionnaires.filter(q => {
+                if (this.filter.status && q.status !== this.filter.status) return false;
+                if (this.filter.category && q.category !== this.filter.category) return false;
+                if (this.filter.language && q.language !== this.filter.language) return false;
+                if (this.filter.source && q.source !== this.filter.source) return false;
+                return true;
+            });
+        },
+
+        resetFilters() {
+            this.filter = { status: '', category: '', language: '', source: '' };
+            this.filteredQuestionnaires = this.questionnaires;
+        },
+
+        async viewDetails(id) {
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.selectedQuestionnaire = data.questionnaire;
+                    this.editedDescription = data.questionnaire.description || '';
+                    this.editingDescription = false;
+                    this.editMode = false;
+                    // Initialize editedQuestions immediately to prevent Alpine.js binding errors
+                    this.editedQuestions = data.questionnaire.questions?.map(q => ({
+                        id: q.id,
+                        question_text: q.question_text,
+                        question_text_zh: q.question_text_zh,
+                        question_type: q.question_type,
+                        category: q.category
+                    })) || [];
+                    this.showDetailsModal = true;
+                }
+            } catch (error) {
+                console.error('Error loading questionnaire details:', error);
+                alert('Failed to load questionnaire details');
+            }
+        },
+
+        async saveDescription() {
+            if (!this.selectedQuestionnaire) return;
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${this.selectedQuestionnaire.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: this.editedDescription
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.selectedQuestionnaire.description = this.editedDescription;
+                    this.editingDescription = false;
+                    alert('Description updated successfully!');
+                    await this.loadQuestionnaires();
+                } else {
+                    throw new Error(data.message || 'Failed to update description');
+                }
+            } catch (error) {
+                console.error('Error saving description:', error);
+                alert('Failed to save description: ' + error.message);
+            }
+        },
+
+        toggleEditMode() {
+            if (!this.editMode) {
+                // Entering edit mode - refresh edited data from current state
+                this.editMode = true;
+                this.editedDescription = this.selectedQuestionnaire?.description || '';
+                // editedQuestions already initialized in viewDetails, just refresh if needed
+                if (this.editedQuestions.length === 0 && this.selectedQuestionnaire?.questions) {
+                    this.editedQuestions = this.selectedQuestionnaire.questions.map(q => ({
+                        id: q.id,
+                        question_text: q.question_text,
+                        question_text_zh: q.question_text_zh,
+                        question_type: q.question_type,
+                        category: q.category
+                    }));
+                }
+            } else {
+                // Exiting edit mode - reset to original values
+                this.editMode = false;
+                this.editedDescription = this.selectedQuestionnaire?.description || '';
+                this.editedQuestions = this.selectedQuestionnaire?.questions?.map(q => ({
+                    id: q.id,
+                    question_text: q.question_text,
+                    question_text_zh: q.question_text_zh,
+                    question_type: q.question_type,
+                    category: q.category
+                })) || [];
+            }
+        },
+
+        async saveAllChanges() {
+            if (!this.selectedQuestionnaire) return;
+            
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+                
+                // Save description
+                try {
+                    const descResponse = await fetch(`/api/v1/questionnaires/${this.selectedQuestionnaire.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            description: this.editedDescription
+                        })
+                    });
+                    
+                    const descData = await descResponse.json();
+                    if (descData.success) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error('Failed to save description:', descData);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error('Error saving description:', error);
+                }
+                
+                // Save each edited question
+                for (let i = 0; i < this.editedQuestions.length; i++) {
+                    const editedQuestion = this.editedQuestions[i];
+                    const originalQuestion = this.selectedQuestionnaire.questions[i];
+                    
+                    // Only save if text changed
+                    if (editedQuestion.question_text !== originalQuestion.question_text) {
+                        try {
+                            const qResponse = await fetch(`/api/v1/questionnaires/questions/${editedQuestion.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    question_text: editedQuestion.question_text,
+                                    question_text_zh: editedQuestion.question_text_zh,
+                                    question_type: editedQuestion.question_type,
+                                    category: editedQuestion.category
+                                })
+                            });
+                            
+                            const qData = await qResponse.json();
+                            if (qData.success) {
+                                successCount++;
+                            } else {
+                                errorCount++;
+                                console.error(`Failed to save question ${i + 1}:`, qData);
+                            }
+                        } catch (error) {
+                            errorCount++;
+                            console.error(`Error saving question ${i + 1}:`, error);
+                        }
+                    }
+                }
+                
+                // Show result
+                if (errorCount === 0) {
+                    alert(`All changes saved successfully! (${successCount} updates)`);
+                } else {
+                    alert(`Saved with some errors: ${successCount} successful, ${errorCount} failed. Check console for details.`);
+                }
+                
+                // Reload questionnaire and exit edit mode
+                await this.viewDetails(this.selectedQuestionnaire.id);
+                this.editMode = false;
+                this.editedQuestions = [];
+                await this.loadQuestionnaires();
+                
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                alert('Failed to save changes: ' + error.message);
+            }
+        },
+
+        async saveQuestionEdit(question, editedQuestion) {
+            try {
+                const response = await fetch(`/api/v1/questionnaires/questions/${question.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question_text: editedQuestion.question_text,
+                        question_text_zh: editedQuestion.question_text_zh,
+                        question_type: editedQuestion.question_type,
+                        category: editedQuestion.category
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update the question in the selectedQuestionnaire
+                    Object.assign(question, editedQuestion);
+                    alert('Question updated successfully!');
+                    // Reload the questionnaire details
+                    await this.viewDetails(this.selectedQuestionnaire.id);
+                } else {
+                    throw new Error(data.message || 'Failed to update question');
+                }
+            } catch (error) {
+                console.error('Error updating question:', error);
+                alert('Failed to update question: ' + error.message);
+            }
+        },
+
+        async viewStatistics(id) {
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}/statistics`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.statistics = data;
+                    this.showStatsModal = true;
+                } else {
+                    alert('Failed to load statistics');
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                alert('Failed to load statistics');
+            }
+        },
+
+        async activateQuestionnaire(id) {
+            if (!confirm('Activate this questionnaire? It will be available for use.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}/activate`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questionnaire activated successfully');
+                    this.loadQuestionnaires();
+                }
+            } catch (error) {
+                console.error('Error activating questionnaire:', error);
+                alert('Failed to activate questionnaire');
+            }
+        },
+
+        async archiveQuestionnaire(id) {
+            if (!confirm('Archive this questionnaire? It will no longer be available for AI to use, but all data will be preserved.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}/archive`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questionnaire archived successfully');
+                    this.loadQuestionnaires();
+                } else {
+                    alert('Failed to archive questionnaire: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error archiving questionnaire:', error);
+                alert('Failed to archive questionnaire');
+            }
+        },
+
+        async unarchiveQuestionnaire(id) {
+            if (!confirm('Restore this questionnaire to draft status? You can then activate it again.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}/unarchive`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questionnaire restored to draft status');
+                    this.loadQuestionnaires();
+                } else {
+                    alert('Failed to restore questionnaire: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error restoring questionnaire:', error);
+                alert('Failed to restore questionnaire');
+            }
+        },
+
+        async toggleQuestionnaireStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'draft' : 'active';
+            const action = newStatus === 'active' ? 'activate' : 'deactivate';
+            
+            if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this questionnaire?`)) return;
+            
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: newStatus
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Questionnaire ${action}d successfully`);
+                    this.loadQuestionnaires();
+                } else {
+                    alert(`Failed to ${action} questionnaire: ` + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error(`Error ${action}ing questionnaire:`, error);
+                alert(`Failed to ${action} questionnaire`);
+            }
+        },
+
+        async openAssignModal(questionnaire) {
+            this.selectedQuestionnaireForAssign = questionnaire;
+            this.showAssignModal = true;
+            this.loadingUsers = true;
+            this.availableUsers = [];
+            this.assignUserId = '';
+            
+            try {
+                // Fetch users with role='user' (patients)
+                const response = await fetch('/api/v1/users/list?role=user');
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.availableUsers = data.users || [];
+                } else {
+                    console.error('Failed to load users:', data);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                alert('Failed to load users');
+            } finally {
+                this.loadingUsers = false;
+            }
+        },
+
+        async assignQuestionnaire() {
+            if (!this.assignUserId) {
+                alert('Please select a user');
+                return;
+            }
+            
+            this.isAssigning = true;
+            
+            try {
+                const response = await fetch('/api/v1/questionnaire-assignments/assign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        questionnaire_id: this.selectedQuestionnaireForAssign.id,
+                        user_id: parseInt(this.assignUserId),
+                        questions_per_conversation: this.assignQuestionsPerConv,
+                        ask_naturally: this.assignAskNaturally,
+                        priority: this.assignPriority,
+                        expires_in_days: this.assignExpiresInDays,
+                        admin_notes: this.assignAdminNotes || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Questionnaire assigned successfully! The user will receive questions during Live2D chat.');
+                    this.showAssignModal = false;
+                    // Reset form
+                    this.assignUserId = '';
+                    this.assignQuestionsPerConv = 2;
+                    this.assignAskNaturally = true;
+                    this.assignPriority = 5;
+                    this.assignExpiresInDays = 30;
+                    this.assignAdminNotes = '';
+                } else {
+                    alert('Failed to assign questionnaire: ' + (data.message || data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error assigning questionnaire:', error);
+                alert('Failed to assign questionnaire: ' + error.message);
+            } finally {
+                this.isAssigning = false;
+            }
+        },
+
+        confirmDelete(questionnaire) {
+            this.questionnaireToDelete = questionnaire;
+            this.deleteConfirmText = '';
+            this.showDeleteModal = true;
+        },
+
+        async deleteQuestionnaire() {
+            if (this.deleteConfirmText !== 'DELETE') {
+                alert('Please type DELETE to confirm');
+                return;
+            }
+
+            if (!this.questionnaireToDelete) return;
+
+            this.isDeleting = true;
+
+            try {
+                const response = await fetch(`/api/v1/questionnaires/${this.questionnaireToDelete.id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Success notification
+                    this.$dispatch('notification', {
+                        type: 'success',
+                        message: `✅ Questionnaire "${this.questionnaireToDelete.title}" deleted successfully!`
+                    });
+
+                    // Close modal and reset
+                    this.showDeleteModal = false;
+                    this.questionnaireToDelete = null;
+                    this.deleteConfirmText = '';
+
+                    // Reload list
+                    await this.loadQuestionnaires();
+                } else {
+                    throw new Error(data.error || data.detail || 'Failed to delete');
+                }
+            } catch (error) {
+                console.error('Error deleting questionnaire:', error);
+                alert(`❌ Failed to delete questionnaire: ${error.message}\n\nPlease try again or contact support if the problem persists.`);
+            } finally {
+                this.isDeleting = false;
+            }
+        },
+
+        async importQuestionnaire() {
+            if (!this.importJson.trim()) {
+                alert('Please paste questionnaire JSON');
+                return;
+            }
+
+            try {
+                const jsonData = JSON.parse(this.importJson);
+                
+                const response = await fetch('/api/v1/questionnaires/import', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alert(`Questionnaire imported successfully! ID: ${data.questionnaire_id}`);
+                    this.showImportModal = false;
+                    this.importJson = '';
+                    this.loadQuestionnaires();
+                } else {
+                    alert('Import failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error importing questionnaire:', error);
+                alert('Failed to import questionnaire: ' + error.message);
+            }
+        },
+
+        handleJsonFileSelect(event) {
+            this.selectedJsonFile = event.target.files[0];
+            console.log('JSON file selected:', this.selectedJsonFile?.name);
+        },
+
+        clearJsonFile() {
+            this.selectedJsonFile = null;
+            document.getElementById('jsonFileInput').value = '';
+        },
+
+        formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        },
+
+        async importFromFile() {
+            if (!this.selectedJsonFile) {
+                alert('Please select a JSON file');
+                return;
+            }
+
+            try {
+                const fileContent = await this.selectedJsonFile.text();
+                const jsonData = JSON.parse(fileContent);
+                
+                const response = await fetch('/api/v1/questionnaires/import', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alert(`✅ Questionnaire imported successfully from file!\nID: ${data.questionnaire_id}\nTitle: ${data.title}`);
+                    this.showFileImportModal = false;
+                    this.clearJsonFile();
+                    this.loadQuestionnaires();
+                } else {
+                    alert('❌ Import failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error importing from file:', error);
+                alert('❌ Failed to import questionnaire from file: ' + error.message);
+            }
+        },
+
+        async loadPendingGenerations() {
+            try {
+                const response = await fetch('/api/v1/ai-questionnaire/pending');
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.pendingGenerations = data.pending_generations || [];
+                    this.stats.pending_approval = this.pendingGenerations.length;
+                    console.log('✅ Loaded pending generations:', this.pendingGenerations.length);
+                }
+            } catch (error) {
+                console.error('Error loading pending generations:', error);
+                this.pendingGenerations = [];
+            }
+        },
+
+        async refreshPending() {
+            await this.loadPendingGenerations();
+        },
+
+        async reviewPending(analysisId) {
+            console.log('🔍 Reviewing analysis:', analysisId);
+            try {
+                const response = await fetch(`/api/v1/ai-questionnaire/review/${analysisId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Check if there are any candidates
+                    if (!data.candidates || data.candidates.length === 0) {
+                        alert(`⚠️ No questions found for analysis ID ${analysisId}.\n\nPossible reasons:\n1. Generation is still processing\n2. Generation failed\n3. Data wasn't saved to database\n\nPlease check the backend logs or try generating again.`);
+                        return;
+                    }
+                    
+                    console.log(`✅ Loaded ${data.candidates.length} candidates for review`);
+                    
+                    this.reviewCandidates = data.candidates || [];
+                    this.selectedCandidates = data.candidates
+                        .filter(c => c.status === 'selected')
+                        .map(c => c.id);
+                    this.currentReviewAnalysisId = analysisId;
+                    this.reviewSuggestedTitle = data.suggested_title || (data.document_filename ? `Questionnaire from ${data.document_filename}` : '');
+                    this.showReviewModal = true;
+                } else {
+                    alert(`Failed to load candidates: ${data.detail || data.error || 'Unknown error'}\n\nAnalysis ID: ${analysisId}`);
+                }
+            } catch (error) {
+                console.error('Error loading candidates:', error);
+                alert(`❌ Failed to load candidates for analysis ${analysisId}:\n\n${error.message}\n\nPlease check:\n1. Backend server is running\n2. Analysis ID is correct\n3. Database has the data`);
+            }
+        },
+
+        selectAllCandidates() {
+            this.selectedCandidates = this.reviewCandidates.map(c => c.id);
+        },
+        
+        toggleCandidateSelection(candidateId) {
+            const index = this.selectedCandidates.indexOf(candidateId);
+            if (index > -1) {
+                // Remove from selection
+                this.selectedCandidates.splice(index, 1);
+            } else {
+                // Add to selection
+                this.selectedCandidates.push(candidateId);
+            }
+        },
+
+        async approvePendingGeneration() {
+            if (this.selectedCandidates.length === 0) {
+                alert('Please select at least one question');
+                return;
+            }
+            
+            // Use suggested title as default if available
+            const defaultTitle = this.reviewSuggestedTitle || 'AI Generated Questionnaire';
+            const title = prompt('Enter a title for this questionnaire:', defaultTitle);
+            if (!title) return;
+            
+            try {
+                const response = await fetch(`/api/v1/ai-questionnaire/review/${this.currentReviewAnalysisId}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        selected_question_ids: this.selectedCandidates,
+                        questionnaire_title: title,
+                        questionnaire_description: this.reviewDescription || null,
+                        auto_activate: false
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`✅ Questionnaire "${title}" created successfully!`);
+                    this.showReviewModal = false;
+                    this.selectedCandidates = [];
+                    this.reviewDescription = '';
+                    this.currentReviewAnalysisId = null;
+                    await this.loadPendingGenerations();
+                    await this.loadQuestionnaires();
+                } else {
+                    alert('Failed to approve: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error approving generation:', error);
+                alert('Failed to approve generation');
+            }
+        },
+
+        async discardPending(analysisId) {
+            if (!confirm('Discard this AI generation? This cannot be undone.')) return;
+            
+            try {
+                const response = await fetch(`/api/v1/ai-questionnaire/review/${analysisId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    this.pendingGenerations = this.pendingGenerations.filter(p => p.analysis_id !== analysisId);
+                    this.stats.pending_approval = this.pendingGenerations.length;
+                    
+                    // Show success notification if available, else alert
+                    if (this.$dispatch) {
+                         this.$dispatch('notification', {
+                            type: 'success',
+                            message: 'Generation discarded successfully'
+                        });
+                    } else {
+                        alert('Generation discarded successfully');
+                    }
+                } else {
+                    throw new Error(data.detail || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error discarding generation:', error);
+                alert('Failed to discard generation: ' + error.message);
+            }
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            return date.toLocaleDateString();
+        }
+    };
+}
+</script>
+
+{% endblock %}

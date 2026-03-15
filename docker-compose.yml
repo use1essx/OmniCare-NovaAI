@@ -1,0 +1,314 @@
+# =============================================================================
+# Healthcare AI V2 - Docker Compose
+# Production-Ready Configuration with Edge TTS
+# =============================================================================
+# 
+# QUICK START:
+#   docker-compose up -d                    # Start all services
+#
+# TTS SERVICE:
+#   Using Edge TTS (Microsoft) - FREE, no API key required!
+#   Voices: zh-HK-HiuMaanNeural (Cantonese), en-US-AvaNeural (English)
+#
+# ⚠️  SECURITY: Before deploying to production:
+#   1. Create .env file with secure values (copy from env.example)
+#   2. Generate a secure SECRET_KEY
+#   3. Configure HTTPS/SSL via reverse proxy
+#   4. Review and restrict CORS_ORIGINS
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Common environment variables (reusable across services)
+# -----------------------------------------------------------------------------
+x-common-env: &common-env
+  SECRET_KEY: ${SECRET_KEY}
+  DATABASE_HOST: postgres
+  DATABASE_PORT: 5432
+  DATABASE_NAME: ${DATABASE_NAME}
+  DATABASE_USER: ${DATABASE_USER}
+  DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+  ENVIRONMENT: ${ENVIRONMENT:-development}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+x-common-volumes: &common-volumes
+  - .:/app
+  - healthcare_logs:/app/logs
+
+services:
+  # ===========================================================================
+  # INFRASTRUCTURE SERVICES (Start First)
+  # ===========================================================================
+  
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: healthcare_ai_postgres
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - ./db_data:/var/lib/postgresql/data     
+      - ./docker/postgres/initdb.d:/docker-entrypoint-initdb.d:ro
+    networks:
+      - healthcare_ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: healthcare_ai_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - healthcare_ai_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # ===========================================================================
+  # MAIN APPLICATION
+  # ===========================================================================
+  
+  # ---------------------------------------------------------------------------
+  # Healthcare AI Backend (Main API Server)
+  # ---------------------------------------------------------------------------
+  healthcare_ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: healthcare_ai_backend
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src --reload-exclude /app/db_data
+    environment:
+      <<: *common-env
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # AWS Bedrock Configuration
+      USE_BEDROCK: ${USE_BEDROCK:-true}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      NOVA_LITE_MODEL_ID: ${NOVA_LITE_MODEL_ID:-amazon.nova-lite-v1:0}
+      NOVA_PRO_MODEL_ID: ${NOVA_PRO_MODEL_ID:-amazon.nova-pro-v1:0}
+      BUDGET_LIMIT_USD: ${BUDGET_LIMIT_USD:-50.00}
+      ENABLE_COST_TRACKING: ${ENABLE_COST_TRACKING:-true}
+      # Titan Embeddings
+      TITAN_EMBED_MODEL_ID: ${TITAN_EMBED_MODEL_ID:-amazon.titan-embed-text-v1}
+      # Knowledge Base / RAG
+      RAG_ENABLED: ${RAG_ENABLED:-false}
+      KB_SANDBOX_DEV_MODE: ${KB_SANDBOX_DEV_MODE:-false}
+      KB_SANDBOX_DEV_ORG_ID: ${KB_SANDBOX_DEV_ORG_ID:-1}
+      # App Settings
+      DEBUG: ${DEBUG:-false}
+      # Matplotlib/MediaPipe
+      MPLCONFIGDIR: /tmp/matplotlib
+      MEDIAPIPE_DISABLE_GPU: 1
+      # Microservices URLs
+      LIVE2D_STT_SERVICE_URL: http://stt_server:8790
+      # TTS: Using Edge TTS (no external server required)
+      MOTION_CAPTURE_SERVICE_URL: http://motion_capture:8001
+      ASSESSMENT_SERVICE_URL: http://assessment:8002
+    volumes:
+      - .:/app
+      - healthcare_uploads:/app/uploads
+      - healthcare_logs:/app/logs
+    ports:
+      - "${HEALTHCARE_AI_PORT:-8000}:8000"
+    networks:
+      - healthcare_ai_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================================================
+  # AI MICROSERVICES
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # STT Server (Whisper Speech-to-Text)
+  # ---------------------------------------------------------------------------
+  stt_server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: healthcare_ai_stt
+    command: python -m src.web.live2d.backend.server_stt
+    environment:
+      <<: *common-env
+      WHISPER_MODEL: ${WHISPER_MODEL:-base}
+    volumes:
+      - .:/app
+      - whisper_cache:/root/.cache/huggingface
+      - healthcare_logs:/app/logs
+    networks:
+      - healthcare_ai_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8790/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Motion Capture Server (MediaPipe)
+  # ---------------------------------------------------------------------------
+  motion_capture:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: healthcare_ai_motion
+    command: python -m src.custom_live_ai.main
+    environment:
+      <<: *common-env
+      MPLCONFIGDIR: /tmp/matplotlib
+      MEDIAPIPE_DISABLE_GPU: 1
+    volumes:
+      - .:/app
+      - healthcare_uploads:/app/uploads
+      - healthcare_logs:/app/logs
+    networks:
+      - healthcare_ai_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Assessment Server (Video Analysis)
+  # ---------------------------------------------------------------------------
+  assessment:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: healthcare_ai_assessment
+    command: python -m src.assessment.main
+    environment:
+      <<: *common-env
+      # AWS Bedrock Configuration
+      USE_BEDROCK: ${USE_BEDROCK:-true}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+    volumes:
+      - .:/app
+      - healthcare_uploads:/app/uploads
+      - healthcare_logs:/app/logs
+    networks:
+      - healthcare_ai_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================================================
+  # ADMIN TOOLS
+  # ===========================================================================
+  
+  # ---------------------------------------------------------------------------
+  # pgAdmin (Database UI)
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: healthcare_ai_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./config/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./config/pgadmin/pgpass:/pgadmin4/pgpass:ro
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - healthcare_ai_network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  healthcare_ai_network:
+    driver: bridge
+    name: healthcare_ai_network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  redis_data:
+    name: healthcare_ai_redis_data
+  pgadmin_data:
+    name: healthcare_ai_pgadmin_data
+  healthcare_uploads:
+    name: healthcare_ai_uploads
+  healthcare_logs:
+    name: healthcare_ai_logs
+  whisper_cache:
+    name: healthcare_ai_whisper_cache
+
+# =============================================================================
+# NOTES
+# =============================================================================
+#
+# TTS Service:
+#   Using Edge TTS (Microsoft) - no external server required!
+#   Voices: zh-HK-HiuMaanNeural (Cantonese), en-US-AvaNeural (English)
+#
+# Start Order:
+#   1. postgres, redis (infrastructure)
+#   2. healthcare_ai (main backend)
+#   3. stt_server, motion_capture, assessment (microservices)
+#   4. pgadmin (database UI)
+#
+# =============================================================================

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Emotion Tracker{% endblock %}
+
+{% block content %}
+<div class="w-full px-6 py-6 mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+            <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                <li class="inline-flex items-center">
+                    <a href="/admin/custom-live-ai" class="inline-flex items-center text-sm font-medium text-slate-700 hover:text-blue-600">
+                        Custom Live AI
+                    </a>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <i class="fas fa-chevron-right text-slate-400 text-xs mx-2"></i>
+                        <span class="text-sm font-medium text-slate-500">Emotion Tracker</span>
+                    </div>
+                </li>
+            </ol>
+        </nav>
+        <h1 class="text-2xl font-bold text-slate-800 mb-1 flex items-center">
+            <i class="fas fa-face-smile text-blue-600 mr-3"></i>Real-time Emotion Tracker
+        </h1>
+        <p class="text-slate-500 text-sm">Detect and track emotions using your webcam</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Video Feed -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-video text-slate-400 mr-2"></i>Camera Feed
+                    </h5>
+                    <div class="flex gap-2">
+                        <button id="startBtn" class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onclick="startCamera()">
+                            <i class="fas fa-play mr-1.5"></i>Start
+                        </button>
+                        <button id="stopBtn" class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onclick="stopCamera()" disabled>
+                            <i class="fas fa-stop mr-1.5"></i>Stop
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 flex justify-center bg-slate-900">
+                    <div class="relative inline-block rounded-lg overflow-hidden shadow-lg bg-black">
+                        <video id="videoFeed" width="640" height="480" autoplay muted playsinline 
+                               class="block max-w-full h-auto rounded-lg" style="display: none;"></video>
+                        <canvas id="overlayCanvas" width="640" height="480" 
+                                class="absolute top-0 left-0 w-full h-full pointer-events-none" style="display: none;"></canvas>
+                        <div id="placeholder" class="flex items-center justify-center w-[640px] h-[480px] max-w-full bg-slate-800 rounded-lg">
+                            <div class="text-center text-slate-500">
+                                <i class="fas fa-camera fa-4x mb-4 opacity-50"></i>
+                                <p class="text-sm font-medium">Click "Start" to enable camera</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Emotion Display -->
+        <div class="space-y-6">
+            <!-- Current Emotion -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-heart-pulse text-slate-400 mr-2"></i>Current Emotion
+                    </h5>
+                </div>
+                <div class="p-6 text-center">
+                    <div id="emotionEmoji" class="text-8xl mb-4 animate-bounce-subtle">😐</div>
+                    <h3 id="emotionLabel" class="text-2xl font-bold text-slate-800 mb-1">Neutral</h3>
+                    <p id="emotionConfidence" class="text-sm text-slate-500 font-medium">Confidence: 0%</p>
+                </div>
+            </div>
+
+            <!-- Emotion Scores -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-chart-bar text-slate-400 mr-2"></i>Emotion Scores
+                    </h5>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😊 Happy</span>
+                            <span id="score-happy" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-happy" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😐 Neutral</span>
+                            <span id="score-neutral" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-neutral" class="bg-slate-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😢 Sad</span>
+                            <span id="score-sad" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-sad" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😠 Angry</span>
+                            <span id="score-angry" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-angry" class="bg-red-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😮 Surprise</span>
+                            <span id="score-surprised" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-surprised" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">😨 Fear</span>
+                            <span id="score-fearful" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-fearful" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium text-slate-700">🤢 Disgusted</span>
+                            <span id="score-disgusted" class="text-xs font-medium text-slate-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div id="bar-disgusted" class="bg-lime-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Info -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h5 class="font-semibold text-slate-800 flex items-center">
+                        <i class="fas fa-info-circle text-slate-400 mr-2"></i>Session Info
+                    </h5>
+                </div>
+                <div class="p-6 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">Status</span>
+                        <span id="sessionStatus" class="text-sm font-medium text-slate-800 bg-slate-100 px-2 py-0.5 rounded">Idle</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">Frames</span>
+                        <span id="frameCount" class="text-sm font-mono text-slate-800">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-600">FPS</span>
+                        <span id="fps" class="text-sm font-mono text-slate-800">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load Face-API.js -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
+
+<script>
+const EMOTION_MAP = {
+    'happy': { emoji: '😊', label: 'Happy' },
+    'sad': { emoji: '😢', label: 'Sad' },
+    'angry': { emoji: '😠', label: 'Angry' },
+    'neutral': { emoji: '😐', label: 'Neutral' },
+    'surprised': { emoji: '😮', label: 'Surprised' },
+    'fearful': { emoji: '😨', label: 'Fearful' },
+    'disgusted': { emoji: '🤢', label: 'Disgusted' }
+};
+
+let video = null;
+let canvas = null;
+let ctx = null;
+let isRunning = false;
+let frameCount = 0;
+let lastFpsTime = Date.now();
+let fpsCount = 0;
+
+document.addEventListener('DOMContentLoaded', async function() {
+    video = document.getElementById('videoFeed');
+    canvas = document.getElementById('overlayCanvas');
+    ctx = canvas.getContext('2d');
+    
+    // Load Face-API models
+    document.getElementById('sessionStatus').textContent = 'Loading models...';
+    try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model');
+        await faceapi.nets.faceExpressionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model');
+        document.getElementById('sessionStatus').textContent = 'Models loaded. Ready.';
+    } catch (error) {
+        document.getElementById('sessionStatus').textContent = 'Error loading models';
+        console.error('Model loading error:', error);
+    }
+});
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: 640, height: 480, facingMode: 'user' }
+        });
+        video.srcObject = stream;
+        video.style.display = 'block';
+        canvas.style.display = 'block';
+        document.getElementById('placeholder').style.display = 'none';
+        
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('sessionStatus').textContent = 'Running';
+        
+        isRunning = true;
+        detectEmotions();
+    } catch (error) {
+        alert('Camera access denied or not available');
+        console.error('Camera error:', error);
+    }
+}
+
+function stopCamera() {
+    isRunning = false;
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    video.style.display = 'none';
+    canvas.style.display = 'none';
+    document.getElementById('placeholder').style.display = 'flex';
+    
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('sessionStatus').textContent = 'Stopped';
+}
+
+async function detectEmotions() {
+    if (!isRunning) return;
+    
+    try {
+        const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceExpressions();
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        if (detections) {
+            // Draw face box
+            const box = detections.detection.box;
+            ctx.strokeStyle = '#3b82f6'; // Tailwind blue-500
+            ctx.lineWidth = 3;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+            
+            // Update emotion display
+            const expressions = detections.expressions;
+            const dominant = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
+            const emotionKey = dominant[0];
+            const confidence = (dominant[1] * 100).toFixed(1);
+            
+            const emotionInfo = EMOTION_MAP[emotionKey] || EMOTION_MAP['neutral'];
+            document.getElementById('emotionEmoji').textContent = emotionInfo.emoji;
+            document.getElementById('emotionLabel').textContent = emotionInfo.label;
+            document.getElementById('emotionConfidence').textContent = `Confidence: ${confidence}%`;
+            
+            // Update score bars
+            for (const [emotion, score] of Object.entries(expressions)) {
+                const pct = (score * 100).toFixed(1);
+                const scoreEl = document.getElementById(`score-${emotion}`);
+                const barEl = document.getElementById(`bar-${emotion}`);
+                if (scoreEl) scoreEl.textContent = `${pct}%`;
+                if (barEl) barEl.style.width = `${pct}%`;
+            }
+            
+            // Send to backend for logging (optional)
+            // await sendToBackend(expressions);
+        }
+        
+        // Update frame counter
+        frameCount++;
+        fpsCount++;
+        document.getElementById('frameCount').textContent = frameCount;
+        
+        // Calculate FPS
+        const now = Date.now();
+        if (now - lastFpsTime >= 1000) {
+            document.getElementById('fps').textContent = fpsCount;
+            fpsCount = 0;
+            lastFpsTime = now;
+        }
+    } catch (error) {
+        console.error('Detection error:', error);
+    }
+    
+    requestAnimationFrame(detectEmotions);
+}
+</script>
+{% endblock %}
+
+

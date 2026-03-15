@@ -1,0 +1,423 @@
+{
+  "kb_categories": [
+    {
+      "name_en": "Financial Support",
+      "name_zh": "經濟支援",
+      "slug": "financial-support",
+      "icon": "💰",
+      "description_en": "Financial assistance and allowances for elderly",
+      "description_zh": "長者經濟援助及津貼",
+      "level": 2,
+      "parent_slug": "elderly"
+    },
+    {
+      "name_en": "Healthcare Services",
+      "name_zh": "醫療服務",
+      "slug": "healthcare-services",
+      "icon": "🏥",
+      "description_en": "Medical and healthcare services for elderly",
+      "description_zh": "長者醫療及健康服務",
+      "level": 2,
+      "parent_slug": "elderly"
+    },
+    {
+      "name_en": "Care Services",
+      "name_zh": "照顧服務",
+      "slug": "care-services",
+      "icon": "🤝",
+      "description_en": "Community and residential care services",
+      "description_zh": "社區及院舍照顧服務",
+      "level": 2,
+      "parent_slug": "elderly"
+    },
+    {
+      "name_en": "Discounts & Benefits",
+      "name_zh": "優惠福利",
+      "slug": "discounts-benefits",
+      "icon": "🎫",
+      "description_en": "Discount cards and special benefits",
+      "description_zh": "優惠卡及特別福利",
+      "level": 2,
+      "parent_slug": "elderly"
+    },
+    {
+      "name_en": "CSSA",
+      "name_zh": "綜援",
+      "slug": "cssa",
+      "icon": "📋",
+      "description_en": "Comprehensive Social Security Assistance",
+      "description_zh": "綜合社會保障援助",
+      "level": 3,
+      "parent_slug": "financial-support"
+    },
+    {
+      "name_en": "Old Age Allowance",
+      "name_zh": "高齡津貼",
+      "slug": "old-age-allowance",
+      "icon": "👴",
+      "description_en": "Old Age Allowance and related benefits",
+      "description_zh": "高齡津貼及相關福利",
+      "level": 3,
+      "parent_slug": "financial-support"
+    },
+    {
+      "name_en": "Health Care Voucher",
+      "name_zh": "醫療券",
+      "slug": "health-care-voucher",
+      "icon": "💳",
+      "description_en": "Elderly Health Care Voucher Scheme",
+      "description_zh": "長者醫療券計劃",
+      "level": 3,
+      "parent_slug": "healthcare-services"
+    },
+    {
+      "name_en": "Dental Services",
+      "name_zh": "牙科服務",
+      "slug": "dental-services",
+      "icon": "🦷",
+      "description_en": "Elderly dental service subsidies",
+      "description_zh": "長者牙科服務資助",
+      "level": 3,
+      "parent_slug": "healthcare-services"
+    },
+    {
+      "name_en": "Medical Fee Waiver",
+      "name_zh": "醫療費用減免",
+      "slug": "medical-fee-waiver",
+      "icon": "💊",
+      "description_en": "Medical fee waiver and reduction",
+      "description_zh": "醫療費用減免機制",
+      "level": 3,
+      "parent_slug": "healthcare-services"
+    },
+    {
+      "name_en": "Community Care Voucher",
+      "name_zh": "社區照顧服務券",
+      "slug": "community-care-voucher",
+      "icon": "🏘️",
+      "description_en": "Community Care Service Voucher Scheme",
+      "description_zh": "長者社區照顧服務券計劃",
+      "level": 3,
+      "parent_slug": "care-services"
+    },
+    {
+      "name_en": "Residential Care Voucher",
+      "name_zh": "院舍照顧服務券",
+      "slug": "residential-care-voucher",
+      "icon": "🏠",
+      "description_en": "Residential Care Service Voucher Scheme",
+      "description_zh": "長者院舍照顧服務券計劃",
+      "level": 3,
+      "parent_slug": "care-services"
+    },
+    {
+      "name_en": "Elder Card",
+      "name_zh": "樂悠咭",
+      "slug": "elder-card",
+      "icon": "🎫",
+      "description_en": "Elder Card application and benefits",
+      "description_zh": "樂悠咭申請及優惠",
+      "level": 3,
+      "parent_slug": "discounts-benefits"
+    }
+  ],
+  "kb_documents": [
+    {
+      "title": "樂悠咭 - 常見問題",
+      "title_en": "Elder Card - FAQ",
+      "category_slug": "elder-card",
+      "file_path": "/app/data/kb_seed_docs/樂悠咭/樂悠咭 - 常見問題.pdf",
+      "language": "zh-HK",
+      "tags": "樂悠咭,Elder Card,FAQ,常見問題,優惠,discount,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "樂悠咭常見問題解答，包括申請資格、使用方法及優惠詳情"
+    },
+    {
+      "title": "樂悠咭申請表格",
+      "title_en": "Elder Card Application Form",
+      "category_slug": "elder-card",
+      "file_path": "/app/data/kb_seed_docs/樂悠咭/樂悠咭_申請表格.pdf",
+      "language": "zh-HK",
+      "tags": "樂悠咭,Elder Card,application,申請表格,form,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "樂悠咭申請表格及填寫指引"
+    },
+    {
+      "title": "樂悠咭計劃詳情",
+      "title_en": "Elder Card Scheme Details",
+      "category_slug": "elder-card",
+      "file_path": "/app/data/kb_seed_docs/樂悠咭/樂悠咭1.pdf",
+      "language": "zh-HK",
+      "tags": "樂悠咭,Elder Card,scheme,計劃,benefits,優惠,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "樂悠咭計劃詳細資料及使用指南"
+    },
+    {
+      "title": "綜援 - 申請登記表格",
+      "title_en": "CSSA - Application Registration Form",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_申請綜合社會保障援助登記表格.pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,application,申請,registration,登記,social security,社會保障,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "綜合社會保障援助申請登記表格"
+    },
+    {
+      "title": "綜援 - 社會保障辦事處地址及辦公時間",
+      "title_en": "CSSA - Social Security Office Addresses and Hours",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_社會保障辦事處地址、電話及辦公時間.pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,office,辦事處,address,地址,contact,聯絡,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "社會保障辦事處地址、電話及辦公時間一覽"
+    },
+    {
+      "title": "綜援指引",
+      "title_en": "CSSA Guidelines",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_綜合社會保障援助指引.pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,guidelines,指引,eligibility,資格,benefits,津貼,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "綜合社會保障援助計劃詳細指引"
+    },
+    {
+      "title": "綜援 - 贍養費處理",
+      "title_en": "CSSA - Maintenance Payment Handling",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_綜合社會保障援助計劃 - 贍養費的處理.pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,maintenance,贍養費,payment,處理,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "綜援計劃中贍養費的處理方法"
+    },
+    {
+      "title": "綜援及公共福利金計劃",
+      "title_en": "CSSA and Public Welfare Schemes",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_綜合社會保障援助計劃及公共福利金計劃 .pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,public welfare,公共福利金,schemes,計劃,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "綜合社會保障援助計劃及公共福利金計劃概覽"
+    },
+    {
+      "title": "綜援計劃小冊子",
+      "title_en": "CSSA Scheme Booklet",
+      "category_slug": "cssa",
+      "file_path": "/app/data/kb_seed_docs/綜援/綜援_綜合社會保障援助計劃小冊子.pdf",
+      "language": "zh-HK",
+      "tags": "綜援,CSSA,booklet,小冊子,guide,指南,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "綜合社會保障援助計劃簡介小冊子"
+    },
+    {
+      "title": "醫療費用減免",
+      "title_en": "Medical Fee Waiver",
+      "category_slug": "medical-fee-waiver",
+      "file_path": "/app/data/kb_seed_docs/醫療費用減免/醫療費用減免.pdf",
+      "language": "zh-HK",
+      "tags": "醫療費用,medical fee,waiver,減免,healthcare,醫療,subsidy,資助,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "醫療費用減免機制及申請方法"
+    },
+    {
+      "title": "長者牙科服務資助",
+      "title_en": "Elderly Dental Service Subsidy",
+      "category_slug": "dental-services",
+      "file_path": "/app/data/kb_seed_docs/長者牙科服務資助/長者牙科服務資助.pdf",
+      "language": "zh-HK",
+      "tags": "牙科,dental,subsidy,資助,healthcare,醫療,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "長者牙科服務資助計劃詳情"
+    },
+    {
+      "title": "社區照顧服務券 - 共同付款金額級別",
+      "title_en": "Community Care Voucher - Co-payment Levels",
+      "category_slug": "community-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者社區照顧服務券計劃/長者社區照顧服務券計劃_共同付款金額級別列表.pdf",
+      "language": "zh-HK",
+      "tags": "社區照顧,community care,voucher,服務券,co-payment,共同付款,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "社區照顧服務券共同付款金額級別列表"
+    },
+    {
+      "title": "社區照顧服務券 - 輔助科技產品租用服務單位",
+      "title_en": "Community Care Voucher - Assistive Technology Rental Units",
+      "category_slug": "community-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者社區照顧服務券計劃/長者社區照顧服務券計劃_提供輔助科技產品租用服務的認可服務單位名單.pdf",
+      "language": "zh-HK",
+      "tags": "社區照顧,community care,voucher,服務券,assistive technology,輔助科技,rental,租用,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "提供輔助科技產品租用服務的認可服務單位名單"
+    },
+    {
+      "title": "社區照顧服務券 - 服務項目",
+      "title_en": "Community Care Voucher - Service Items",
+      "category_slug": "community-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者社區照顧服務券計劃/長者社區照顧服務券計劃_社區照顧服務項目.pdf",
+      "language": "zh-HK",
+      "tags": "社區照顧,community care,voucher,服務券,services,服務項目,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "社區照顧服務券計劃服務項目詳情"
+    },
+    {
+      "title": "社區照顧服務券 - 認可服務單位名單",
+      "title_en": "Community Care Voucher - Accredited Service Units",
+      "category_slug": "community-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者社區照顧服務券計劃/長者社區照顧服務券計劃_認可服務單位名單.pdf",
+      "language": "zh-HK",
+      "tags": "社區照顧,community care,voucher,服務券,accredited,認可,service units,服務單位,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "社區照顧服務券計劃認可服務單位名單"
+    },
+    {
+      "title": "醫療券 - 使用小貼士",
+      "title_en": "Health Care Voucher - Usage Tips",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_使用醫療券小貼士.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,usage,使用,tips,貼士,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "使用醫療券的實用小貼士"
+    },
+    {
+      "title": "醫療券 - 使用規限",
+      "title_en": "Health Care Voucher - Usage Restrictions",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_使用醫療券的規限.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,restrictions,規限,rules,規則,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "使用醫療券的規限及注意事項"
+    },
+    {
+      "title": "醫療券 - 合資格長者及金額",
+      "title_en": "Health Care Voucher - Eligibility and Amount",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_合資格長者及每年醫療券金額.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,eligibility,資格,amount,金額,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "合資格長者及每年醫療券金額詳情"
+    },
+    {
+      "title": "醫療券 - 配偶共用",
+      "title_en": "Health Care Voucher - Spouse Sharing",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_配偶共用醫療券.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,spouse,配偶,sharing,共用,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "配偶共用醫療券的安排及方法"
+    },
+    {
+      "title": "醫療券 - 醫療服務提供者類別",
+      "title_en": "Health Care Voucher - Service Provider Categories",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_醫療服務提供者類別.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,service providers,服務提供者,categories,類別,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "醫療服務提供者類別及資格"
+    },
+    {
+      "title": "醫療券 - 獎賞先導計劃",
+      "title_en": "Health Care Voucher - Reward Pilot Scheme",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_長者醫療券獎賞先導計劃.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,reward,獎賞,pilot scheme,先導計劃,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "長者醫療券獎賞先導計劃詳情"
+    },
+    {
+      "title": "醫療券 - 開設戶口及使用",
+      "title_en": "Health Care Voucher - Account Setup and Usage",
+      "category_slug": "health-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者醫療券計劃/長者醫療券計劃_開設戶口及使用醫療券.pdf",
+      "language": "zh-HK",
+      "tags": "醫療券,health care voucher,account,戶口,setup,開設,usage,使用,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "開設醫療券戶口及使用指南"
+    },
+    {
+      "title": "院舍照顧服務券 - 共同付款級別（護養院）",
+      "title_en": "Residential Care Voucher - Co-payment Levels (Nursing Home)",
+      "category_slug": "residential-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者院舍照顧服務券計劃/長者院舍照顧服務券計劃_共同付款金額級別列表 （護養院宿位）.pdf",
+      "language": "zh-HK",
+      "tags": "院舍照顧,residential care,voucher,服務券,co-payment,共同付款,nursing home,護養院,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "院舍照顧服務券共同付款金額級別列表（護養院宿位）"
+    },
+    {
+      "title": "院舍照顧服務券 - 共同付款級別（護理安老）",
+      "title_en": "Residential Care Voucher - Co-payment Levels (Care and Attention)",
+      "category_slug": "residential-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者院舍照顧服務券計劃/長者院舍照顧服務券計劃_共同付款金額級別列表（護理安老宿位）.pdf",
+      "language": "zh-HK",
+      "tags": "院舍照顧,residential care,voucher,服務券,co-payment,共同付款,care and attention,護理安老,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "院舍照顧服務券共同付款金額級別列表（護理安老宿位）"
+    },
+    {
+      "title": "院舍照顧服務券 - 認可服務機構名單",
+      "title_en": "Residential Care Voucher - Accredited Service Organizations",
+      "category_slug": "residential-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者院舍照顧服務券計劃/長者院舍照顧服務券計劃_認可服務機構名單.pdf",
+      "language": "zh-HK",
+      "tags": "院舍照顧,residential care,voucher,服務券,accredited,認可,organizations,機構,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "院舍照顧服務券計劃認可服務機構名單"
+    },
+    {
+      "title": "院舍照顧服務券計劃",
+      "title_en": "Residential Care Service Voucher Scheme",
+      "category_slug": "residential-care-voucher",
+      "file_path": "/app/data/kb_seed_docs/長者院舍照顧服務券計劃/長者院舍照顧服務券計劃.pdf",
+      "language": "zh-HK",
+      "tags": "院舍照顧,residential care,voucher,服務券,scheme,計劃,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "長者院舍照顧服務券計劃詳細資料"
+    },
+    {
+      "title": "高齡津貼、傷殘津貼及長者生活津貼 - 申請指引",
+      "title_en": "Old Age Allowance, Disability Allowance & OALA - Application Guide",
+      "category_slug": "old-age-allowance",
+      "file_path": "/app/data/kb_seed_docs/高齡津貼、傷殘津貼及長者生活津貼/高齡津貼和傷殘津貼及長者生活津貼_公共福利金計劃申請指引.pdf",
+      "language": "zh-HK",
+      "tags": "高齡津貼,old age allowance,disability allowance,傷殘津貼,OALA,長者生活津貼,application,申請,elderly,長者",
+      "visibility": "public",
+      "organization_id": null,
+      "description": "高齡津貼、傷殘津貼及長者生活津貼公共福利金計劃申請指引"
+    }
+  ]
+}

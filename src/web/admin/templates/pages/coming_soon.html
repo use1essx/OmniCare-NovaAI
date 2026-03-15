@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Coming Soon · Healthcare AI Admin{% endblock %}
+{% block page_title %}Under Construction{% endblock %}
+{% block breadcrumb_current %}Coming Soon{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] text-center">
+    <div class="bg-blue-50 text-blue-600 rounded-full p-6 mb-6">
+        <i class="fas fa-hard-hat text-4xl"></i>
+    </div>
+    <h2 class="text-2xl font-bold text-slate-900 mb-2">Feature Coming Soon</h2>
+    <p class="text-slate-500 max-w-md mb-8">
+        We're currently working on this feature. Please check back later for updates.
+    </p>
+    <a href="/admin/" class="btn btn-primary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %}

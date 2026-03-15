@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniCare - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #4a5568;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: #718096;
+            font-size: 1.1rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f7fafc;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #718096;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+            color: #718096;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .guest-button {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .guest-button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .health-info {
+            background: #e6fffa;
+            border: 2px solid #38b2ac;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .health-info h3 {
+            color: #2c7a7b;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .health-info p {
+            color: #2c7a7b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #68d391;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 2px solid #fc8181;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .password-requirements {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        .requirement {
+            display: block;
+            margin: 2px 0;
+        }
+
+        .requirement.valid {
+            color: #38a169;
+        }
+
+        .requirement.invalid {
+            color: #e53e3e;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 30px 25px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .logo h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1>🏥 OmniCare</h1>
+        </div>
+
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('login')">Login</button>
+            <button class="tab-button" onclick="switchTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alert-container"></div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Processing...</span>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-tab" class="tab-content active">
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email or Username</label>
+                    <input type="text" id="login-email" name="email_or_username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember-me" name="remember_me">
+                    <label for="remember-me">Remember me for 30 days</label>
+                </div>
+
+                <button type="submit" class="submit-button">
+                    Login to Healthcare AI
+                </button>
+            </form>
+
+            <button type="button" class="guest-button" onclick="continueAsGuest()">
+                Continue as Guest
+            </button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-tab" class="tab-content">
+            <div class="health-info">
+                <h3>🎯 Why Create an Account?</h3>
+                <p>• Save your health conversations and history<br>
+                   • Get personalized health recommendations<br>
+                   • Track medications and health goals<br>
+                   • Access Hong Kong healthcare data</p>
+            </div>
+
+            <form id="signup-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="signup-firstname">First Name</label>
+                        <input type="text" id="signup-firstname" name="firstname" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-lastname">Last Name</label>
+                        <input type="text" id="signup-lastname" name="lastname" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-email">Email Address</label>
+                    <input type="email" id="signup-email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <input type="text" id="signup-username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" name="password" required>
+                    <div class="password-requirements">
+                        <span class="requirement" id="req-length">• At least 8 characters</span>
+                        <span class="requirement" id="req-uppercase">• One uppercase letter</span>
+                        <span class="requirement" id="req-lowercase">• One lowercase letter</span>
+                        <span class="requirement" id="req-number">• One number</span>
+                        <span class="requirement" id="req-special">• One special character</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-confirm">Confirm Password</label>
+                    <input type="password" id="signup-confirm" name="confirm_password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="language-preference">Preferred Language</label>
+                    <select id="language-preference" name="language_preference">
+                        <option value="en">English</option>
+                        <option value="zh-HK">Traditional Chinese (Hong Kong)</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms-agree" name="terms_agree" required>
+                    <label for="terms-agree">I agree to the Terms of Service and Privacy Policy</label>
+                </div>
+
+                <button type="submit" class="submit-button">
+                    Create Healthcare AI Account
+                </button>
+            </form>
+
+            <button type="button" class="guest-button" onclick="continueAsGuest()">
+                Continue as Guest
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = window.location.origin.replace(':8080', ':8000'); // Healthcare AI backend
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Clear alerts when switching tabs
+            clearAlerts();
+        }
+
+        // Alert functions
+        function showAlert(message, type = 'error') {
+            const alertContainer = document.getElementById('alert-container');
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function clearAlerts() {
+            document.getElementById('alert-container').innerHTML = '';
+        }
+
+        // Loading state
+        function setLoading(show) {
+            const loading = document.getElementById('loading');
+            const buttons = document.querySelectorAll('.submit-button');
+            
+            if (show) {
+                loading.classList.add('show');
+                buttons.forEach(btn => btn.disabled = true);
+            } else {
+                loading.classList.remove('show');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // Password strength validation
+        function validatePassword(password) {
+            const requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+
+            // Update visual indicators
+            Object.keys(requirements).forEach(req => {
+                const element = document.getElementById(`req-${req}`);
+                if (element) {
+                    element.className = requirements[req] ? 'requirement valid' : 'requirement invalid';
+                }
+            });
+
+            return Object.values(requirements).every(Boolean);
+        }
+
+        // Form submissions
+        function setAuthCookie(token) {
+            if (!token) return;
+            document.cookie = `access_token=${token}; path=/; SameSite=Lax`;
+        }
+
+        function clearAuthCookie() {
+            document.cookie = 'access_token=; path=/; Max-Age=0; SameSite=Lax';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const rawNextParam = urlParams.get('next');
+
+        function getSafeNextPath(rawValue) {
+            if (!rawValue) {
+                return null;
+            }
+            try {
+                const resolved = new URL(rawValue, window.location.origin);
+                if (resolved.origin !== window.location.origin) {
+                    return null;
+                }
+                return resolved.pathname + resolved.search + resolved.hash;
+            } catch (error) {
+                console.warn('Ignoring invalid next parameter:', error);
+                return null;
+            }
+        }
+
+        const nextDestination = getSafeNextPath(rawNextParam);
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            clearAlerts();
+
+            const formData = new FormData(e.target);
+            const data = {
+                email_or_username: formData.get('email_or_username'),
+                password: formData.get('password'),
+                remember_me: formData.get('remember_me') === 'on'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store tokens
+                    localStorage.setItem('access_token', result.access_token);
+                    localStorage.setItem('refresh_token', result.refresh_token);
+                    localStorage.setItem('auth_token', result.access_token);
+                    localStorage.setItem('user_data', JSON.stringify(result.user));
+                    setAuthCookie(result.access_token);
+                    
+                    showAlert('Login successful! Redirecting...', 'success');
+                    
+                    // Redirect to chat interface for all users
+                    setTimeout(() => {
+                        const target = nextDestination || '/live2d/';
+                        window.location.href = target;
+                    }, 1500);
+                } else {
+                    // Check for various error fields from backend
+                    const errorMessage = result.detail || result.message || result.error || 'Login failed. Please check your credentials.';
+                    showAlert(errorMessage);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Connection error. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            clearAlerts();
+
+            const formData = new FormData(e.target);
+            
+            // Validate password confirmation
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirm_password');
+            
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match.');
+                setLoading(false);
+                return;
+            }
+
+            if (!validatePassword(password)) {
+                showAlert('Password does not meet security requirements.');
+                setLoading(false);
+                return;
+            }
+
+            const data = {
+                email: formData.get('email'),
+                username: formData.get('username'),
+                password: password,
+                full_name: `${formData.get('firstname')} ${formData.get('lastname')}`,
+                language_preference: formData.get('language_preference') || 'en',
+                timezone: 'Asia/Hong_Kong'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Account created successfully! Please login with your credentials.', 'success');
+                    
+                    // Switch to login tab and pre-fill email
+                    setTimeout(() => {
+                        switchTab('login');
+                        document.getElementById('login-email').value = data.email;
+                    }, 2000);
+                } else {
+                    const errorMessage = result.detail || result.message || result.error || 'Registration failed. Please try again.';
+                    showAlert(errorMessage);
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showAlert('Connection error. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Password validation on input
+        document.getElementById('signup-password').addEventListener('input', (e) => {
+            validatePassword(e.target.value);
+        });
+
+        // Continue as guest
+        function continueAsGuest() {
+            // Clear any stored authentication
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            clearAuthCookie();
+            
+            // Set guest mode flag
+            localStorage.setItem('guest_mode', 'true');
+            
+            // Redirect to main chat interface
+            window.location.href = '/live2d/';
+        }
+
+        // Check if user is already logged in
+        window.addEventListener('load', async () => {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                // Validate token before redirecting
+                try {
+                    const response = await fetch('/api/v1/auth/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        // Token is valid, redirect appropriately
+                        const target = nextDestination || '/live2d/';
+                        window.location.href = target;
+                    } else {
+                        // Token is invalid, remove it and stay on auth page
+                        localStorage.removeItem('access_token');
+                        document.cookie = 'access_token=; path=/; Max-Age=0; SameSite=Lax';
+                    }
+                } catch (error) {
+                    // Network error or other issue, remove token and stay on auth page
+                    console.error('Token validation failed:', error);
+                    localStorage.removeItem('access_token');
+                    document.cookie = 'access_token=; path=/; Max-Age=0; SameSite=Lax';
+                }
+            }
+        });
+
+
+        // Initialize password validation
+        validatePassword('');
+    </script>
+</body>
+</html>

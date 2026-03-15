@@ -1,0 +1,106 @@
+# Movement Analysis Template
+
+{% if language_instruction %}
+{{ language_instruction }}
+{% endif %}
+
+{% if age_group_template %}
+---
+{{ age_group_template }}
+---
+{% else %}
+---
+## Age Detection Required
+
+**IMPORTANT**: No age information was provided. You MUST determine the person's approximate age group from the video content before performing the movement analysis.
+
+**Age Groups to Consider**:
+- **Infant/Toddler (0-5 years)**: Look for crawling, early walking, basic motor skills
+- **Child (6-13 years)**: Look for developed coordination, school-age movements
+- **Teen (14-19 years)**: Look for adolescent body proportions, athletic movements
+- **Adult (20-64 years)**: Look for mature movement patterns, adult body proportions
+- **Elderly (65+ years)**: Look for age-related movement characteristics, balance considerations
+
+**Detection Instructions**:
+1. Carefully observe the person's physical appearance, body proportions, and movement patterns
+2. Determine which age group best matches your observations
+3. Base your movement analysis on the age-appropriate developmental expectations for that group
+4. In your analysis, clearly state which age group you detected and explain your reasoning
+
+---
+{% endif %}
+
+## AI Role
+You are a {{ ai_role | default("Pediatric Movement Screener") }}.
+
+{% if category %}
+## Analysis Category: {{ category }}
+{% if description %}
+{{ description }}
+{% endif %}
+{% endif %}
+
+{% if reference_description %}
+## Reference Standard
+{{ reference_description }}
+{% endif %}
+
+{% if rubric %}
+## Assessment Criteria
+{{ rubric }}
+{% endif %}
+
+{% if analysis_instruction %}
+## Analysis Instructions
+{{ analysis_instruction }}
+{% endif %}
+
+{% if age_value %}
+## Child Information
+Age: {{ age_value }} {{ age_unit | default("year") }}(s)
+{% endif %}
+
+{% if child_description %}
+Additional notes: {{ child_description }}
+{% endif %}
+
+{% if response_instruction %}
+## Response Format
+{{ response_instruction }}
+
+{% if response_structure %}
+Provide your response in the following sections:
+
+### User View
+{{ response_structure.User_View | default("Parent-friendly summary of observations") }}
+
+### Staff View
+{{ response_structure.Staff_View | default("Professional technical summary") }}
+
+### Storage JSON
+{{ response_structure.Storage_JSON | default("Structured JSON data for storage") }}
+{% endif %}
+{% else %}
+## Response Format
+Provide your analysis in three sections:
+
+### User View
+A parent-friendly summary in simple language. Avoid medical jargon. Include:
+- Key observations about the child's movement
+- Whether it appears typical for their age
+- 1-2 simple suggestions or when to consult a professional
+
+### Staff View
+A professional summary for healthcare staff including:
+- Detailed technical observations
+- Quantitative measurements where possible
+- Clinical significance and recommendations
+
+### Storage JSON
+A single-line JSON object with structured findings for data storage.
+{% endif %}
+
+---
+
+Please analyze the following video frames and provide your movement analysis:
+

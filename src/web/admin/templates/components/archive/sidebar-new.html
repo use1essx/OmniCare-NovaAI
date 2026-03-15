@@ -1,0 +1,254 @@
+{% set perms = permissions or {} %}
+<aside class="admin-sidebar custom-scrollbar"
+       :class="{ 'is-open': $root.sidebarOpen }"
+       x-cloak
+       x-data="{
+           sections: {
+               data: {{ 'true' if request.url.path.startswith('/admin/data') else 'false' }},
+               ai: {{ 'true' if '#ai' in request.url.path else 'false' }},
+               system: {{ 'true' if request.url.path.startswith('/admin/super-admin') or request.url.path.startswith('/health') else 'false' }},
+           },
+           get store() { return Alpine.store && Alpine.store('admin'); },
+           get metrics() { return this.store?.metrics || {}; },
+           get isConnected() { return this.store?.isConnected || false; },
+           get lastUpdate() { return this.store?.lastUpdate || null; },
+           get systemTone() {
+               const status = (this.metrics.system?.status || '').toLowerCase();
+               if (['critical', 'error', 'down'].includes(status)) return 'critical';
+               if (['warning', 'degraded'].includes(status)) return 'warning';
+               if (['healthy', 'ok', 'online'].includes(status)) return 'ok';
+               return 'unknown';
+           },
+           timeAgo(timestamp) {
+               if (!timestamp) return 'Never';
+               const now = new Date();
+               const then = new Date(timestamp);
+               const diff = Math.max(0, now - then);
+               const minutes = Math.floor(diff / 60000);
+               if (minutes < 1) return 'Just now';
+               if (minutes < 60) return `${minutes}m ago`;
+               const hours = Math.floor(minutes / 60);
+               if (hours < 24) return `${hours}h ago`;
+               const days = Math.floor(hours / 24);
+               return `${days}d ago`;
+           }
+       }">
+    <!-- Header -->
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <i class="fas fa-heart-pulse"></i>
+            </div>
+            <div class="sidebar-brand-text">
+                <span class="sidebar-brand-title">Healthcare AI</span>
+                <span class="sidebar-brand-subtitle">Admin</span>
+            </div>
+        </div>
+        <button class="icon-button hide-desktop"
+                type="button"
+                @click="$root.closeSidebar()">
+            <i class="fas fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+        <!-- Overview Section -->
+        {% if perms.view_dashboard %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Overview</h3>
+            <div>
+                {% set dashboard_active = request.url.path == '/admin/' %}
+                <a href="/admin/" class="sidebar-nav-item {{ 'is-active' if dashboard_active else '' }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Executive Dashboard</span>
+                </a>
+
+                {% set testing_active = request.url.path.startswith('/admin/testing') %}
+                <a href="/admin/testing" class="sidebar-nav-item {{ 'is-active' if testing_active else '' }}">
+                    <i class="fas fa-vial"></i>
+                    <span>Testing Lab</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Operations Section -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Operations</h3>
+            <div>
+                {% if perms.manage_users %}
+                {% set users_active = request.url.path.startswith('/admin/user-management') %}
+                <a href="/admin/user-management" class="sidebar-nav-item {{ 'is-active' if users_active else '' }}" style="justify-content: space-between;">
+                    <span style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-users"></i>
+                        <span>User Directory</span>
+                    </span>
+                    <span class="badge badge-sm" :style="'background: ' + ({{ 'true' if users_active else 'false' }} ? '#dbeafe' : '#d1fae5') + '; color: ' + ({{ 'true' if users_active else 'false' }} ? '#1e40af' : '#065f46')"
+                          x-text="metrics.users?.active ?? 0"></span>
+                </a>
+                {% endif %}
+
+                {% if perms.view_data_management %}
+                <div>
+                    <button type="button"
+                            class="sidebar-dropdown-toggle"
+                            @click="sections.data = !sections.data"
+                            :aria-expanded="sections.data.toString()">
+                        <span style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-database"></i>
+                            Data Platform
+                        </span>
+                        <i class="fas fa-chevron-down text-xs transition"
+                           :style="sections.data ? 'transform: rotate(180deg)' : ''"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content"
+                         x-show="sections.data"
+                         x-transition>
+                        {% set data_files_active = request.url.path == '/admin/data-management' %}
+                        <a href="/admin/data-management" class="sidebar-nav-item sidebar-dropdown-item {{ 'is-active' if data_files_active else '' }}">
+                            <i class="fas fa-cloud-arrow-up"></i>
+                            <span>File Management</span>
+                        </a>
+                        <a href="/admin/data/hk-sources" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-globe"></i>
+                            <span>HK Data Sources</span>
+                        </a>
+                        <a href="/admin/data/quality" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-shield-check"></i>
+                            <span>Quality Review</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <a href="/admin/live2d-admin" class="sidebar-nav-item {{ 'is-active' if request.url.path == '/admin/live2d-admin' else '' }}">
+                    <i class="fas fa-theater-masks"></i>
+                    <span>Live2D Studio</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Intelligence Section -->
+        {% if perms.view_ai_agents %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Intelligence</h3>
+            <div>
+                <div>
+                    <button type="button"
+                            class="sidebar-dropdown-toggle"
+                            @click="sections.ai = !sections.ai"
+                            :aria-expanded="sections.ai.toString()">
+                        <span style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-robot"></i>
+                            AI Agents
+                        </span>
+                        <i class="fas fa-chevron-down text-xs transition"
+                           :style="sections.ai ? 'transform: rotate(180deg)' : ''"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content"
+                         x-show="sections.ai"
+                         x-transition>
+                        <a href="/admin/testing#ai-performance" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Performance</span>
+                        </a>
+                        <a href="/admin/testing#ai-conversations" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-messages"></i>
+                            <span>Conversation Logs</span>
+                        </a>
+                        <a href="/admin/testing#ai-evaluations" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Evaluations</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- System Section -->
+        {% if perms.view_system %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">System</h3>
+            <div>
+                <div>
+                    <button type="button"
+                            class="sidebar-dropdown-toggle"
+                            @click="sections.system = !sections.system"
+                            :aria-expanded="sections.system.toString()">
+                        <span style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-sliders"></i>
+                            Controls
+                        </span>
+                        <i class="fas fa-chevron-down text-xs transition"
+                           :style="sections.system ? 'transform: rotate(180deg)' : ''"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content"
+                         x-show="sections.system"
+                         x-transition>
+                        <a href="/health" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-heart-pulse"></i>
+                            <span>Health Checks</span>
+                        </a>
+                        <a href="/admin/testing#system-logs" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-file-lines"></i>
+                            <span>System Logs</span>
+                        </a>
+                        <a href="/admin/testing#system-config" class="sidebar-nav-item sidebar-dropdown-item">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Configuration</span>
+                        </a>
+                    </div>
+                </div>
+
+                {% set superadmin_active = request.url.path.startswith('/admin/super-admin') %}
+                <a href="/admin/super-admin" class="sidebar-nav-item {{ 'is-active' if superadmin_active else '' }}">
+                    <i class="fas fa-crown"></i>
+                    <span>Super Admin</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </nav>
+
+    <!-- Footer Status -->
+    <div class="sidebar-footer">
+        <div class="sidebar-status-card">
+            <div class="sidebar-status-header">
+                <span class="sidebar-status-title">System Status</span>
+                <span style="font-size: 0.625rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Live</span>
+            </div>
+            <div>
+                <div class="sidebar-status-item">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="relative flex h-2 w-2">
+                            <span class="pulse-dot absolute inset-0" :data-tone="isConnected ? 'green' : 'red'"></span>
+                            <span class="relative z-10 h-1.5 w-1.5 rounded-full"
+                                  :style="'background: ' + (isConnected ? '#34d399' : '#f87171')"></span>
+                        </span>
+                        <span>Connection</span>
+                    </span>
+                    <span style="font-weight: 600;" x-text="isConnected ? 'Live' : 'Offline'"></span>
+                </div>
+                <div class="sidebar-status-item">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="relative flex h-2 w-2">
+                            <span class="pulse-dot absolute inset-0"
+                                  :data-tone="systemTone === 'critical' ? 'red' : 'green'"></span>
+                            <span class="relative z-10 h-1.5 w-1.5 rounded-full"
+                                  :style="'background: ' + (systemTone === 'critical' ? '#f87171' : (systemTone === 'warning' ? '#fbbf24' : '#34d399'))"></span>
+                        </span>
+                        <span>System</span>
+                    </span>
+                    <span style="font-weight: 600; text-transform: capitalize;" x-text="metrics.system?.status || 'Unknown'"></span>
+                </div>
+                <div class="sidebar-status-item" style="border-top: 1px solid #e2e8f0; padding-top: 0.5rem; margin-top: 0.5rem;">
+                    <span style="color: #94a3b8;">Updated</span>
+                    <span style="font-weight: 600;" x-text="timeAgo(lastUpdate)"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>
+
